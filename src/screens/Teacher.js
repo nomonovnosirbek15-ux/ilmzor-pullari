@@ -4,6 +4,7 @@ import { supabase, q, rpc } from '../supabase';
 import { C, Btn, Card, Check, Chip, Coin, Empty, ErrorBox, Field, H2, Loading, P, Page, Row, fmt, useLoad, useUI } from '../ui';
 import { History, Ratings } from '../shared';
 import { useMyGroups } from './Student';
+import { ManageTasks } from './Tasks';
 
 function Give({ me, refreshMe }) {
   const { notify, ask } = useUI();
@@ -127,6 +128,7 @@ function TeacherRatings({ me }) {
 export function teacherTabs(me, refreshMe) {
   return [
     { key: 'give', icon: '⭐', label: 'Pul berish', render: () => <Give me={me} refreshMe={refreshMe} /> },
+    { key: 'tasks', icon: '📝', label: 'Vazifalar', render: () => <ManageTasks me={me} /> },
     { key: 'hist', icon: '📜', label: 'Tarix', render: () => <History me={me} /> },
     { key: 'rating', icon: '🏆', label: 'Reyting', render: () => <TeacherRatings me={me} /> },
   ];

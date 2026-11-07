@@ -4,6 +4,7 @@ import { supabase, q } from '../supabase';
 import { CURRENCY } from '../config';
 import { C, Card, ErrorBox, H2, P, Page, Row, fmt, useLoad } from '../ui';
 import { Ratings, ShopCatalog, TxList, useTx } from '../shared';
+import { StudentTasks } from './Tasks';
 
 export function useMyGroups(me) {
   return useLoad(async () => {
@@ -51,6 +52,7 @@ function Wallet({ me, refreshMe }) {
 export function studentTabs(me, refreshMe) {
   return [
     { key: 'wallet', icon: '👛', label: 'Hisobim', render: () => <Wallet me={me} refreshMe={refreshMe} /> },
+    { key: 'tasks', icon: '📝', label: 'Vazifalar', render: () => <StudentTasks me={me} refreshMe={refreshMe} /> },
     { key: 'shop', icon: '🛍️', label: "Do'kon", render: () => <ShopCatalog balance={me.balance} /> },
     { key: 'rating', icon: '🏆', label: 'Reyting', render: () => <StudentRatings me={me} /> },
   ];

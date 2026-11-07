@@ -79,6 +79,7 @@ export function txView(t, viewerId) {
   const name = (p) => (p && p.full_name) || '—';
   switch (t.type) {
     case 'reward':
+      if (t.assignment_id) return { icon: '📝', title: `Vazifa: ${t.note || ''}`, sub: `${name(t.sender)} → ${name(t.receiver)}`, plus: t.from_id !== viewerId, hideNote: true };
       return { icon: '⭐', title: t.reason?.name || "Rag'bat", sub: `${name(t.sender)} → ${name(t.receiver)}`, plus: t.from_id !== viewerId };
     case 'purchase':
       return { icon: '🛍️', title: `${t.item?.name || 'Mahsulot'}${t.quantity > 1 ? ' × ' + t.quantity : ''}`, sub: `Xarid: ${name(t.sender)}`, plus: false };
@@ -101,7 +102,7 @@ export function TxList({ items, viewerId }) {
             key={t.id}
             left={<Text style={{ fontSize: 24 }}>{v.icon}</Text>}
             title={v.title}
-            sub={`${v.sub}${t.note ? ' · ' + t.note : ''}\n${fmtDate(t.created_at)}`}
+            sub={`${v.sub}${t.note && !v.hideNote ? ' · ' + t.note : ''}\n${fmtDate(t.created_at)}`}
             right={<Coin value={t.amount} sign={v.plus ? '+' : '−'} color={v.plus ? C.success : C.danger} />}
           />
         );

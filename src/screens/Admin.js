@@ -7,6 +7,7 @@ import {
 import { History, Ratings } from '../shared';
 import { Items, TopUp } from './Seller';
 import { useMyGroups } from './Student';
+import { ManageTasks } from './Tasks';
 
 const norm = (x) => (x || '').toLowerCase();
 const ROLES = ['student', 'teacher', 'seller', 'admin'];
@@ -26,6 +27,8 @@ function Stats() {
         <Stat icon="📅" label="Shu oy berildi" value={x.given_month} color={C.success} coin />
         <Stat icon="🛍️" label="Shu oy sarflandi" value={x.spent_month} color={C.danger} coin />
         <Stat icon="👛" label="O'quvchilarda jami" value={x.student_money} color={C.primaryDark} coin />
+        {x.tasks_month !== undefined && <Stat icon="📝" label="Shu oy topshirilgan vazifa" value={x.tasks_month} color={C.blue} />}
+        {x.to_review !== undefined && <Stat icon="⏳" label="Tekshirish kutilmoqda" value={x.to_review} color={C.gold} />}
       </Row>
       <Card>
         <H2 style={{ marginBottom: 12 }}>Pul oqimi (shu oy)</H2>
@@ -388,13 +391,25 @@ function AdminRatings({ me }) {
   return <Ratings me={me} groups={g.data} />;
 }
 
+function StatsAndRating({ me }) {
+  const [tab, setTab] = useState('stats');
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={{ paddingHorizontal: 16, paddingTop: 12, width: '100%', maxWidth: 672, alignSelf: 'center' }}>
+        <Segment options={[['stats', '📊 Statistika'], ['rating', '🏆 Reyting']]} value={tab} onChange={setTab} />
+      </View>
+      {tab === 'stats' ? <Stats /> : <AdminRatings me={me} />}
+    </View>
+  );
+}
+
 export function adminTabs(me) {
   return [
-    { key: 'stats', icon: '📊', label: 'Statistika', render: () => <Stats /> },
+    { key: 'stats', icon: '📊', label: 'Statistika', render: () => <StatsAndRating me={me} /> },
     { key: 'people', icon: '👥', label: 'Odamlar', render: () => <People me={me} /> },
     { key: 'groups', icon: '🏫', label: 'Guruhlar', render: () => <Groups /> },
     { key: 'reasons', icon: '⭐', label: 'Sabablar', render: () => <Reasons /> },
+    { key: 'tasks', icon: '📝', label: 'Vazifalar', render: () => <ManageTasks me={me} /> },
     { key: 'shop', icon: '🛍️', label: "Do'kon", render: () => <Shop me={me} /> },
-    { key: 'rating', icon: '🏆', label: 'Reyting', render: () => <AdminRatings me={me} /> },
   ];
 }
