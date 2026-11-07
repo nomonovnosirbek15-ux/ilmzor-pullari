@@ -2,7 +2,7 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { supabase, q } from '../supabase';
 import { CURRENCY } from '../config';
-import { C, Card, ErrorBox, H2, P, Page, Row, fmt, useLoad } from '../ui';
+import { Banknotes, C, Card, ErrorBox, H2, P, Page, Row, fmt, useLoad } from '../ui';
 import { Ratings, ShopCatalog, TxList, useTx } from '../shared';
 import { StudentTasks } from './Tasks';
 
@@ -28,9 +28,13 @@ function Wallet({ me, refreshMe }) {
   return (
     <Page onRefresh={reload} refreshing={tx.loading && !!tx.data}>
       <Card style={{ backgroundColor: C.primary, borderColor: C.primary, paddingVertical: 24, alignItems: 'center' }}>
-        <Text style={{ color: '#CCFBF1', fontSize: 15 }}>Mening hisobim</Text>
-        <Text style={{ color: '#fff', fontSize: 52, fontWeight: '900', marginVertical: 4 }}>{fmt(me.balance)} 🪙</Text>
+        <Text style={{ color: '#D3F5E6', fontSize: 15 }}>Mening hisobim</Text>
+        <Text style={{ color: '#fff', fontSize: 52, fontWeight: '900', marginVertical: 4 }}>{fmt(me.balance)}</Text>
         <Text style={{ color: '#FDE68A', fontSize: 15, fontWeight: '700' }}>{CURRENCY}</Text>
+      </Card>
+      <Card>
+        <H2 style={{ marginBottom: 12 }}>Mening pullarim</H2>
+        <Banknotes amount={me.balance} />
       </Card>
       <Row style={{ gap: 12, marginBottom: 12 }}>
         <View style={{ flex: 1, backgroundColor: C.successLight, borderRadius: 14, padding: 14 }}>

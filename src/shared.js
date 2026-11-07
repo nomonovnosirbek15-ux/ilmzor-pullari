@@ -33,12 +33,12 @@ export function Ratings({ me, groups }) {
 
       {mine && (
         <Card style={{ backgroundColor: C.primaryDark, borderColor: C.primaryDark }}>
-          <Text style={{ color: '#99F6E4', fontSize: 14 }}>Sizning o'rningiz</Text>
+          <Text style={{ color: '#8EE8BF', fontSize: 14 }}>Sizning o'rningiz</Text>
           <Row style={{ justifyContent: 'space-between', marginTop: 4 }}>
             <Text style={{ color: '#fff', fontSize: 34, fontWeight: '900' }}>{MEDAL[mine.place - 1] || ''} {mine.place}-o'rin</Text>
             <Text style={{ color: '#FDE68A', fontSize: 16, fontWeight: '700' }}>{data.length} ta o'quvchidan</Text>
           </Row>
-          <Text style={{ color: '#fff', marginTop: 4 }}>Topilgan: {fmt(mine.earned)} 🪙</Text>
+          <Text style={{ color: '#fff', marginTop: 4 }}>Topilgan: {fmt(mine.earned)} ilmzor</Text>
         </Card>
       )}
 
@@ -130,7 +130,7 @@ export function ShopCatalog({ balance }) {
   return (
     <Page onRefresh={reload} refreshing={loading && !!data}>
       <Card style={{ backgroundColor: C.goldLight, borderColor: '#FCD34D' }}>
-        <P>Sizda: <Text style={{ fontWeight: '800' }}>{fmt(balance)} 🪙</Text></P>
+        <P>Sizda: <Text style={{ fontWeight: '800' }}>{fmt(balance)} ilmzor</Text></P>
         <P muted style={{ marginTop: 4, fontSize: 13 }}>Narsa olish uchun do'kondagi sotuvchiga murojaat qiling.</P>
       </Card>
       <Row style={{ flexWrap: 'wrap' }}>{cats.map((c) => <Chip key={c} label={c} active={cat === c} onPress={() => setCat(c)} />)}</Row>
@@ -142,7 +142,7 @@ export function ShopCatalog({ balance }) {
               <ListRow
                 key={i.id}
                 title={i.name}
-                sub={`${i.category} · ${i.stock > 0 ? `Omborda: ${i.stock}` : 'Tugagan'}${!can && i.stock > 0 ? ` · Yana ${fmt(i.price - balance)} 🪙 kerak` : ''}`}
+                sub={`${i.category} · ${i.stock > 0 ? `Omborda: ${i.stock}` : 'Tugagan'}${!can && i.stock > 0 ? ` · Yana ${fmt(i.price - balance)} ilmzor kerak` : ''}`}
                 right={<Coin value={i.price} color={can && i.stock > 0 ? C.success : C.muted} />}
               />
             );

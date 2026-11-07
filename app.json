@@ -6,11 +6,11 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "backgroundColor": "#134E4A",
+    "backgroundColor": "#0E223A",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#134E4A"
+      "backgroundColor": "#0E223A"
     },
     "ios": {
       "supportsTablet": true,
@@ -20,7 +20,7 @@
       "package": "uz.ilmzor.pullari",
       "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#134E4A",
+        "backgroundColor": "#0E223A",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       }
@@ -30,8 +30,8 @@
       "output": "single",
       "name": "Ilmzor puli",
       "shortName": "Ilmzor puli",
-      "themeColor": "#134E4A",
-      "backgroundColor": "#134E4A"
+      "themeColor": "#0E223A",
+      "backgroundColor": "#0E223A"
     },
     "experiments": {
       "baseUrl": "/ilmzor-pullari"

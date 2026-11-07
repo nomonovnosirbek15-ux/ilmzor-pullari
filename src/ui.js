@@ -1,10 +1,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, Platform,
+  ActivityIndicator, Image, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, Platform,
 } from 'react-native';
 
 export const C = {
-  bg: '#F3F6FA', card: '#FFFFFF', primary: '#0F766E', primaryDark: '#134E4A', primaryLight: '#CCFBF1',
+  bg: '#F3F6FA', card: '#FFFFFF', primary: '#17A06A', primaryDark: '#0E223A', primaryLight: '#D3F5E6', brand: '#4AD496',
   gold: '#F59E0B', goldLight: '#FEF3C7', text: '#0F172A', muted: '#64748B', border: '#E2E8F0',
   danger: '#DC2626', dangerLight: '#FEE2E2', success: '#16A34A', successLight: '#DCFCE7', blue: '#2563EB',
 };
@@ -175,15 +175,62 @@ export function ListRow({ title, sub, right, onPress, left }) {
   );
 }
 
-export const Coin = ({ value, size = 16, color = C.text, sign = '' }) => (
-  <Text style={{ fontSize: size, fontWeight: '800', color }}>{sign}{fmt(value)} 🪙</Text>
+export const NOTES = {
+  50: require('../assets/notes/n50.jpg'), 20: require('../assets/notes/n20.jpg'), 10: require('../assets/notes/n10.jpg'),
+  5: require('../assets/notes/n5.jpg'), 2: require('../assets/notes/n2.jpg'),
+};
+export const MINI_NOTE = require('../assets/notes/mini50.png');
+export const LOGO = require('../assets/logo-green.png');
+
+// Pul belgisi: kichik banknota rasmi
+export const Note = ({ size = 16 }) => (
+  <Image source={MINI_NOTE} style={{ width: size * 1.9, height: size * 0.95, borderRadius: 2, marginLeft: 5 }} resizeMode="cover" />
 );
+export const Coin = ({ value, size = 16, color = C.text, sign = '' }) => (
+  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+    <Text style={{ fontSize: size, fontWeight: '800', color }}>{sign}{fmt(value)}</Text>
+    <Note size={size} />
+  </View>
+);
+
+// Balansni banknotalar ko'rinishida ko'rsatish: 85 = 50 + 20 + 10 + 5
+export function breakdown(amount) {
+  let r = Math.max(0, Math.floor(Number(amount) || 0));
+  const out = [];
+  for (const d of [50, 20, 10, 5, 2]) {
+    const n = Math.floor(r / d);
+    if (n) { out.push({ d, n }); r -= n * d; }
+  }
+  return { notes: out, rest: r };
+}
+export function Banknotes({ amount, width = 150 }) {
+  const { notes, rest } = breakdown(amount);
+  if (!notes.length && !rest) return <P muted style={{ textAlign: 'center' }}>Hali pul yo'q — vazifalarni bajarib ishlang!</P>;
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10 }}>
+      {notes.map(({ d, n }) => (
+        <View key={d} style={{ width, alignItems: 'center' }}>
+          <View style={{ width, height: width * 0.47 + (Math.min(n, 4) - 1) * 6 }}>
+            {Array.from({ length: Math.min(n, 4) }, (_, i) => (
+              <Image key={i} source={NOTES[d]} resizeMode="cover"
+                style={{ position: 'absolute', top: i * 6, left: i * 3, width: width - 9, height: width * 0.47, borderRadius: 6, borderWidth: 1, borderColor: '#fff' }} />
+            ))}
+          </View>
+          <Text style={{ fontWeight: '800', color: C.text, marginTop: 4 }}>{d} × {n}</Text>
+        </View>
+      ))}
+      {rest > 0 && <View style={{ width, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: C.muted }}>+ {rest} ilmzor</Text></View>}
+    </View>
+  );
+}
 
 export function Stat({ label, value, color = C.primary, icon, coin }) {
   return (
     <View style={[s.stat, { borderLeftColor: color }]}>
       <Text style={s.small}>{icon} {label}</Text>
-      <Text style={[s.statValue, { color }]}>{fmt(value)}{coin ? ' 🪙' : ''}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Text style={[s.statValue, { color }]}>{fmt(value)}</Text>{coin && <Note size={22} />}
+      </View>
     </View>
   );
 }

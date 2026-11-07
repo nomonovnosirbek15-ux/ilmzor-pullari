@@ -14,9 +14,9 @@ const STATUS = {
   paid: ['✅ Bajarildi', C.success],
 };
 
-const rewardText = (a) => a.kind === 'task' ? `${fmt(a.reward_amount)} 🪙`
-  : a.reward_mode === 'per_correct' ? `har to'g'ri javobga ${fmt(a.per_correct)} 🪙`
-    : `${a.threshold_pct}% dan oshsa ${fmt(a.reward_amount)} 🪙`;
+const rewardText = (a) => a.kind === 'task' ? `${fmt(a.reward_amount)} ilmzor`
+  : a.reward_mode === 'per_correct' ? `har to'g'ri javobga ${fmt(a.per_correct)} ilmzor`
+    : `${a.threshold_pct}% dan oshsa ${fmt(a.reward_amount)} ilmzor`;
 const maxReward = (a) => a.kind === 'task' ? a.reward_amount : a.reward_mode === 'per_correct' ? a.per_correct * a.question_count : a.reward_amount;
 const expired = (a) => a.deadline && new Date(a.deadline) < new Date();
 
@@ -246,19 +246,19 @@ function Editor({ initial, groups, onDone }) {
           <H2 style={{ marginBottom: 6 }}>Mukofot</H2>
           <Segment options={[['per_correct', "Har to'g'ri javobga"], ['threshold', 'Foizdan oshsa']]} value={f.mode} onChange={(v) => set('mode', v)} />
           {f.mode === 'per_correct' ? (
-            <Field label="Har bir to'g'ri javob uchun (🪙)" value={f.per} onChangeText={(v) => set('per', v.replace(/\D/g, ''))} keyboardType="number-pad" />
+            <Field label="Har bir to'g'ri javob uchun (ilmzor)" value={f.per} onChangeText={(v) => set('per', v.replace(/\D/g, ''))} keyboardType="number-pad" />
           ) : (
             <Row style={{ gap: 12 }}>
               <Field style={{ flex: 1 }} label="Kamida (%)" value={f.pct} onChangeText={(v) => set('pct', v.replace(/\D/g, ''))} keyboardType="number-pad" />
-              <Field style={{ flex: 1 }} label="Mukofot (🪙)" value={f.amount} onChangeText={(v) => set('amount', v.replace(/\D/g, ''))} keyboardType="number-pad" />
+              <Field style={{ flex: 1 }} label="Mukofot (ilmzor)" value={f.amount} onChangeText={(v) => set('amount', v.replace(/\D/g, ''))} keyboardType="number-pad" />
             </Row>
           )}
         </>
       )}
       {f.kind === 'task' && (
-        <Field label="Qabul qilinsa beriladigan pul (🪙)" value={f.amount} onChangeText={(v) => set('amount', v.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="Masalan: 20" />
+        <Field label="Qabul qilinsa beriladigan pul (ilmzor)" value={f.amount} onChangeText={(v) => set('amount', v.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="Masalan: 20" />
       )}
-      {max > 0 && <P muted style={{ marginTop: -4, marginBottom: 12, fontSize: 13 }}>Bitta o'quvchi ko'pi bilan {fmt(max)} 🪙 oladi. Pul sizning hisobingizdan ayriladi.</P>}
+      {max > 0 && <P muted style={{ marginTop: -4, marginBottom: 12, fontSize: 13 }}>Bitta o'quvchi ko'pi bilan {fmt(max)} ilmzor oladi. Pul sizning hisobingizdan ayriladi.</P>}
 
       <P style={{ fontWeight: '600', marginBottom: 6 }}>Muddat</P>
       <Row style={{ flexWrap: 'wrap' }}>
@@ -315,7 +315,7 @@ function Detail({ a, gName, onEdit, onChanged, onClosed }) {
       <Row style={{ gap: 10, marginBottom: 12 }}>
         <View style={[s.stat, { borderLeftColor: C.blue }]}><Text style={s.small}>Javoblar</Text><Text style={[s.statValue, { color: C.blue }]}>{list.length}</Text></View>
         {avg !== null && <View style={[s.stat, { borderLeftColor: C.gold }]}><Text style={s.small}>O'rtacha natija</Text><Text style={[s.statValue, { color: C.gold }]}>{avg}%</Text></View>}
-        <View style={[s.stat, { borderLeftColor: C.success }]}><Text style={s.small}>Berilgan</Text><Text style={[s.statValue, { color: C.success }]}>{fmt(paid)} 🪙</Text></View>
+        <View style={[s.stat, { borderLeftColor: C.success }]}><Text style={s.small}>Berilgan</Text><Text style={[s.statValue, { color: C.success }]}>{fmt(paid)} ilmzor</Text></View>
       </Row>
 
       <H2 style={{ marginBottom: 8 }}>O'quvchilar javoblari</H2>
@@ -346,7 +346,7 @@ function Review({ sub, a, onDone }) {
     setBusy(approve ? 'ok' : 'no');
     try {
       const r = await rpc('review_submission', { p_sub: sub.id, p_approve: approve, p_comment: comment.trim() || null });
-      notify(r === 'paid' ? `Qabul qilindi: +${fmt(a.reward_amount)} 🪙` : r === 'unpaid' ? "Qabul qilindi, lekin hisobingizda pul yetmadi — keyin to'lanadi" : 'Qaytarildi', r === 'unpaid' ? 'err' : 'ok');
+      notify(r === 'paid' ? `Qabul qilindi: +${fmt(a.reward_amount)} ilmzor` : r === 'unpaid' ? "Qabul qilindi, lekin hisobingizda pul yetmadi — keyin to'lanadi" : 'Qaytarildi', r === 'unpaid' ? 'err' : 'ok');
       onDone();
     } catch (e) { notify(e.message, 'err'); }
     setBusy('');
@@ -397,7 +397,7 @@ export function StudentTasks({ me, refreshMe }) {
     <Page onRefresh={d.reload} refreshing={d.loading}>
       <Row style={{ gap: 10, marginBottom: 12 }}>
         <View style={[s.stat, { borderLeftColor: C.gold }]}><Text style={s.small}>📌 Bajarish kerak</Text><Text style={[s.statValue, { color: C.gold }]}>{newCount}</Text></View>
-        <View style={[s.stat, { borderLeftColor: C.success }]}><Text style={s.small}>💰 Vazifalardan topdim</Text><Text style={[s.statValue, { color: C.success }]}>{fmt(earned)} 🪙</Text></View>
+        <View style={[s.stat, { borderLeftColor: C.success }]}><Text style={s.small}>💰 Vazifalardan topdim</Text><Text style={[s.statValue, { color: C.success }]}>{fmt(earned)} ilmzor</Text></View>
       </Row>
       <Segment options={[['new', `Yangi (${newCount})`], ['done', 'Topshirilgan']]} value={filter} onChange={setFilter} />
       {!list.length ? <Empty text={filter === 'new' ? "Hozircha yangi vazifa yo'q 🎉" : "Hali hech narsa topshirmagansiz"} /> : (
@@ -410,7 +410,7 @@ export function StudentTasks({ me, refreshMe }) {
                 title={a.title}
                 sub={`${x ? STATUS[x.status][0] : expired(a) ? '⌛ Muddat tugagan' : '🆕 Yangi'} · ${a.author?.full_name || ''}${a.deadline && !x ? `\n⏰ ${fmtDate(a.deadline)} gacha` : ''}`}
                 right={x && x.status !== 'rejected' ? <Coin value={x.reward} size={14} color={x.status === 'paid' ? C.success : C.muted} sign={x.reward ? '+' : ''} />
-                  : <Text style={{ color: C.gold, fontWeight: '800' }}>≤ {fmt(maxReward(a))} 🪙</Text>}
+                  : <Text style={{ color: C.gold, fontWeight: '800' }}>≤ {fmt(maxReward(a))} ilmzor</Text>}
                 onPress={() => setOpenId(a.id)} />
             );
           })}
@@ -441,7 +441,7 @@ function DoTask({ me, a, sub, onDone }) {
     try {
       const r = await rpc('submit_test', { p_assignment: a.id, p_answers: answers });
       setResult(r);
-      notify(r.reward ? `+${fmt(r.reward)} 🪙 — barakalla!` : `${r.correct}/${r.total} to'g'ri`);
+      notify(r.reward ? `+${fmt(r.reward)} ilmzor — barakalla!` : `${r.correct}/${r.total} to'g'ri`);
       onDone();
     } catch (e) { notify(e.message, 'err'); }
     setBusy(false);
@@ -478,7 +478,7 @@ function DoTask({ me, a, sub, onDone }) {
             <Text style={{ fontSize: 15, color: C.muted }}>Natija</Text>
             <Text style={{ fontSize: 40, fontWeight: '900', color: C.text }}>{shown.correct}/{shown.total}</Text>
             <Text style={{ fontSize: 18, fontWeight: '800', color: shown.reward ? C.success : C.muted }}>
-              {shown.reward ? `+${fmt(shown.reward)} 🪙` : "Bu safar pul yo'q — keyingisida albatta!"}
+              {shown.reward ? `+${fmt(shown.reward)} ilmzor` : "Bu safar pul yo'q — keyingisida albatta!"}
             </Text>
             {shown.status === 'unpaid' && <P muted style={{ marginTop: 6, textAlign: 'center' }}>Pul o'qituvchi hisobi to'ldirilgach tushadi</P>}
           </Card>

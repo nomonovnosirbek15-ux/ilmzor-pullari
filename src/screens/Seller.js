@@ -31,7 +31,7 @@ function Sell() {
   const filtered = data.data.students.filter((x) => norm(x.full_name).includes(norm(search)) || norm(x.username).includes(norm(search))).slice(0, 30);
 
   const submit = async () => {
-    const ok = await ask('Sotilsinmi?', `${st.full_name}\n${it.name} × ${qty} = ${fmt(total)} 🪙\nQoladi: ${fmt(st.balance - total)} 🪙`, 'Sotish');
+    const ok = await ask('Sotilsinmi?', `${st.full_name}\n${it.name} × ${qty} = ${fmt(total)} ilmzor\nQoladi: ${fmt(st.balance - total)} ilmzor`, 'Sotish');
     if (!ok) return;
     setBusy(true);
     try {
@@ -51,7 +51,7 @@ function Sell() {
           <Row style={{ justifyContent: 'space-between' }}>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 18, fontWeight: '800', color: C.primaryDark }}>{st.full_name}</Text>
-              <Text style={{ color: C.primaryDark }}>Hisobida: {fmt(st.balance)} 🪙</Text>
+              <Text style={{ color: C.primaryDark }}>Hisobida: {fmt(st.balance)} ilmzor</Text>
             </View>
             <Btn small kind="ghost" title="Almashtirish" onPress={() => setStudent(null)} />
           </Row>
@@ -150,7 +150,7 @@ export function Items() {
             <Field label="Turi" value={edit.category} onChangeText={(v) => setEdit({ ...edit, category: v })} autoCapitalize="sentences" placeholder="O'quv qurollari, Kitoblar, O'yinlar..." />
             {!!cats.length && <Row style={{ flexWrap: 'wrap', marginTop: -4, marginBottom: 8 }}>{cats.map((c) => <Chip key={c} label={c} active={edit.category === c} onPress={() => setEdit({ ...edit, category: c })} />)}</Row>}
             <Row style={{ gap: 12 }}>
-              <Field style={{ flex: 1 }} label="Narxi (🪙)" value={edit.price} onChangeText={(v) => setEdit({ ...edit, price: v.replace(/\D/g, '') })} keyboardType="number-pad" />
+              <Field style={{ flex: 1 }} label="Narxi (ilmzor)" value={edit.price} onChangeText={(v) => setEdit({ ...edit, price: v.replace(/\D/g, '') })} keyboardType="number-pad" />
               <Field style={{ flex: 1 }} label="Omborda (dona)" value={edit.stock} onChangeText={(v) => setEdit({ ...edit, stock: v.replace(/\D/g, '') })} keyboardType="number-pad" />
             </Row>
             <Row style={{ marginBottom: 14 }}>
@@ -178,11 +178,11 @@ export function TopUp() {
   const submit = async () => {
     const n = parseInt(amount, 10);
     if (!(n > 0)) return notify('Summani kiriting', 'err');
-    if (!(await ask("Pul ajratilsinmi?", `${t.full_name} hisobiga ${fmt(n)} 🪙`, 'Ajratish'))) return;
+    if (!(await ask("Pul ajratilsinmi?", `${t.full_name} hisobiga ${fmt(n)} ilmzor`, 'Ajratish'))) return;
     setBusy(true);
     try {
       await rpc('allocate_to_teacher', { p_teacher: t.id, p_amount: n, p_note: note.trim() || null });
-      notify(`${t.full_name}: +${fmt(n)} 🪙`);
+      notify(`${t.full_name}: +${fmt(n)} ilmzor`);
       setAmount(''); setNote(''); setSel(null); data.reload();
     } catch (e) { notify(e.message, 'err'); }
     setBusy(false);
@@ -201,7 +201,7 @@ export function TopUp() {
       <Sheet visible={!!t} onClose={() => setSel(null)} title={t ? t.full_name : ''}>
         {t && (
           <>
-            <P style={{ marginBottom: 12 }}>Hozirgi hisobi: <Text style={{ fontWeight: '800' }}>{fmt(t.balance)} 🪙</Text></P>
+            <P style={{ marginBottom: 12 }}>Hozirgi hisobi: <Text style={{ fontWeight: '800' }}>{fmt(t.balance)} ilmzor</Text></P>
             <Row style={{ flexWrap: 'wrap' }}>{[100, 200, 500, 1000].map((v) => <Chip key={v} label={'+' + v} active={amount === String(v)} onPress={() => setAmount(String(v))} />)}</Row>
             <Field label="Summa" value={amount} onChangeText={(v) => setAmount(v.replace(/\D/g, ''))} keyboardType="number-pad" />
             <Field label="Izoh (ixtiyoriy)" value={note} onChangeText={setNote} placeholder="Masalan: noyabr oyi uchun" autoCapitalize="sentences" />

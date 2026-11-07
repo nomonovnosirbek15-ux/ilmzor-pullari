@@ -33,7 +33,7 @@ function Stats() {
       <Card>
         <H2 style={{ marginBottom: 12 }}>Pul oqimi (shu oy)</H2>
         <Bars data={[{ label: '⭐ Berildi', value: x.given_month }, { label: '🛍️ Sarflandi', value: x.spent_month }]} color={C.primary} />
-        <P muted style={{ marginTop: 10, fontSize: 13 }}>O'qituvchilar hisobida berilmagan: {fmt(x.teacher_money)} 🪙</P>
+        <P muted style={{ marginTop: 10, fontSize: 13 }}>O'qituvchilar hisobida berilmagan: {fmt(x.teacher_money)} ilmzor</P>
       </Card>
       <Card>
         <H2 style={{ marginBottom: 12 }}>Nima uchun berildi (shu oy)</H2>
@@ -169,7 +169,7 @@ function EditPerson({ me, p, groups, memberOf, onChanged, notify, ask }) {
 
   return (
     <>
-      <P muted style={{ marginBottom: 10 }}>Login: @{p.username} · Hisob: {fmt(p.balance)} 🪙</P>
+      <P muted style={{ marginBottom: 10 }}>Login: @{p.username} · Hisob: {fmt(p.balance)} ilmzor</P>
       <Field label="Ism familiya" value={name} onChangeText={setName} autoCapitalize="words" />
       <P style={{ fontWeight: '600', marginBottom: 6 }}>Rol</P>
       <Row style={{ flexWrap: 'wrap' }}>{ROLES.map((r) => <Chip key={r} label={ROLE_NAMES[r]} active={role === r} onPress={() => !isMe && setRole(r)} />)}</Row>
@@ -358,8 +358,8 @@ function Reasons() {
         {edit && (
           <>
             <Field label="Nomi" value={edit.name} onChangeText={(v) => setEdit({ ...edit, name: v })} autoCapitalize="sentences" placeholder="Masalan: Olimpiadada qatnashgani" />
-            <Field label="Qat'iy summa (🪙)" value={edit.amount} onChangeText={(v) => setEdit({ ...edit, amount: v.replace(/\D/g, '') })} keyboardType="number-pad"
-              placeholder="Bo'sh = erkin" hint={edit.amount ? `🔒 Qat'iy: har doim ${edit.amount} 🪙` : "✏️ Erkin: o'qituvchi summani o'zi yozadi"} />
+            <Field label="Qat'iy summa (ilmzor)" value={edit.amount} onChangeText={(v) => setEdit({ ...edit, amount: v.replace(/\D/g, '') })} keyboardType="number-pad"
+              placeholder="Bo'sh = erkin" hint={edit.amount ? `🔒 Qat'iy: har doim ${edit.amount} ilmzor` : "✏️ Erkin: o'qituvchi summani o'zi yozadi"} />
             <Field label="Tartib raqami" value={edit.sort} onChangeText={(v) => setEdit({ ...edit, sort: v.replace(/\D/g, '') })} keyboardType="number-pad" hint="Ro'yxatda qaysi o'rinda turishi" />
             <Row style={{ marginBottom: 14 }}>
               <Chip label="Faol" active={edit.active} onPress={() => setEdit({ ...edit, active: true })} />

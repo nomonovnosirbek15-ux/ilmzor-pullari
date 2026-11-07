@@ -48,12 +48,12 @@ function Give({ me, refreshMe }) {
     if (!reason) return notify('Sababni tanlang', 'err');
     if (per <= 0) return notify('Summani kiriting', 'err');
     if (total > me.balance) return notify(`Hisobingizda yetarli pul yo'q (kerak: ${fmt(total)})`, 'err');
-    const ok = await ask('Pul berilsinmi?', `${ids.length} ta o'quvchiga ${fmt(per)} 🪙 dan.\nSabab: ${reason.name}\nJami: ${fmt(total)} 🪙`, 'Berish');
+    const ok = await ask('Pul berilsinmi?', `${ids.length} ta o'quvchiga ${fmt(per)} ilmzor dan.\nSabab: ${reason.name}\nJami: ${fmt(total)} ilmzor`, 'Berish');
     if (!ok) return;
     setBusy(true);
     try {
       await rpc('give_reward', { p_students: ids, p_reason: reason.id, p_amount: reason.fixed_amount ? null : per, p_note: note.trim() || null });
-      notify(`${ids.length} ta o'quvchiga ${fmt(total)} 🪙 berildi`);
+      notify(`${ids.length} ta o'quvchiga ${fmt(total)} ilmzor berildi`);
       setPicked({}); setNote(''); if (!reason.fixed_amount) setAmount('');
       refreshMe(); data.reload();
     } catch (e) { notify(e.message, 'err'); }
@@ -66,8 +66,8 @@ function Give({ me, refreshMe }) {
   return (
     <Page onRefresh={() => { refreshMe(); data.reload(); }} refreshing={data.loading}>
       <Card style={{ backgroundColor: C.primaryDark, borderColor: C.primaryDark }}>
-        <Text style={{ color: '#99F6E4' }}>Berish uchun hisobingizda</Text>
-        <Text style={{ color: '#fff', fontSize: 36, fontWeight: '900' }}>{fmt(me.balance)} 🪙</Text>
+        <Text style={{ color: '#8EE8BF' }}>Berish uchun hisobingizda</Text>
+        <Text style={{ color: '#fff', fontSize: 36, fontWeight: '900' }}>{fmt(me.balance)} ilmzor</Text>
       </Card>
 
       {!groups.length ? <Empty text="Sizga hali guruh biriktirilmagan. Adminga murojaat qiling." /> : (
@@ -94,7 +94,7 @@ function Give({ me, refreshMe }) {
           <H2 style={{ marginVertical: 8 }}>3. Nima uchun?</H2>
           <Row style={{ flexWrap: 'wrap' }}>
             {reasons.map((r) => (
-              <Chip key={r.id} label={`${r.name} · ${r.fixed_amount ? r.fixed_amount + ' 🪙' : 'erkin'}`}
+              <Chip key={r.id} label={`${r.name} · ${r.fixed_amount ? r.fixed_amount + ' ilmzor' : 'erkin'}`}
                 active={r.id === reasonId} onPress={() => setReasonId(r.id)} color={C.gold} />
             ))}
           </Row>
@@ -102,7 +102,7 @@ function Give({ me, refreshMe }) {
           {reason && (
             <Card>
               {reason.fixed_amount ? (
-                <P>Summa admin tomonidan belgilangan: <Text style={{ fontWeight: '800' }}>{reason.fixed_amount} 🪙</Text></P>
+                <P>Summa admin tomonidan belgilangan: <Text style={{ fontWeight: '800' }}>{reason.fixed_amount} ilmzor</Text></P>
               ) : (
                 <Field label="Har bir o'quvchiga summa" value={amount} onChangeText={(v) => setAmount(v.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="Masalan: 15" />
               )}
@@ -110,7 +110,7 @@ function Give({ me, refreshMe }) {
             </Card>
           )}
 
-          <Btn title={total ? `Berish · jami ${fmt(total)} 🪙` : 'Berish'} icon="⭐" onPress={submit} loading={busy}
+          <Btn title={total ? `Berish · jami ${fmt(total)} ilmzor` : 'Berish'} icon="⭐" onPress={submit} loading={busy}
             disabled={!ids.length || !reason || per <= 0} />
           {total > me.balance && <P style={{ color: C.danger, marginTop: 8, textAlign: 'center' }}>Hisobingizda yetarli pul yo'q</P>}
         </>
