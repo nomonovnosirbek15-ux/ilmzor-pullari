@@ -710,7 +710,7 @@ function AiSimilar({ a, q: question }) {
                   style={{ flexDirection: 'row', alignItems: 'center', padding: 10, borderRadius: 10, borderWidth: 1.5, marginBottom: 6,
                     borderColor: isAns ? C.success : isSel ? C.danger : C.border, backgroundColor: isAns ? C.successLight : isSel ? C.dangerLight : '#fff' }}>
                   <Text style={{ fontWeight: '800', width: 26 }}>{'ABCDEF'[j]})</Text>
-                  <Text style={{ flex: 1, fontSize: 15 }}>{o}</Text>
+                  <Text style={{ flex: 1, fontSize: 15 }}>{String(o).replace(/^\s*[A-Fa-f]\s*[).:]\s*/, '')}</Text>
                   {isAns && <Text>✅</Text>}{isSel && !isAns && <Text>❌</Text>}
                 </Pressable>
               );
