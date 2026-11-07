@@ -33,28 +33,39 @@ export function UIProvider({ children }) {
   }, []);
   const ask = useCallback((title, text, okLabel = 'Ha') =>
     new Promise((resolve) => setConfirm({ title, text, okLabel, resolve })), []);
-  const close = (v) => { confirm?.resolve(v); setConfirm(null); };
+  const close = useCallback((v) => { setConfirm((c) => { c?.resolve(v); return null; }); }, []);
   return (
-    <UICtx.Provider value={{ notify, ask }}>
+    <UICtx.Provider value={{ notify, ask, toast, confirm, close }}>
       {children}
+      <UILayers />
+    </UICtx.Provider>
+  );
+}
+
+// Bildirishnoma va tasdiqlash oynasi. Oddiy View (Modal emas) — shuning uchun har bir Sheet ichida ham
+// chiziladi va doim eng ustki oynada ko'rinadi (aks holda ochiq oyna orqasida qolib ketadi).
+export function UILayers() {
+  const { toast, confirm, close } = useContext(UICtx);
+  return (
+    <>
       {toast && (
         <View pointerEvents="none" style={[s.toast, { backgroundColor: toast.type === 'err' ? C.danger : C.primaryDark }]}>
           <Text style={s.toastText}>{toast.type === 'err' ? '⚠️ ' : '✅ '}{toast.text}</Text>
         </View>
       )}
-      <Modal visible={!!confirm} transparent animationType="fade" onRequestClose={() => close(false)}>
-        <View style={s.backdrop}>
+      {confirm && (
+        <View style={[StyleSheet.absoluteFill, s.backdrop, { zIndex: 1000, elevation: 1000 }]}>
           <View style={s.dialog}>
-            <Text style={s.h2}>{confirm?.title}</Text>
-            {!!confirm?.text && <Text style={[s.p, { marginTop: 8 }]}>{confirm.text}</Text>}
+            <Text style={s.h2}>{confirm.title}</Text>
+            {!!confirm.text && <Text style={[s.p, { marginTop: 8 }]}>{confirm.text}</Text>}
             <Row style={{ marginTop: 18, gap: 10 }}>
               <Btn title="Bekor" kind="ghost" onPress={() => close(false)} style={{ flex: 1 }} />
-              <Btn title={confirm?.okLabel || 'Ha'} onPress={() => close(true)} style={{ flex: 1 }} />
+              <Btn title={confirm.okLabel || 'Ha'} onPress={() => close(true)} style={{ flex: 1 }} />
             </Row>
           </View>
         </View>
-      </Modal>
-    </UICtx.Provider>
+      )}
+    </>
   );
 }
 
@@ -277,6 +288,7 @@ export function Sheet({ visible, onClose, title, children }) {
           </Row>
           <ScrollView keyboardShouldPersistTaps="handled">{children}</ScrollView>
         </View>
+        <UILayers />
       </View>
     </Modal>
   );
@@ -312,7 +324,7 @@ export const s = StyleSheet.create({
   statValue: { fontSize: 26, fontWeight: '800', marginTop: 4 },
   barBg: { height: 12, backgroundColor: '#EEF2F7', borderRadius: 6, overflow: 'hidden' },
   bar: { height: 12, borderRadius: 6 },
-  toast: { position: 'absolute', left: 16, right: 16, top: 50, padding: 14, borderRadius: 12, zIndex: 999, maxWidth: 560, alignSelf: 'center' },
+  toast: { position: 'absolute', elevation: 1001, left: 16, right: 16, top: 50, padding: 14, borderRadius: 12, zIndex: 999, maxWidth: 560, alignSelf: 'center' },
   toastText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   backdrop: { flex: 1, backgroundColor: 'rgba(15,23,42,0.5)', justifyContent: 'center', padding: 24 },
   dialog: { backgroundColor: '#fff', borderRadius: 18, padding: 20, width: '100%', maxWidth: 420, alignSelf: 'center' },
