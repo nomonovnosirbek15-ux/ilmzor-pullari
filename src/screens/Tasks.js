@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
-import { supabase, q, rpc } from '../supabase';
+import { supabase, q, rpc, askAI } from '../supabase';
 import { useSettings } from '../settings';
 import { pickDocument, pickPhoto, uploadAsset, signedUrl, openFile, kindOf } from '../files';
 import {
@@ -43,7 +43,7 @@ function FileView({ bucket, path, type }) {
 }
 
 /* ---------- Umumiy: javoblar jadvali ---------- */
-function AnswerGrid({ count, options, value, onChange, results, keyAnswers, highlight }) {
+function AnswerGrid({ count, options, value, onChange, results, keyAnswers, highlight, onAsk }) {
   return (
     <View>
       {Array.from({ length: count }, (_, i) => (
@@ -64,7 +64,11 @@ function AnswerGrid({ count, options, value, onChange, results, keyAnswers, high
               );
             })}
           </Row>
-          {results && <Text style={{ fontSize: 20, width: 30, textAlign: 'center' }}>{results[i] ? '✅' : '❌'}</Text>}
+          {results && (onAsk && !results[i] ? (
+            <Pressable onPress={() => onAsk(i + 1)} style={{ backgroundColor: '#EDE9FE', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 6 }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#6D28D9' }}>🤖 Yordam</Text>
+            </Pressable>
+          ) : <Text style={{ fontSize: 20, width: 30, textAlign: 'center' }}>{results[i] ? '✅' : '❌'}</Text>)}
         </Row>
       ))}
     </View>
@@ -308,6 +312,8 @@ function Detail({ a, gName, onEdit, onChanged, onClosed }) {
   const subs = useLoad(() => q(supabase.from('submissions').select('*, student:profiles!submissions_student_id_fkey(full_name)')
     .eq('assignment_id', a.id).order('status').order('created_at', { ascending: false })), [a.id]);
   const [review, setReview] = useState(null);
+  const [aiQ, setAiQ] = useState(null);
+  const [aiNum, setAiNum] = useState('1');
 
   const del = async () => {
     if (!(await ask("O'chirilsinmi?", "Javoblar to'langan bo'lsa, vazifa faqat yashiriladi (tarix saqlanadi).", "O'chirish"))) return;
@@ -339,6 +345,19 @@ function Detail({ a, gName, onEdit, onChanged, onClosed }) {
         <View style={[s.stat, { borderLeftColor: C.success }]}><Text style={s.small}>Berilgan</Text><Text style={[s.statValue, { color: C.success }]}>{fmt(paid)} ilmzor</Text></View>
       </Row>
 
+      {a.kind === 'test' && a.file_path && (
+        <Card style={{ backgroundColor: '#F5F3FF', borderColor: '#DDD6FE' }}>
+          <P style={{ fontWeight: '700', marginBottom: 6 }}>🤖 AI yordamchini sinab ko'ring</P>
+          <P muted style={{ fontSize: 13, marginBottom: 8 }}>O'quvchilar xato qilgan savolda "Yordam" bosganda shunday tushuntirish va o'xshash misollar ko'radi.</P>
+          <Row style={{ gap: 10 }}>
+            <Field style={{ width: 90, marginBottom: 0 }} value={aiNum} onChangeText={(v) => setAiNum(v.replace(/\D/g, ''))} keyboardType="number-pad" placeholder="Savol" />
+            <Btn small title="Sinash" onPress={() => { const n = parseInt(aiNum, 10); if (n >= 1 && n <= a.question_count) setAiQ(n); }} style={{ flex: 1 }} />
+          </Row>
+        </Card>
+      )}
+      <Sheet visible={!!aiQ} onClose={() => setAiQ(null)} title={aiQ ? `🤖 ${aiQ}-savol (sinov)` : ''}>
+        {aiQ && <AiHelp a={a} q={aiQ} />}
+      </Sheet>
       <H2 style={{ marginBottom: 8 }}>O'quvchilar javoblari</H2>
       {subs.error ? <ErrorBox text={subs.error} onRetry={subs.reload} /> : !subs.data ? <Loading /> : !list.length ? <Empty text="Hali hech kim topshirmagan" /> : (
         <Card>
@@ -447,6 +466,9 @@ export function StudentTasks({ me, refreshMe }) {
 
 function DoTask({ me, a, sub, onDone }) {
   const { notify, ask } = useUI();
+  const { can } = useSettings();
+  const [aiQ, setAiQ] = useState(null);
+  const aiOn = can('ai_help') && !!a.file_path;
   const n = a.question_count || 0;
   const [mode, setMode] = useState(sub && a.kind === 'test' ? 'review' : 'do');
   const [answers, setAnswers] = useState(() => Array(n).fill(''));
@@ -539,7 +561,11 @@ function DoTask({ me, a, sub, onDone }) {
             </Card>
           )}
           <H2 style={{ marginBottom: 6 }}>{wrong ? `❌ Xatolar: ${wrong} ta` : '🎉 Hammasi to\'g\'ri!'}</H2>
-          <Card><AnswerGrid count={total} options={a.option_count} value={view.answers || []} results={view.results} keyAnswers={key.data} /></Card>
+          {wrong > 0 && aiOn && <P muted style={{ fontSize: 13, marginBottom: 8 }}>🤖 "Yordam" ni bosing — sun'iy intellekt xatoni tushuntiradi va o'xshash misollar beradi.</P>}
+          <Card><AnswerGrid count={total} options={a.option_count} value={view.answers || []} results={view.results} keyAnswers={key.data} onAsk={aiOn ? setAiQ : undefined} /></Card>
+          <Sheet visible={!!aiQ} onClose={() => setAiQ(null)} title={aiQ ? `🤖 ${aiQ}-savol bo'yicha yordam` : ''}>
+            {aiQ && <AiHelp a={a} q={aiQ} />}
+          </Sheet>
           {key.data && <P muted style={{ fontSize: 13, marginTop: -4, marginBottom: 10 }}>🟢 yashil — to'g'ri javob</P>}
           {canRetry ? (
             <Row style={{ gap: 10, marginBottom: 10 }}>
@@ -616,6 +642,92 @@ function DoTask({ me, a, sub, onDone }) {
         </>
       )}
       <View style={{ height: 30 }} />
+    </>
+  );
+}
+
+/* =====================================================================
+   SUN'IY INTELLEKT YORDAMCHISI
+   ===================================================================== */
+function AiHelp({ a, q: question }) {
+  const [tab, setTab] = useState('explain');
+  return (
+    <>
+      <Segment options={[['explain', '💡 Tushuntirish'], ['similar', "✏️ O'xshash misollar"]]} value={tab} onChange={setTab} />
+      {tab === 'explain' ? <AiExplain a={a} q={question} /> : <AiSimilar a={a} q={question} />}
+      <P muted style={{ fontSize: 11, textAlign: 'center', marginTop: 10 }}>Javoblarni sun'iy intellekt (Google Gemini) tayyorlaydi — ba'zan xato qilishi mumkin. Shubha bo'lsa, o'qituvchingizdan so'rang.</P>
+      <View style={{ height: 20 }} />
+    </>
+  );
+}
+
+function AiLoading({ text }) {
+  return (
+    <Card style={{ alignItems: 'center', paddingVertical: 28 }}>
+      <Text style={{ fontSize: 36 }}>🤖</Text>
+      <Loading />
+      <P muted>{text}</P>
+    </Card>
+  );
+}
+
+function AiExplain({ a, q: question }) {
+  const d = useLoad(() => askAI({ assignment_id: a.id, question, mode: 'explain' }), [a.id, question]);
+  if (d.loading && !d.data) return <AiLoading text="Savolni o'qib, tushuntirish tayyorlanmoqda..." />;
+  if (d.error) return <ErrorBox text={d.error} onRetry={d.reload} />;
+  return (
+    <Card>
+      {(d.data.text || '').split('\n').map((line, i) => {
+        const clean = line.replace(/\*\*/g, '').replace(/^#+\s*/, '');
+        const head = /^(\d\)|Savol:|Qayerda|Yechish|Javob:|Endi)/.test(clean.trim());
+        return clean.trim() ? <Text key={i} style={{ fontSize: 15, lineHeight: 22, color: C.text, fontWeight: head ? '800' : '400', marginTop: head && i ? 8 : 0 }}>{clean}</Text> : null;
+      })}
+    </Card>
+  );
+}
+
+function AiSimilar({ a, q: question }) {
+  const { notify } = useUI();
+  const [fresh, setFresh] = useState(0);
+  const d = useLoad(() => askAI({ assignment_id: a.id, question, mode: 'similar', fresh: fresh > 0 }), [a.id, question, fresh]);
+  const [picked, setPicked] = useState({});
+  useEffect(() => setPicked({}), [d.data]);
+  if (d.loading && !d.data) return <AiLoading text="Yangi misollar tuzilmoqda..." />;
+  if (d.error) return <ErrorBox text={d.error} onRetry={d.reload} />;
+  const probs = d.data.problems || [];
+  const done = probs.filter((_, i) => picked[i] !== undefined).length;
+  const right = probs.filter((p, i) => picked[i] === p.answer).length;
+  return (
+    <>
+      {!!d.data.topic && <P muted style={{ marginBottom: 8 }}>Mavzu: {d.data.topic}</P>}
+      {probs.map((p, i) => {
+        const sel = picked[i];
+        return (
+          <Card key={i}>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 10 }}>{i + 1}. {p.q}</Text>
+            {p.options.map((o, j) => {
+              const isSel = sel === j; const isAns = sel !== undefined && j === p.answer;
+              return (
+                <Pressable key={j} disabled={sel !== undefined} onPress={() => setPicked({ ...picked, [i]: j })}
+                  style={{ flexDirection: 'row', alignItems: 'center', padding: 10, borderRadius: 10, borderWidth: 1.5, marginBottom: 6,
+                    borderColor: isAns ? C.success : isSel ? C.danger : C.border, backgroundColor: isAns ? C.successLight : isSel ? C.dangerLight : '#fff' }}>
+                  <Text style={{ fontWeight: '800', width: 26 }}>{'ABCDEF'[j]})</Text>
+                  <Text style={{ flex: 1, fontSize: 15 }}>{o}</Text>
+                  {isAns && <Text>✅</Text>}{isSel && !isAns && <Text>❌</Text>}
+                </Pressable>
+              );
+            })}
+            {sel !== undefined && <P style={{ marginTop: 6, fontSize: 14 }}>{sel === p.answer ? '🎉 To\'g\'ri! ' : '💡 '}{p.why}</P>}
+          </Card>
+        );
+      })}
+      {done === probs.length && probs.length > 0 && (
+        <Card style={{ backgroundColor: right === probs.length ? C.successLight : C.goldLight, borderColor: 'transparent', alignItems: 'center' }}>
+          <Text style={{ fontSize: 22, fontWeight: '900' }}>{right}/{probs.length}</Text>
+          <P>{right === probs.length ? "Zo'r! Endi testdagi savolni qayta ishlab ko'ring 💪" : "Yana mashq qiling — yangi misollar oling"}</P>
+        </Card>
+      )}
+      <Btn kind="ghost" icon="🔄" title="Yangi misollar" loading={d.loading} onPress={() => { setFresh(fresh + 1); notify('Yangi misollar tuzilmoqda...'); }} />
     </>
   );
 }

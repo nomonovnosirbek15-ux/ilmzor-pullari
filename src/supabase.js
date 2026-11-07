@@ -40,6 +40,19 @@ export async function rpc(name, args) {
   return data;
 }
 
+// AI yordamchi (Edge Function: ai-help)
+export async function askAI(body) {
+  const { data, error } = await supabase.functions.invoke('ai-help', { body });
+  if (error) {
+    let msg = error.message;
+    try { const j = await error.context.json(); if (j?.error) msg = j.error; } catch (_) { /* ignore */ }
+    if (/Failed to send|fetch/i.test(msg)) msg = "AI xizmati bilan aloqa yo'q";
+    throw new Error(msg);
+  }
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
+
 export async function q(promise) {
   const { data, error } = await promise;
   if (error) throw new Error(errText(error));
