@@ -9,7 +9,8 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 const DAILY_LIMIT = 30; // o'quvchi uchun kuniga yangi AI so'rovlar (keshdagilar hisobga kirmaydi)
-const MODELS = [Deno.env.get('GEMINI_MODEL'), 'gemini-flash-latest', 'gemini-2.5-flash'].filter(Boolean) as string[];
+const MODELS = [Deno.env.get('GEMINI_MODEL'), 'gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-flash-lite-latest']
+  .filter((m, i, arr) => m && arr.indexOf(m) === i) as string[];
 
 function encodeBase64(bytes: Uint8Array) {
   let s = '';
@@ -26,27 +27,44 @@ Faqat o'zbek tilida (lotin yozuvida), sodda va qisqa gaplar bilan yoz. LaTeX va 
 ×, ÷, ², ³, √, ½ kabi belgilar bilan yoz. Uzunlik birligini doim "cm", yuzani "kv cm" deb yoz ("sm" emas).`;
 
 async function gemini(key: string, parts: unknown[], asJson: boolean) {
-  let lastErr = '';
+  // Bir model limitga yetsa yoki ishlamasa — keyingisini sinaydi (har bir modelning bepul limiti alohida)
+  const errors: string[] = [];
+  let limited = 0;
   for (const model of MODELS) {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts }],
-        generationConfig: { temperature: asJson ? 0.8 : 0.4, ...(asJson ? { responseMimeType: 'application/json' } : {}) },
-      }),
-    });
-    if (res.status === 404) { lastErr = `model ${model} topilmadi`; continue; }
-    const data = await res.json();
-    if (!res.ok) {
-      if (res.status === 429) throw new Error("AI hozir band (bepul limit). Birozdan keyin urinib ko'ring");
-      throw new Error('AI xatosi: ' + (data?.error?.message || res.status));
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts }],
+          generationConfig: { temperature: asJson ? 0.8 : 0.4, ...(asJson ? { responseMimeType: 'application/json' } : {}) },
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = data?.error?.message || String(res.status);
+        console.error(`gemini ${model} ${res.status}: ${msg}`);
+        errors.push(`${model}: ${res.status} ${msg}`.slice(0, 200));
+        if (res.status === 429) limited++;
+        if (res.status === 400 && /API key|location/i.test(msg)) throw new Error('AI xatosi: ' + msg);
+        continue;
+      }
+      const cand = data?.candidates?.[0];
+      const text = (cand?.content?.parts || []).filter((p: { thought?: boolean }) => !p.thought).map((p: { text?: string }) => p.text || '').join('').trim();
+      if (!text) {
+        console.error(`gemini ${model} bo'sh javob: ${cand?.finishReason} ${JSON.stringify(data?.promptFeedback || {})}`);
+        errors.push(`${model}: bo'sh javob (${cand?.finishReason || data?.promptFeedback?.blockReason || '?'})`);
+        continue;
+      }
+      return text;
+    } catch (e) {
+      if ((e as Error).message.startsWith('AI xatosi')) throw e;
+      console.error(`gemini ${model} tarmoq: ${(e as Error).message}`);
+      errors.push(`${model}: ${(e as Error).message}`);
     }
-    const text = (data?.candidates?.[0]?.content?.parts || []).map((p: { text?: string }) => p.text || '').join('').trim();
-    if (!text) throw new Error("AI javob bermadi. Qayta urinib ko'ring");
-    return text;
   }
-  throw new Error('AI modeli topilmadi: ' + lastErr);
+  if (limited === MODELS.length) throw new Error("Bugungi bepul AI limiti tugadi. Ertaga yana urinib ko'ring");
+  throw new Error('AI javob bermadi: ' + errors[errors.length - 1]);
 }
 
 Deno.serve(async (req) => {
@@ -155,6 +173,7 @@ Agar savolni topa olmasang: {"error":"Savolni fayldan topa olmadim"}`;
     await db.from('ai_cache').upsert({ assignment_id: a.id, question: q, kind: cacheKind, content });
     return json(content);
   } catch (e) {
+    console.error('ai-help xato:', (e as Error).message);
     return fail((e as Error).message || 'Xatolik', 500);
   }
 });

@@ -488,8 +488,6 @@ function DoTask({ me, a, sub, onDone }) {
   const filled = answers.filter(Boolean).length;
 
   const sendTest = async () => {
-    const empty = n - filled;
-    if (!(await ask('Topshirasizmi?', `${empty ? `${empty} ta savol belgilanmagan.\n` : ''}${left !== null ? `Qolgan urinishlar: ${left}` : ''}`, 'Topshirish'))) return;
     setBusy(true);
     try {
       const r = await rpc('submit_test', { p_assignment: a.id, p_answers: answers });
