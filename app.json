@@ -1,24 +1,40 @@
 {
   "expo": {
-    "name": "ilmzor-pullari",
+    "name": "Ilmzor puli",
     "slug": "ilmzor-pullari",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "backgroundColor": "#134E4A",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#134E4A"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "uz.ilmzor.pullari"
     },
     "android": {
+      "package": "uz.ilmzor.pullari",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#134E4A",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "output": "single",
+      "name": "Ilmzor puli",
+      "shortName": "Ilmzor puli",
+      "themeColor": "#134E4A",
+      "backgroundColor": "#134E4A"
+    },
+    "experiments": {
+      "baseUrl": "/ilmzor-pullari"
     }
   }
 }

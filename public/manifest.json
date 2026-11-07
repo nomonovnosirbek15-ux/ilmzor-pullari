@@ -1,0 +1,14 @@
+{
+  "name": "Ilmzor puli",
+  "short_name": "Ilmzor puli",
+  "start_url": "/ilmzor-pullari/",
+  "scope": "/ilmzor-pullari/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#134E4A",
+  "theme_color": "#134E4A",
+  "icons": [
+    { "src": "/ilmzor-pullari/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/ilmzor-pullari/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
