@@ -9,7 +9,8 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 const DAILY_LIMIT = 30; // o'quvchi uchun kuniga yangi AI so'rovlar (keshdagilar hisobga kirmaydi)
-const MODELS = [Deno.env.get('GEMINI_MODEL'), 'gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-flash-lite-latest']
+// Eslatma: Google eski modellarni yangi foydalanuvchilarga yopib boradi (404) — shuning uchun bir nechta zaxira.
+const MODELS = [Deno.env.get('GEMINI_MODEL'), 'gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-flash-latest']
   .filter((m, i, arr) => m && arr.indexOf(m) === i) as string[];
 
 function encodeBase64(bytes: Uint8Array) {
@@ -30,9 +31,15 @@ async function gemini(key: string, parts: unknown[], asJson: boolean) {
   // Bir model limitga yetsa yoki ishlamasa — keyingisini sinaydi (har bir modelning bepul limiti alohida)
   const errors: string[] = [];
   let limited = 0;
+  const started = Date.now();
   for (const model of MODELS) {
+    const left = 110000 - (Date.now() - started); // umumiy vaqt chegarasi (server 150 s dan keyin to'xtatadi)
+    if (left < 8000) { errors.push('vaqt tugadi'); break; }
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), Math.min(60000, left));
     try {
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        signal: ctrl.signal,
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
         body: JSON.stringify({
@@ -59,11 +66,13 @@ async function gemini(key: string, parts: unknown[], asJson: boolean) {
       return text;
     } catch (e) {
       if ((e as Error).message.startsWith('AI xatosi')) throw e;
-      console.error(`gemini ${model} tarmoq: ${(e as Error).message}`);
-      errors.push(`${model}: ${(e as Error).message}`);
+      console.error(`gemini ${model} tarmoq/vaqt: ${(e as Error).message}`);
+      errors.push(`${model}: ${(e as Error).name === 'AbortError' ? 'javob juda kechikdi' : (e as Error).message}`);
+    } finally {
+      clearTimeout(timer);
     }
   }
-  if (limited === MODELS.length) throw new Error("Bugungi bepul AI limiti tugadi. Ertaga yana urinib ko'ring");
+  if (limited > 0 && errors.every((e) => / 429 | 404 /.test(e))) throw new Error("Bugungi bepul AI limiti tugadi. Ertaga yana urinib ko'ring");
   throw new Error('AI javob bermadi: ' + errors[errors.length - 1]);
 }
 
