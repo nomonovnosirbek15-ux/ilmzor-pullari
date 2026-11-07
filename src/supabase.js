@@ -13,7 +13,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   },
 });
 
-export const isConfigured = !SUPABASE_URL.includes('YOUR-PROJECT') && !SUPABASE_ANON_KEY.includes('YOUR-ANON');
+export const isConfigured = !SUPABASE_URL.includes('YOUR-PROJECT');
 
 export const cleanLogin = (s) => (s || '').trim().toLowerCase().replace(/[^a-z0-9._]/g, '');
 export const loginToEmail = (login) => `${cleanLogin(login)}@${LOGIN_DOMAIN}`;
