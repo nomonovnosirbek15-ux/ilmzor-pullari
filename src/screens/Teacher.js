@@ -6,9 +6,12 @@ import { History, Ratings } from '../shared';
 import { useMyGroups } from './Student';
 import { ManageTasks } from './Tasks';
 import { PendingBanner } from './Approvals';
+import { Groups } from './Admin';
+import { useSettings } from '../settings';
 
 function Give({ me, refreshMe }) {
   const { notify, ask } = useUI();
+  const { can } = useSettings();
   const data = useLoad(async () => {
     const [groups, reasons] = await Promise.all([
       q(supabase.from('groups').select('id,name, group_members(student:profiles(id,full_name,balance,active,role))').eq('teacher_id', me.id).order('name')),
@@ -25,7 +28,7 @@ function Give({ me, refreshMe }) {
   const [busy, setBusy] = useState(false);
 
   const groups = data.data?.groups || [];
-  const reasons = data.data?.reasons || [];
+  const reasons = (data.data?.reasons || []).filter((r) => r.fixed_amount || can('teacher_free_amount'));
   useEffect(() => { if (!groupId && groups[0]) setGroupId(groups[0].id); }, [groups, groupId]);
 
   const group = groups.find((g) => g.id === groupId);
@@ -66,7 +69,12 @@ function Give({ me, refreshMe }) {
 
   return (
     <Page onRefresh={() => { refreshMe(); data.reload(); }} refreshing={data.loading}>
-      <PendingBanner me={me} />
+      {can('teacher_approve_students') && <PendingBanner me={me} />}
+      {!can('teacher_give_rewards') && (
+        <Card style={{ backgroundColor: C.dangerLight, borderColor: 'transparent' }}>
+          <P>⛔ Pul berish admin tomonidan vaqtincha yopilgan.</P>
+        </Card>
+      )}
       <Card style={{ backgroundColor: C.primaryDark, borderColor: C.primaryDark }}>
         <Text style={{ color: '#8EE8BF' }}>Berish uchun hisobingizda</Text>
         <Text style={{ color: '#fff', fontSize: 36, fontWeight: '900' }}>{fmt(me.balance)} ilmzor</Text>
@@ -113,7 +121,7 @@ function Give({ me, refreshMe }) {
           )}
 
           <Btn title={total ? `Berish · jami ${fmt(total)} ilmzor` : 'Berish'} icon="⭐" onPress={submit} loading={busy}
-            disabled={!ids.length || !reason || per <= 0} />
+            disabled={!ids.length || !reason || per <= 0 || !can('teacher_give_rewards')} />
           {total > me.balance && <P style={{ color: C.danger, marginTop: 8, textAlign: 'center' }}>Hisobingizda yetarli pul yo'q</P>}
         </>
       )}
@@ -127,11 +135,12 @@ function TeacherRatings({ me }) {
   return <Ratings me={me} groups={g.data} />;
 }
 
-export function teacherTabs(me, refreshMe) {
+export function teacherTabs(me, refreshMe, can) {
   return [
     { key: 'give', icon: '⭐', label: 'Pul berish', render: () => <Give me={me} refreshMe={refreshMe} /> },
     { key: 'tasks', icon: '📝', label: 'Vazifalar', render: () => <ManageTasks me={me} /> },
+    can('teacher_manage_groups') && { key: 'groups', icon: '🏫', label: 'Guruhlarim', render: () => <Groups me={me} /> },
     { key: 'hist', icon: '📜', label: 'Tarix', render: () => <History me={me} /> },
     { key: 'rating', icon: '🏆', label: 'Reyting', render: () => <TeacherRatings me={me} /> },
-  ];
+  ].filter(Boolean);
 }

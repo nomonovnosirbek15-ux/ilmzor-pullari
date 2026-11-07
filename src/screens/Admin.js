@@ -9,6 +9,7 @@ import { Items, TopUp } from './Seller';
 import { useMyGroups } from './Student';
 import { ManageTasks } from './Tasks';
 import { PendingBanner } from './Approvals';
+import { useSettings } from '../settings';
 
 const norm = (x) => (x || '').toLowerCase();
 const ROLES = ['student', 'teacher', 'seller', 'admin'];
@@ -222,17 +223,22 @@ function EditPerson({ me, p, groups, memberOf, onChanged, notify, ask }) {
 }
 
 /* ---------- Guruhlar ---------- */
-function Groups() {
+export function Groups({ me }) {
   const { notify, ask } = useUI();
+  const { can } = useSettings();
+  const isT = me.role === 'teacher';
+  const canBlock = !isT || can('teacher_block_students');
   const d = useLoad(async () => {
+    let gq = supabase.from('groups').select('*').order('name');
+    if (isT) gq = gq.eq('teacher_id', me.id);
     const [groups, teachers, students, members] = await Promise.all([
-      q(supabase.from('groups').select('*').order('name')),
+      q(gq),
       q(supabase.from('profiles').select('id,full_name').eq('role', 'teacher').eq('active', true).order('full_name')),
-      q(supabase.from('profiles').select('id,full_name,username').eq('role', 'student').eq('active', true).order('full_name')),
+      q(supabase.from('profiles').select('id,full_name,username,active').eq('role', 'student').order('full_name')),
       q(supabase.from('group_members').select('*')),
     ]);
     return { groups, teachers, students, members };
-  }, []);
+  }, [me.id, isT]);
   const [edit, setEdit] = useState(null);
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
@@ -247,7 +253,7 @@ function Groups() {
     if (!edit.name.trim()) return notify('Guruh nomini kiriting', 'err');
     setBusy(true);
     try {
-      const row = { name: edit.name.trim(), teacher_id: edit.teacher_id || null };
+      const row = { name: edit.name.trim(), teacher_id: isT ? me.id : edit.teacher_id || null };
       if (edit.id) await q(supabase.from('groups').update(row).eq('id', edit.id));
       else {
         const [g] = await q(supabase.from('groups').insert(row).select());
@@ -264,32 +270,41 @@ function Groups() {
       d.reload();
     } catch (e) { notify(e.message, 'err'); }
   };
+  const block = async (x) => {
+    if (x.active && !(await ask('Bloklansinmi?', `${x.full_name} ilovaga kira olmaydi. Pullari va tarixi saqlanadi.`, 'Bloklash'))) return;
+    try { await rpc('teacher_set_student_active', { p_student: x.id, p_active: !x.active }); notify(x.active ? 'Bloklandi' : 'Yoqildi'); d.reload(); }
+    catch (e) { notify(e.message, 'err'); }
+  };
   const remove = async () => {
     if (!(await ask("Guruh o'chirilsinmi?", "O'quvchilar o'chmaydi, faqat guruh ro'yxati o'chadi.", "O'chirish"))) return;
     try { await q(supabase.from('groups').delete().eq('id', edit.id)); setEdit(null); d.reload(); notify("O'chirildi"); } catch (e) { notify(e.message, 'err'); }
   };
 
   const inGroup = edit?.id ? members.filter((m) => m.group_id === edit.id).map((m) => m.student_id) : [];
-  const shown = students.filter((x) => norm(x.full_name).includes(norm(search)) || norm(x.username).includes(norm(search)))
+  const shown = students.filter((x) => (x.active || inGroup.includes(x.id)) && (norm(x.full_name).includes(norm(search)) || norm(x.username).includes(norm(search))))
     .sort((a, b) => (inGroup.includes(b.id) ? 1 : 0) - (inGroup.includes(a.id) ? 1 : 0));
 
   return (
     <Page onRefresh={d.reload} refreshing={d.loading}>
-      <Btn title="Yangi guruh" icon="➕" onPress={() => { setSearch(''); setEdit({ name: '', teacher_id: teachers[0]?.id || null }); }} style={{ marginBottom: 12 }} />
+      <Btn title="Yangi guruh" icon="➕" onPress={() => { setSearch(''); setEdit({ name: '', teacher_id: isT ? me.id : teachers[0]?.id || null }); }} style={{ marginBottom: 12 }} />
       {!groups.length ? <Empty text="Guruh oching va o'qituvchi biriktiring" /> : (
         <Card>
-          {groups.map((g) => <ListRow key={g.id} title={g.name} sub={`${tName(g.teacher_id)} · ${count(g.id)} o'quvchi`} onPress={() => { setSearch(''); setEdit({ ...g }); }} />)}
+          {groups.map((g) => <ListRow key={g.id} title={g.name} sub={isT ? `${count(g.id)} o'quvchi` : `${tName(g.teacher_id)} · ${count(g.id)} o'quvchi`} onPress={() => { setSearch(''); setEdit({ ...g }); }} />)}
         </Card>
       )}
       <Sheet visible={!!edit} onClose={() => setEdit(null)} title={edit?.id ? 'Guruh' : 'Yangi guruh'}>
         {edit && (
           <>
             <Field label="Guruh nomi" value={edit.name} onChangeText={(v) => setEdit({ ...edit, name: v })} autoCapitalize="sentences" placeholder="Masalan: Matematika 3-sinf A" />
-            <P style={{ fontWeight: '600', marginBottom: 6 }}>O'qituvchisi</P>
-            <Row style={{ flexWrap: 'wrap' }}>
-              {!teachers.length && <P muted>Avval o'qituvchi akkauntini oching</P>}
-              {teachers.map((t) => <Chip key={t.id} label={t.full_name} active={edit.teacher_id === t.id} onPress={() => setEdit({ ...edit, teacher_id: t.id })} />)}
-            </Row>
+            {!isT && (
+              <>
+                <P style={{ fontWeight: '600', marginBottom: 6 }}>O'qituvchisi</P>
+                <Row style={{ flexWrap: 'wrap' }}>
+                  {!teachers.length && <P muted>Avval o'qituvchi akkauntini oching</P>}
+                  {teachers.map((t) => <Chip key={t.id} label={t.full_name} active={edit.teacher_id === t.id} onPress={() => setEdit({ ...edit, teacher_id: t.id })} />)}
+                </Row>
+              </>
+            )}
             <Btn title="Saqlash" onPress={save} loading={busy} style={{ marginVertical: 12 }} />
             {edit.id && (
               <>
@@ -298,7 +313,8 @@ function Groups() {
                 <Card>
                   {!shown.length ? <P muted>O'quvchi topilmadi</P> : shown.map((x) => {
                     const on = inGroup.includes(x.id);
-                    return <Check key={x.id} label={x.full_name} sub={'@' + x.username} checked={on} onPress={() => toggle(x.id, on)} />;
+                    return <Check key={x.id} label={(x.active ? '' : '🚫 ') + x.full_name} sub={'@' + x.username + (x.active ? '' : ' · bloklangan')} checked={on} onPress={() => toggle(x.id, on)}
+                      right={on && canBlock ? <Btn small kind={x.active ? 'ghost' : 'light'} title={x.active ? 'Bloklash' : 'Yoqish'} onPress={() => block(x)} /> : null} />;
                   })}
                 </Card>
                 <Btn kind="danger" title="Guruhni o'chirish" onPress={remove} />
@@ -368,6 +384,52 @@ function Reasons() {
   );
 }
 
+/* ---------- Sozlamalar paneli ---------- */
+const ROLE_TITLES = { teacher: "👩‍🏫 O'qituvchilar", seller: '🛍️ Sotuvchilar', student: "👦 O'quvchilar" };
+function Permissions() {
+  const { notify } = useUI();
+  const { reload: reloadCtx } = useSettings();
+  const d = useLoad(() => q(supabase.from('settings').select('*').order('role').order('sort')), []);
+  const [busy, setBusy] = useState('');
+  if (d.error) return <Page><ErrorBox text={d.error} onRetry={d.reload} /></Page>;
+  if (!d.data) return <Page><Loading /></Page>;
+  const toggle = async (r) => {
+    setBusy(r.key);
+    try {
+      await q(supabase.from('settings').update({ value: !r.value }).eq('key', r.key));
+      notify(`${r.label}: ${!r.value ? 'ochildi' : 'yopildi'}`);
+      d.reload(); reloadCtx();
+    } catch (e) { notify(e.message, 'err'); }
+    setBusy('');
+  };
+  return (
+    <Page onRefresh={d.reload} refreshing={d.loading}>
+      <P muted style={{ marginBottom: 12, fontSize: 13 }}>Yopilgan imkoniyat ilovada ko'rinmaydi va serverda ham taqiqlanadi. O'zgarish darhol kuchga kiradi.</P>
+      {['teacher', 'seller', 'student'].map((role) => (
+        <Card key={role}>
+          <H2 style={{ marginBottom: 6 }}>{ROLE_TITLES[role]}</H2>
+          {d.data.filter((r) => r.role === role).map((r) => (
+            <Check key={r.key} checked={r.value} label={r.label} sub={r.value ? '✅ Ochiq' : '⛔ Yopiq'} onPress={() => busy || toggle(r)} />
+          ))}
+        </Card>
+      ))}
+      <P muted style={{ textAlign: 'center', fontSize: 12 }}>Bitta odamni butunlay to'xtatish uchun: Odamlar → ismini bosing → "Bloklash".</P>
+    </Page>
+  );
+}
+
+function SettingsPanel() {
+  const [tab, setTab] = useState('perms');
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={{ paddingHorizontal: 16, paddingTop: 12, width: '100%', maxWidth: 672, alignSelf: 'center' }}>
+        <Segment options={[['perms', '🔐 Ruxsatlar'], ['reasons', '⭐ Sabablar va summalar']]} value={tab} onChange={setTab} />
+      </View>
+      {tab === 'perms' ? <Permissions /> : <Reasons />}
+    </View>
+  );
+}
+
 function Shop({ me }) {
   const [tab, setTab] = useState('items');
   return (
@@ -402,8 +464,8 @@ export function adminTabs(me) {
   return [
     { key: 'stats', icon: '📊', label: 'Statistika', render: () => <StatsAndRating me={me} /> },
     { key: 'people', icon: '👥', label: 'Odamlar', render: () => <People me={me} /> },
-    { key: 'groups', icon: '🏫', label: 'Guruhlar', render: () => <Groups /> },
-    { key: 'reasons', icon: '⭐', label: 'Sabablar', render: () => <Reasons /> },
+    { key: 'groups', icon: '🏫', label: 'Guruhlar', render: () => <Groups me={me} /> },
+    { key: 'settings', icon: '⚙️', label: 'Sozlamalar', render: () => <SettingsPanel /> },
     { key: 'tasks', icon: '📝', label: 'Vazifalar', render: () => <ManageTasks me={me} /> },
     { key: 'shop', icon: '🛍️', label: "Do'kon", render: () => <Shop me={me} /> },
   ];

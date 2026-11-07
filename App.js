@@ -9,12 +9,15 @@ import { studentTabs } from './src/screens/Student';
 import { teacherTabs } from './src/screens/Teacher';
 import { sellerTabs } from './src/screens/Seller';
 import { adminTabs } from './src/screens/Admin';
+import { SettingsProvider, useSettings } from './src/settings';
 
 export default function App() {
   return (
     <SafeAreaProvider>
       <UIProvider>
-        <Root />
+        <SettingsProvider>
+          <Root />
+        </SettingsProvider>
       </UIProvider>
     </SafeAreaProvider>
   );
@@ -95,10 +98,11 @@ function Root() {
 
 function Main({ me, refreshMe, logout }) {
   const { ask } = useUI();
+  const { can } = useSettings();
   const tabs = me.role === 'admin' ? adminTabs(me)
-    : me.role === 'teacher' ? teacherTabs(me, refreshMe)
-      : me.role === 'seller' ? sellerTabs(me)
-        : studentTabs(me, refreshMe);
+    : me.role === 'teacher' ? teacherTabs(me, refreshMe, can)
+      : me.role === 'seller' ? sellerTabs(me, can)
+        : studentTabs(me, refreshMe, can);
   const [tab, setTab] = useState(tabs[0].key);
   const current = tabs.find((t) => t.key === tab) || tabs[0];
   const showBalance = me.role === 'student' || me.role === 'teacher';

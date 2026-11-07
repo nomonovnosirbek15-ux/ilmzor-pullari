@@ -3,9 +3,12 @@ import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, Vie
 import { supabase, loginToEmail, cleanLogin, errText, isConfigured } from '../supabase';
 import { CURRENCY } from '../config';
 import { C, Btn, Card, Chip, Field, LOGO, P, Row, Segment, useUI } from '../ui';
+import { useSettings } from '../settings';
 
 export default function Login() {
   const { notify } = useUI();
+  const { can } = useSettings();
+  const regOpen = can('self_registration');
   const [mode, setMode] = useState('login');
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
@@ -60,7 +63,7 @@ export default function Login() {
           </View>
           <Card style={{ padding: 20 }}>
             {!isConfigured && <P style={{ color: C.danger, marginBottom: 12 }}>⚠️ Server sozlanmagan (src/config.js)</P>}
-            <Segment options={[['login', 'Kirish'], ['register', "Ro'yxatdan o'tish"]]} value={mode} onChange={setMode} />
+            {regOpen && <Segment options={[['login', 'Kirish'], ['register', "Ro'yxatdan o'tish"]]} value={mode} onChange={setMode} />}
             {mode === 'register' && (
               <>
                 <Field label="Ism va familiya" value={fullName} onChangeText={setFullName} autoCapitalize="words" placeholder="Aliyev Ali" />
@@ -83,7 +86,8 @@ export default function Login() {
             )}
             <Btn title={mode === 'login' ? 'Kirish' : "Ro'yxatdan o'tish"} onPress={mode === 'login' ? signIn : signUp} loading={busy} style={{ marginTop: 4 }} />
             <P muted style={{ textAlign: 'center', marginTop: 14, fontSize: 13 }}>
-              {mode === 'login' ? "Akkauntingiz yo'qmi? \"Ro'yxatdan o'tish\" ni bosing" : "Ro'yxatdan o'tgach, o'qituvchingiz tasdiqlaydi"}
+              {mode === 'register' ? "Ro'yxatdan o'tgach, o'qituvchingiz tasdiqlaydi"
+                : regOpen ? "Akkauntingiz yo'qmi? \"Ro'yxatdan o'tish\" ni bosing" : 'Login va parolni markaz administratoridan oling'}
             </P>
           </Card>
         </View>

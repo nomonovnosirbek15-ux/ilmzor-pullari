@@ -213,11 +213,12 @@ export function TopUp() {
   );
 }
 
-export function sellerTabs(me) {
-  return [
-    { key: 'sell', icon: '🛍️', label: 'Sotish', render: () => <Sell /> },
-    { key: 'items', icon: '📦', label: 'Mahsulot', render: () => <Items /> },
-    { key: 'topup', icon: '💼', label: "Pul ajratish", render: () => <TopUp /> },
-    { key: 'hist', icon: '📜', label: 'Tarix', render: () => <History me={me} /> },
-  ];
+export function sellerTabs(me, can) {
+  const tabs = [
+    can('seller_sell') && { key: 'sell', icon: '🛍️', label: 'Sotish', render: () => <Sell /> },
+    can('seller_manage_items') && { key: 'items', icon: '📦', label: 'Mahsulot', render: () => <Items /> },
+    can('seller_topup_teachers') && { key: 'topup', icon: '💼', label: 'Pul ajratish', render: () => <TopUp /> },
+    can('seller_see_history') && { key: 'hist', icon: '📜', label: 'Tarix', render: () => <History me={me} /> },
+  ].filter(Boolean);
+  return tabs.length ? tabs : [{ key: 'none', icon: '⛔', label: 'Yopiq', render: () => <Page><Empty text="Hozircha sizga hech qanday bo'lim ochilmagan. Adminga murojaat qiling." /></Page> }];
 }

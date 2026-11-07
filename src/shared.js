@@ -8,8 +8,8 @@ const PERIODS = [['week', 'Hafta'], ['month', 'Oy'], ['all', 'Umumiy']];
 
 /* ---------- Reyting ---------- */
 // groups: foydalanuvchiga ko'rinadigan guruhlar [{id,name}]
-export function Ratings({ me, groups }) {
-  const [scope, setScope] = useState(groups && groups.length ? 'group' : 'center');
+export function Ratings({ me, groups, hideCenter }) {
+  const [scope, setScope] = useState(groups && groups.length || hideCenter ? 'group' : 'center');
   const [period, setPeriod] = useState('month');
   const [groupId, setGroupId] = useState(groups && groups[0] ? groups[0].id : null);
   const gid = scope === 'group' ? groupId : null;
@@ -21,7 +21,7 @@ export function Ratings({ me, groups }) {
 
   return (
     <Page onRefresh={reload} refreshing={loading && !!data}>
-      <Segment options={[['group', 'Guruh'], ['center', 'Markaz']]} value={scope} onChange={setScope} />
+      {!hideCenter && <Segment options={[['group', 'Guruh'], ['center', 'Markaz']]} value={scope} onChange={setScope} />}
       {scope === 'group' && (
         groups && groups.length ? (
           <Row style={{ flexWrap: 'wrap' }}>

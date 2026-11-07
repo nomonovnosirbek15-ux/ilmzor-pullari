@@ -53,17 +53,17 @@ function Wallet({ me, refreshMe }) {
   );
 }
 
-export function studentTabs(me, refreshMe) {
+export function studentTabs(me, refreshMe, can) {
   return [
     { key: 'wallet', icon: '👛', label: 'Hisobim', render: () => <Wallet me={me} refreshMe={refreshMe} /> },
     { key: 'tasks', icon: '📝', label: 'Vazifalar', render: () => <StudentTasks me={me} refreshMe={refreshMe} /> },
     { key: 'shop', icon: '🛍️', label: "Do'kon", render: () => <ShopCatalog balance={me.balance} /> },
-    { key: 'rating', icon: '🏆', label: 'Reyting', render: () => <StudentRatings me={me} /> },
+    { key: 'rating', icon: '🏆', label: 'Reyting', render: () => <StudentRatings me={me} centerVisible={can('center_rating_visible')} /> },
   ];
 }
 
-function StudentRatings({ me }) {
+function StudentRatings({ me, centerVisible }) {
   const g = useMyGroups(me);
   if (!g.data) return <Page>{g.error ? <ErrorBox text={g.error} onRetry={g.reload} /> : null}</Page>;
-  return <Ratings me={me} groups={g.data} />;
+  return <Ratings me={me} groups={g.data} hideCenter={!centerVisible} />;
 }

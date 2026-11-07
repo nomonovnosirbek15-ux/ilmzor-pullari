@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
 import { supabase, q, rpc } from '../supabase';
+import { useSettings } from '../settings';
 import { pickDocument, pickPhoto, uploadAsset, signedUrl, openFile, kindOf } from '../files';
 import {
   C, Btn, Card, Chip, Coin, Empty, ErrorBox, Field, H2, ListRow, Loading, P, Page, Row, Segment, Sheet, fmt, fmtDate, s, useLoad, useUI,
@@ -42,20 +43,23 @@ function FileView({ bucket, path, type }) {
 }
 
 /* ---------- Umumiy: javoblar jadvali ---------- */
-function AnswerGrid({ count, options, value, onChange, results }) {
+function AnswerGrid({ count, options, value, onChange, results, keyAnswers, highlight }) {
   return (
     <View>
       {Array.from({ length: count }, (_, i) => (
-        <Row key={i} style={{ paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}>
-          <Text style={{ width: 40, fontWeight: '800', color: C.text }}>{i + 1}.</Text>
+        <Row key={i} style={{ paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', backgroundColor: highlight?.[i] ? C.goldLight : 'transparent', borderRadius: 8 }}>
+          <Text style={{ width: 40, fontWeight: '800', color: C.text, paddingLeft: 4 }}>{i + 1}.</Text>
           <Row style={{ flex: 1, flexWrap: 'wrap', gap: 6 }}>
             {LETTERS.slice(0, options).map((L) => {
               const on = value[i] === L;
+              const isKey = keyAnswers && keyAnswers[i] === L;
+              const bad = results && on && !results[i];
+              const bg = bad ? C.danger : on ? C.primary : isKey ? C.successLight : '#fff';
               return (
                 <Pressable key={L} disabled={!onChange} onPress={() => { const v = [...value]; v[i] = on ? '' : L; onChange(v); }}
                   style={{ width: 40, height: 36, borderRadius: 9, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5,
-                    borderColor: on ? C.primary : C.border, backgroundColor: on ? C.primary : '#fff' }}>
-                  <Text style={{ fontWeight: '800', color: on ? '#fff' : C.text }}>{L}</Text>
+                    borderColor: isKey ? C.success : on ? bg : C.border, backgroundColor: bg }}>
+                  <Text style={{ fontWeight: '800', color: on || bad ? '#fff' : C.text }}>{L}</Text>
                 </Pressable>
               );
             })}
@@ -72,6 +76,8 @@ function AnswerGrid({ count, options, value, onChange, results }) {
    ===================================================================== */
 export function ManageTasks({ me }) {
   const { notify } = useUI();
+  const { can } = useSettings();
+  const canUpload = me.role === 'admin' || can('teacher_upload_tasks');
   const isAdmin = me.role === 'admin';
   const d = useLoad(async () => {
     let aq = supabase.from('assignments').select('*, assignment_groups(group_id), submissions(id,status)').order('created_at', { ascending: false });
@@ -102,7 +108,8 @@ export function ManageTasks({ me }) {
 
   return (
     <Page onRefresh={d.reload} refreshing={d.loading}>
-      <Btn title="Yangi test yoki vazifa" icon="➕" onPress={() => setEditing({})} style={{ marginBottom: 12 }} disabled={!groups.length} />
+      {canUpload ? <Btn title="Yangi test yoki vazifa" icon="➕" onPress={() => setEditing({})} style={{ marginBottom: 12 }} disabled={!groups.length} />
+        : <Card style={{ backgroundColor: C.dangerLight, borderColor: 'transparent' }}><P>⛔ Vazifa yuklash admin tomonidan yopilgan.</P></Card>}
       {!groups.length && <P muted style={{ marginBottom: 12 }}>Avval sizga guruh biriktirilishi kerak.</P>}
       {pending > 0 && (
         <Card style={{ backgroundColor: C.goldLight, borderColor: '#FCD34D' }}>
@@ -162,6 +169,7 @@ function Editor({ initial, groups, onDone }) {
     pct: initial.threshold_pct ? String(initial.threshold_pct) : '80', amount: initial.reward_amount ? String(initial.reward_amount) : '',
     deadline: initial.deadline || null, groups: initial.assignment_groups ? initial.assignment_groups.map((g) => g.group_id) : (groups.length === 1 ? [groups[0].id] : []),
     active: initial.active !== false,
+    attempts: initial.id ? (initial.max_attempts ?? null) : 3, showKey: initial.show_key !== false,
   }));
   const [asset, setAsset] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -196,6 +204,7 @@ function Editor({ initial, groups, onDone }) {
         p_reward_mode: f.kind === 'test' ? f.mode : null,
         p_per_correct: parseInt(f.per, 10) || null, p_threshold_pct: parseInt(f.pct, 10) || null, p_reward_amount: parseInt(f.amount, 10) || null,
         p_deadline: f.deadline, p_groups: f.groups, p_active: f.active,
+        p_max_attempts: f.kind === 'test' ? f.attempts : null, p_show_key: f.showKey,
       });
       notify(initial.id ? 'Saqlandi' : "Yuklandi — o'quvchilar ko'ra oladi");
       onDone();
@@ -260,6 +269,18 @@ function Editor({ initial, groups, onDone }) {
       )}
       {max > 0 && <P muted style={{ marginTop: -4, marginBottom: 12, fontSize: 13 }}>Bitta o'quvchi ko'pi bilan {fmt(max)} ilmzor oladi. Pul sizning hisobingizdan ayriladi.</P>}
 
+      {f.kind === 'test' && (
+        <>
+          <P style={{ fontWeight: '600', marginBottom: 6 }}>Necha marta ishlash mumkin</P>
+          <Row style={{ flexWrap: 'wrap' }}>
+            {[[1, '1'], [2, '2'], [3, '3'], [5, '5'], [null, 'Cheksiz']].map(([v, l]) => <Chip key={l} label={l} active={f.attempts === v} onPress={() => set('attempts', v)} />)}
+          </Row>
+          <P muted style={{ fontSize: 13, marginBottom: 8 }}>Pul faqat eng yuqori natija uchun beriladi — qayta ishlab, ortiqcha pul olib bo'lmaydi.</P>
+          <Row style={{ marginBottom: 12 }}>
+            <Chip label="Oxirida to'g'ri javoblarni ko'rsatish" active={f.showKey} onPress={() => set('showKey', !f.showKey)} />
+          </Row>
+        </>
+      )}
       <P style={{ fontWeight: '600', marginBottom: 6 }}>Muddat</P>
       <Row style={{ flexWrap: 'wrap' }}>
         {DEADLINES.map(([v, l]) => {
@@ -323,7 +344,7 @@ function Detail({ a, gName, onEdit, onChanged, onClosed }) {
         <Card>
           {list.map((x) => (
             <ListRow key={x.id} title={x.student?.full_name || '—'}
-              sub={`${STATUS[x.status][0]}${x.total ? ` · ${x.correct}/${x.total} (${Math.round((x.correct / x.total) * 100)}%)` : ''} · ${fmtDate(x.created_at)}`}
+              sub={`${STATUS[x.status][0]}${x.total ? ` · eng yaxshi ${x.correct}/${x.total} (${Math.round((x.correct / x.total) * 100)}%)` : ''}${a.kind === 'test' && x.attempts > 1 ? ` · ${x.attempts} urinish` : ''} · ${fmtDate(x.created_at)}`}
               right={x.reward > 0 ? <Coin value={x.reward} size={14} color={x.status === 'paid' ? C.success : C.muted} /> : null}
               onPress={a.kind === 'task' ? () => setReview(x) : undefined} />
           ))}
@@ -388,6 +409,7 @@ export function StudentTasks({ me, refreshMe }) {
   if (!d.data) return <Page><Loading /></Page>;
   const subOf = (id) => d.data.subs.find((x) => x.assignment_id === id);
   const isNew = (a) => { const x = subOf(a.id); return (!x || x.status === 'rejected') && !expired(a); };
+  const canImprove = (a) => { const x = subOf(a.id); return a.kind === 'test' && x && !expired(a) && x.correct < x.total && (a.max_attempts == null || x.attempts < a.max_attempts); };
   const list = d.data.assignments.filter((a) => (filter === 'new' ? isNew(a) : !isNew(a)));
   const newCount = d.data.assignments.filter(isNew).length;
   const earned = d.data.subs.filter((x) => x.status === 'paid').reduce((t, x) => t + x.reward, 0);
@@ -408,7 +430,7 @@ export function StudentTasks({ me, refreshMe }) {
               <ListRow key={a.id}
                 left={<Text style={{ fontSize: 24 }}>{a.kind === 'test' ? '📝' : '📸'}</Text>}
                 title={a.title}
-                sub={`${x ? STATUS[x.status][0] : expired(a) ? '⌛ Muddat tugagan' : '🆕 Yangi'} · ${a.author?.full_name || ''}${a.deadline && !x ? `\n⏰ ${fmtDate(a.deadline)} gacha` : ''}`}
+                sub={`${x ? (a.kind === 'test' ? `🏆 ${x.correct}/${x.total}${canImprove(a) ? ' · 🔁 yaxshilash mumkin' : ''}` : STATUS[x.status][0]) : expired(a) ? '⌛ Muddat tugagan' : '🆕 Yangi'} · ${a.author?.full_name || ''}${a.deadline && !x ? `\n⏰ ${fmtDate(a.deadline)} gacha` : ''}`}
                 right={x && x.status !== 'rejected' ? <Coin value={x.reward} size={14} color={x.status === 'paid' ? C.success : C.muted} sign={x.reward ? '+' : ''} />
                   : <Text style={{ color: C.gold, fontWeight: '800' }}>≤ {fmt(maxReward(a))} ilmzor</Text>}
                 onPress={() => setOpenId(a.id)} />
@@ -425,27 +447,45 @@ export function StudentTasks({ me, refreshMe }) {
 
 function DoTask({ me, a, sub, onDone }) {
   const { notify, ask } = useUI();
-  const [answers, setAnswers] = useState(() => Array(a.question_count || 0).fill(''));
-  const [result, setResult] = useState(null);
+  const n = a.question_count || 0;
+  const [mode, setMode] = useState(sub && a.kind === 'test' ? 'review' : 'do');
+  const [answers, setAnswers] = useState(() => Array(n).fill(''));
+  const [focus, setFocus] = useState(null); // qayta ishlashda xato savollar
+  const [last, setLast] = useState(null);   // oxirgi topshirish natijasi
   const [photo, setPhoto] = useState(null);
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
   const late = expired(a);
-  const canDo = !late && (!sub || sub.status === 'rejected');
+  const attempts = useLoad(() => (a.kind === 'test' && sub
+    ? q(supabase.from('test_attempts').select('*').eq('assignment_id', a.id).eq('student_id', me.id).order('created_at', { ascending: false }))
+    : Promise.resolve([])), [a.id, me.id, sub?.attempts]);
+  const key = useLoad(() => (a.kind === 'test' && sub ? rpc('get_test_key', { p_assignment: a.id }) : Promise.resolve(null)), [a.id, sub?.attempts]);
+  const used = sub?.attempts || 0;
+  const left = a.max_attempts == null ? null : Math.max(0, a.max_attempts - used);
+  const canRetry = !late && (left === null || left > 0);
   const filled = answers.filter(Boolean).length;
 
   const sendTest = async () => {
-    const empty = answers.length - filled;
-    if (!(await ask('Topshirasizmi?', `${empty ? `${empty} ta savol belgilanmagan.\n` : ''}Topshirgandan keyin o'zgartirib bo'lmaydi.`, 'Topshirish'))) return;
+    const empty = n - filled;
+    if (!(await ask('Topshirasizmi?', `${empty ? `${empty} ta savol belgilanmagan.\n` : ''}${left !== null ? `Qolgan urinishlar: ${left}` : ''}`, 'Topshirish'))) return;
     setBusy(true);
     try {
       const r = await rpc('submit_test', { p_assignment: a.id, p_answers: answers });
-      setResult(r);
-      notify(r.reward ? `+${fmt(r.reward)} ilmzor — barakalla!` : `${r.correct}/${r.total} to'g'ri`);
-      onDone();
+      setLast({ ...r, answers: [...answers] });
+      notify(r.paid_now ? `+${fmt(r.paid_now)} ilmzor — barakalla!` : r.correct > (sub?.correct ?? -1) ? `${r.correct}/${r.total} to'g'ri` : `${r.correct}/${r.total} — avvalgi natijangiz yuqoriroq`);
+      setMode('review'); setFocus(null); onDone();
     } catch (e) { notify(e.message, 'err'); }
     setBusy(false);
   };
+
+  // Xatolar ustida ishlash: to'g'rilari saqlanadi, xatolari tozalanadi
+  const retryMistakes = (src) => {
+    const prev = src.answers || []; const res = src.results || [];
+    setAnswers(Array.from({ length: n }, (_, i) => (res[i] ? prev[i] || '' : '')));
+    setFocus(res.map((r) => !r));
+    setMode('do');
+  };
+  const retryAll = () => { setAnswers(Array(n).fill('')); setFocus(null); setMode('do'); };
 
   const pick = async (cam) => { try { const p = await pickPhoto(cam); if (p) setPhoto(p); } catch (e) { notify(e.message, 'err'); } };
   const sendTask = async () => {
@@ -460,31 +500,87 @@ function DoTask({ me, a, sub, onDone }) {
     setBusy(false);
   };
 
-  const shown = result || (sub && sub.status !== 'rejected' && a.kind === 'test' ? sub : null);
-
-  return (
+  const header = (
     <>
       <P muted style={{ marginBottom: 8 }}>
-        {a.kind === 'test' ? `📝 Test · ${a.question_count} savol` : '📸 Vazifa: yechimni rasmga olib yuboring'}
+        {a.kind === 'test' ? `📝 Test · ${n} savol` : '📸 Vazifa: yechimni rasmga olib yuboring'}
         {'\n'}💰 {rewardText(a)}
+        {a.kind === 'test' ? `\n🔁 ${a.max_attempts == null ? 'Cheksiz urinish' : `${a.max_attempts} ta urinish`} · pul eng yuqori natija uchun` : ''}
         {a.deadline ? `\n⏰ ${fmtDate(a.deadline)} gacha${late ? ' (tugagan)' : ''}` : ''}
       </P>
       {!!a.description && <Card><P>{a.description}</P></Card>}
       <FileView bucket="assignments" path={a.file_path} type={a.file_type} />
+    </>
+  );
 
-      {shown ? (
+  /* ---------- TEST ---------- */
+  if (a.kind === 'test') {
+    if (mode === 'review' && (sub || last)) {
+      const view = last || attempts.data?.[0] || sub;
+      const best = last ? last.best : sub.correct;
+      const total = view.total || n;
+      const earned = last ? last.best_reward : sub.reward;
+      const wrong = (view.results || []).filter((r) => !r).length;
+      return (
         <>
-          <Card style={{ backgroundColor: shown.reward ? C.successLight : C.goldLight, borderColor: 'transparent', alignItems: 'center' }}>
-            <Text style={{ fontSize: 15, color: C.muted }}>Natija</Text>
-            <Text style={{ fontSize: 40, fontWeight: '900', color: C.text }}>{shown.correct}/{shown.total}</Text>
-            <Text style={{ fontSize: 18, fontWeight: '800', color: shown.reward ? C.success : C.muted }}>
-              {shown.reward ? `+${fmt(shown.reward)} ilmzor` : "Bu safar pul yo'q — keyingisida albatta!"}
-            </Text>
-            {shown.status === 'unpaid' && <P muted style={{ marginTop: 6, textAlign: 'center' }}>Pul o'qituvchi hisobi to'ldirilgach tushadi</P>}
-          </Card>
-          <Card><AnswerGrid count={shown.total} options={a.option_count} value={result ? answers : sub.answers} results={shown.results} /></Card>
+          {header}
+          <Row style={{ gap: 10, marginBottom: 12 }}>
+            <View style={[s.stat, { borderLeftColor: C.blue }]}><Text style={s.small}>🏆 Eng yuqori</Text><Text style={[s.statValue, { color: C.blue }]}>{best}/{total}</Text></View>
+            <View style={[s.stat, { borderLeftColor: C.success }]}><Text style={s.small}>💰 Topilgan</Text><Text style={[s.statValue, { color: C.success }]}>{fmt(earned)}</Text></View>
+          </Row>
+          {last && (
+            <Card style={{ backgroundColor: last.paid_now ? C.successLight : C.goldLight, borderColor: 'transparent', alignItems: 'center' }}>
+              <Text style={{ color: C.muted }}>Bu urinish</Text>
+              <Text style={{ fontSize: 36, fontWeight: '900', color: C.text }}>{last.correct}/{last.total}</Text>
+              <Text style={{ fontWeight: '800', color: last.paid_now ? C.success : C.muted, textAlign: 'center' }}>
+                {last.paid_now ? `+${fmt(last.paid_now)} ilmzor` : last.correct >= last.best && last.reward > 0 ? "Pul avval olingan" : "Yangi rekord bo'lmadi — pul faqat eng yuqori natija uchun"}
+              </Text>
+              {last.status === 'unpaid' && <P muted style={{ marginTop: 6, textAlign: 'center' }}>Pul o'qituvchi hisobi to'ldirilgach tushadi</P>}
+            </Card>
+          )}
+          <H2 style={{ marginBottom: 6 }}>{wrong ? `❌ Xatolar: ${wrong} ta` : '🎉 Hammasi to\'g\'ri!'}</H2>
+          <Card><AnswerGrid count={total} options={a.option_count} value={view.answers || []} results={view.results} keyAnswers={key.data} /></Card>
+          {key.data && <P muted style={{ fontSize: 13, marginTop: -4, marginBottom: 10 }}>🟢 yashil — to'g'ri javob</P>}
+          {canRetry ? (
+            <Row style={{ gap: 10, marginBottom: 10 }}>
+              {wrong > 0 && <Btn title="Xatolarni qayta ishlash" icon="🔁" onPress={() => retryMistakes(view)} style={{ flex: 1.4 }} />}
+              <Btn kind="ghost" title="Boshidan" onPress={retryAll} style={{ flex: 1 }} />
+            </Row>
+          ) : <P muted style={{ textAlign: 'center', marginBottom: 10 }}>{late ? '⌛ Muddat tugagan' : '🔒 Urinishlar tugagan'}</P>}
+          {left !== null && canRetry && <P muted style={{ textAlign: 'center', fontSize: 13 }}>Qolgan urinishlar: {left}</P>}
+          {(attempts.data || []).length > 1 && (
+            <Card>
+              <H2 style={{ marginBottom: 6 }}>Urinishlar tarixi</H2>
+              {attempts.data.map((t, i) => (
+                <ListRow key={t.id} title={`${attempts.data.length - i}-urinish: ${t.correct}/${t.total}`} sub={fmtDate(t.created_at)}
+                  right={<Text style={{ color: C.muted }}>{Math.round((t.correct / t.total) * 100)}%</Text>} />
+              ))}
+            </Card>
+          )}
+          <View style={{ height: 30 }} />
         </>
-      ) : sub && a.kind === 'task' && sub.status !== 'rejected' ? (
+      );
+    }
+    if (late) return <>{header}<Card><P muted>⌛ Muddat tugagan</P></Card></>;
+    return (
+      <>
+        {header}
+        {focus && <Card style={{ backgroundColor: C.goldLight, borderColor: 'transparent' }}><P>🔁 To'g'ri javoblaringiz saqlandi. Faqat <Text style={{ fontWeight: '800' }}>sariq</Text> belgilangan savollarni qayta yeching.</P></Card>}
+        <H2 style={{ marginBottom: 8 }}>Javoblaringiz ({filled}/{n})</H2>
+        <Card><AnswerGrid count={n} options={a.option_count} value={answers} onChange={setAnswers} highlight={focus} /></Card>
+        <Btn title="Topshirish" icon="✅" onPress={sendTest} loading={busy} disabled={!filled} />
+        {sub && <Btn kind="ghost" title="Bekor qilish" onPress={() => setMode('review')} style={{ marginTop: 10 }} />}
+        <View style={{ height: 30 }} />
+      </>
+    );
+  }
+
+  /* ---------- RASMLI VAZIFA ---------- */
+  const canDo = !late && (!sub || sub.status === 'rejected');
+  return (
+    <>
+      {header}
+      {sub && sub.status !== 'rejected' ? (
         <>
           <Card style={{ alignItems: 'center' }}>
             <Text style={{ fontSize: 18, fontWeight: '800' }}>{STATUS[sub.status][0]}</Text>
@@ -495,12 +591,6 @@ function DoTask({ me, a, sub, onDone }) {
         </>
       ) : !canDo ? (
         <Card><P muted>⌛ Muddat tugagan</P></Card>
-      ) : a.kind === 'test' ? (
-        <>
-          <H2 style={{ marginBottom: 8 }}>Javoblaringiz ({filled}/{answers.length})</H2>
-          <Card><AnswerGrid count={answers.length} options={a.option_count} value={answers} onChange={setAnswers} /></Card>
-          <Btn title="Topshirish" icon="✅" onPress={sendTest} loading={busy} disabled={!filled} />
-        </>
       ) : (
         <>
           {sub?.status === 'rejected' && (
