@@ -21,7 +21,7 @@ Ilmzor o'quv markazi uchun o'quvchilarni rag'batlantirish ilovasi.
 ### 1. Supabase (server, bepul)
 1. https://supabase.com → **Start your project** → GitHub bilan kiring.
 2. **New project**: nomi `ilmzor-pullari`, parol o'ylab toping, region: **Central EU (Frankfurt)**.
-3. Chap menyu → **SQL Editor** → **New query** → `supabase/schema.sql` faylidagi hamma matnni joylang → **Run**. Keyin xuddi shunday `supabase/02_vazifalar.sql` ni ham.
+3. Chap menyu → **SQL Editor** → **New query** → `supabase/schema.sql` faylidagi hamma matnni joylang → **Run**. Keyin xuddi shunday `supabase/02_vazifalar.sql` va `supabase/03_royxatdan_otish.sql` ni ham.
 4. **Authentication → Sign In / Providers → Email** → **Confirm email** ni O'CHIRING → Save.
 5. **Authentication → Users → Add user → Create new user**:
    email `admin@ilmzor.app`, parol, **Auto Confirm User** ✅.

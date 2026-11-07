@@ -50,6 +50,13 @@ function Root() {
     return () => { supabase.removeChannel(ch); };
   }, [uid]);
 
+  // Tasdiqlashni kutayotganda har 15 soniyada tekshirish
+  useEffect(() => {
+    if (!me || me.role !== 'pending') return undefined;
+    const t = setInterval(refreshMe, 15000);
+    return () => clearInterval(t);
+  }, [me, refreshMe]);
+
   const logout = () => { setMe(null); supabase.auth.signOut(); };
 
   let body;
@@ -63,9 +70,12 @@ function Root() {
         <Card style={{ maxWidth: 420, alignSelf: 'center', width: '100%' }}>
           <Text style={{ fontSize: 40, textAlign: 'center' }}>{me && !me.active ? '🚫' : '⏳'}</Text>
           <H2 style={{ textAlign: 'center', marginVertical: 8 }}>
-            {profileError ? 'Xatolik' : me && !me.active ? 'Akkaunt bloklangan' : 'Rol hali berilmagan'}
+            {profileError ? 'Xatolik' : me && !me.active ? 'Akkaunt bloklangan' : "So'rovingiz yuborildi"}
           </H2>
-          <P muted style={{ textAlign: 'center', marginBottom: 16 }}>{profileError || 'Markaz administratoriga murojaat qiling.'}</P>
+          <P muted style={{ textAlign: 'center', marginBottom: 16 }}>
+            {profileError || (me && !me.active ? 'Markaz administratoriga murojaat qiling.'
+              : `${me?.full_name || ''}, o'qituvchingiz tasdiqlagach, ilova o'zi ochiladi. Odatda bu dars paytida bo'ladi.`)}
+          </P>
           <Btn title="Qayta tekshirish" onPress={refreshMe} style={{ marginBottom: 10 }} />
           <Btn kind="ghost" title="Chiqish" onPress={logout} />
         </Card>

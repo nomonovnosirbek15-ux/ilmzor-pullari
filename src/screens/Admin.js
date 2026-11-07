@@ -8,6 +8,7 @@ import { History, Ratings } from '../shared';
 import { Items, TopUp } from './Seller';
 import { useMyGroups } from './Student';
 import { ManageTasks } from './Tasks';
+import { PendingBanner } from './Approvals';
 
 const norm = (x) => (x || '').toLowerCase();
 const ROLES = ['student', 'teacher', 'seller', 'admin'];
@@ -71,7 +72,6 @@ function People({ me }) {
   if (d.error) return <Page><ErrorBox text={d.error} onRetry={d.reload} /></Page>;
   if (!d.data) return <Page><Loading /></Page>;
   const { people, groups, members } = d.data;
-  const pending = people.filter((p) => p.role === 'pending');
   const list = people.filter((p) => (filter === 'all' || p.role === filter) && (norm(p.full_name).includes(norm(search)) || norm(p.username).includes(norm(search))));
   const groupsOf = (id) => members.filter((m) => m.student_id === id).map((m) => m.group_id);
 
@@ -96,12 +96,7 @@ function People({ me }) {
   return (
     <Page onRefresh={d.reload} refreshing={d.loading}>
       <Btn title="Yangi akkaunt" icon="➕" onPress={() => setCreating({ fullName: '', login: '', password: '', role: 'student', groups: [] })} style={{ marginBottom: 12 }} />
-      {!!pending.length && (
-        <Card style={{ backgroundColor: C.goldLight, borderColor: '#FCD34D' }}>
-          <H2>⏳ Rol berilmaganlar: {pending.length}</H2>
-          <P muted style={{ fontSize: 13 }}>Ularni bosib rol bering.</P>
-        </Card>
-      )}
+      <PendingBanner me={me} key={'pb' + people.length} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
         {[['all', 'Hammasi'], ...ROLES.map((r) => [r, ROLE_NAMES[r]]), ['pending', 'Kutilmoqda']].map(([v, l]) => (
           <Chip key={v} label={`${l} (${v === 'all' ? people.length : people.filter((p) => p.role === v).length})`} active={filter === v} onPress={() => setFilter(v)} />

@@ -5,6 +5,7 @@ import { C, Btn, Card, Check, Chip, Coin, Empty, ErrorBox, Field, H2, Loading, P
 import { History, Ratings } from '../shared';
 import { useMyGroups } from './Student';
 import { ManageTasks } from './Tasks';
+import { PendingBanner } from './Approvals';
 
 function Give({ me, refreshMe }) {
   const { notify, ask } = useUI();
@@ -65,6 +66,7 @@ function Give({ me, refreshMe }) {
 
   return (
     <Page onRefresh={() => { refreshMe(); data.reload(); }} refreshing={data.loading}>
+      <PendingBanner me={me} />
       <Card style={{ backgroundColor: C.primaryDark, borderColor: C.primaryDark }}>
         <Text style={{ color: '#8EE8BF' }}>Berish uchun hisobingizda</Text>
         <Text style={{ color: '#fff', fontSize: 36, fontWeight: '900' }}>{fmt(me.balance)} ilmzor</Text>
