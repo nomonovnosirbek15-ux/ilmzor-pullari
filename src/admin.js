@@ -52,18 +52,18 @@ function teacherBoard(){
   if(!isAdmin()) return '';
   const t=today();
   const [ws,we]=range(t,'week'),[ms,me]=range(t,'month'),[ps,pe]=range(shifted(-1,t,'month'),'month');
-  const W=rowsIn(ws,we,{group:'all'}),M=rowsIn(ms,me,{group:'all'}),P=rowsIn(ps,pe,{group:'all'});
+  const W=rowsIn(ws,we,{group:'all'}),M=rowsIn(ms,me,{group:'all'}),P=rowsIn(ps,pe,{group:'all'}),O=rowsIn(ms,me,{group:'all',oyl:true});
   const pend=pendingTasks('all'),att=attention('all');
   const wr=weekRanges(6,parse(t)).map(([s,f])=>({s,f,rows:rowsIn(s,f,{group:'all'})}));
   const list=(S.users||[]).filter(u=>u.active).map(u=>{
     const mine=r=>r.st.teacherId===u.id;
     const studs=S.students.filter(x=>isActive(x)&&x.teacherId===u.id);
     const grs=new Set(studs.map(x=>x.group||'Guruhsiz'));
-    const w=stats(W.filter(mine)),m=stats(M.filter(mine)),p=stats(P.filter(mine));
+    const w=stats(W.filter(mine)),m=stats(M.filter(mine)),p=stats(P.filter(mine)),o=stats(O.filter(mine));
     const pc=pend.reduce((a,x)=>a+x.ids.filter(id=>(S.stuById[id]||{}).teacherId===u.id).length,0);
     const ac=att.filter(a=>a.x.teacherId===u.id).length;
     const series=wr.map(x=>({s:x.s,f:x.f,pct:stats(x.rows.filter(mine)).pct}));
-    return {u,studs:studs.length,grs:grs.size,w,m,p,pc,ac,series};
+    return {u,studs:studs.length,grs:grs.size,w,m,p,o,pc,ac,series};
   }).sort((a,b)=>(b.m.pct??-1)-(a.m.pct??-1)||b.studs-a.studs||a.u.name.localeCompare(b.u.name));
   const active=list.filter(x=>x.studs);
   const cpct=stats(M.filter(r=>r.st.teacherId)).pct;
@@ -72,13 +72,13 @@ function teacherBoard(){
   let pos=0;
   return `<div class="card"><h2>👩‍🏫 Ustozlar natijalari <span class="muted" style="font-weight:500">— ${MONTHS_CAP[ms.getMonth()]}, markaz o‘rtachasi ${fmtP(cpct)}</span></h2>
    <p class="muted" style="font-size:12.5px;margin-top:-4px">Foiz — ustoz guruhlaridagi o‘quvchilarning vazifalarni bajarish foizi. 👁 — ustoz sahifasini u ko‘rgandek ochish.</p>
-   <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Ustoz</th><th>Guruh / o‘quvchi</th><th style="width:22%">Bu oy</th><th>Bu hafta</th><th title="Oxirgi 6 hafta">📈 6 hafta</th><th title="Bu oy berilgan vazifalar">Vazifa</th><th title="Hali baholanmagan">⏳</th><th title="E’tibor talab o‘quvchilar">🚩</th><th></th></tr></thead><tbody>
+   <div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Ustoz</th><th>Guruh / o‘quvchi</th><th style="width:22%">Bu oy</th><th>Bu hafta</th><th title="Bu oygi oylik test o‘rtachasi">🗓 Oylik test</th><th title="Oxirgi 6 hafta">📈 6 hafta</th><th title="Bu oy berilgan vazifalar">Vazifa</th><th title="Hali baholanmagan">⏳</th><th title="E’tibor talab o‘quvchilar">🚩</th><th></th></tr></thead><tbody>
    ${list.map(x=>x.studs?`<tr><td class="muted">${x.m.pct==null?'—':++pos}</td><td><b>${esc(x.u.name)}</b>${x.u.role==='admin'?' <span class="muted" style="font-size:12px">rahbar</span>':''}</td><td>${x.grs} / ${x.studs}</td>
      <td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1">${pbar(x.m.pct)}</div><b style="min-width:38px;text-align:right">${fmtP(x.m.pct)}</b></div>${x.p.pct!=null?`<div style="font-size:12px">${dl(x.m.pct,x.p.pct)} <span class="muted">o‘tgan oyga</span></div>`:''}</td>
-     <td>${cell(x.w.pct)}</td><td>${spark(x.series)}</td><td>${x.m.tasks}</td>
+     <td>${cell(x.w.pct)}</td><td>${cell(x.o.pct)}</td><td>${spark(x.series)}</td><td>${x.m.tasks}</td>
      <td>${x.pc?`<b style="color:#c2620a">${x.pc}</b>`:'<span style="color:var(--good)">0</span>'}</td><td>${x.ac?`<b style="color:#c33">${x.ac}</b>`:'<span style="color:var(--good)">0</span>'}</td>
      <td>${x.u.id===window.__ME.id?'':`<button class="btn sm" data-act="viewAs" data-id="${x.u.id}">👁</button>`}</td></tr>`
-     :`<tr style="opacity:.55"><td></td><td>${esc(x.u.name)}</td><td colspan="7" class="muted">hali guruh yo‘q</td><td>${x.u.id===window.__ME.id?'':`<button class="btn sm" data-act="viewAs" data-id="${x.u.id}">👁</button>`}</td></tr>`).join('')}
+     :`<tr style="opacity:.55"><td></td><td>${esc(x.u.name)}</td><td colspan="8" class="muted">hali guruh yo‘q</td><td>${x.u.id===window.__ME.id?'':`<button class="btn sm" data-act="viewAs" data-id="${x.u.id}">👁</button>`}</td></tr>`).join('')}
    </tbody></table></div>${active.length?'':'<div class="empty">Ustozlar guruh yaratgach natijalar shu yerda chiqadi</div>'}</div>`;
 }
 /* ---- O'quvchi «Bajardim» deb topshirganlar ---- */

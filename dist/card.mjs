@@ -54,6 +54,18 @@ export function cardSvg(R, logoB64) {
   });
   // ranks
   let y = 720;
+  if (R.oylik !== undefined) {
+    // oylik karta: guruhda · markazda · oylik test
+    const boxes = [['Guruhda', R.rankGroup, R.groupSize, 'o‘rin'], ['Markazda', R.rankCenter, R.centerSize, 'o‘rin']];
+    boxes.forEach((k, i) => { const x = 50 + i * 330; o += box(x, y, 310, 96, 22, '#fff');
+      o += T(x + 24, y + 40, k[0] + ' ' + k[3], 22, 600, MUTED);
+      o += `<text x="${x + 24}" y="${y + 82}" font-family="Satoshi"><tspan font-size="38" font-weight="900" fill="${NAVY}">${k[1] == null ? '—' : k[1]}</tspan><tspan font-size="22" font-weight="700" fill="${SOFT}">${k[1] == null ? '' : ' / ' + k[2]}</tspan></text>`; });
+    const ox = 710; o += box(ox, y, 320, 96, 22, R.oylik.pct == null ? '#fff' : pcolor(R.oylik.pct));
+    const fg = R.oylik.pct == null ? MUTED : '#fff';
+    o += T(ox + 24, y + 40, 'Oylik test', 22, 700, fg);
+    o += T(ox + 24, y + 82, R.oylik.pct == null ? '—' : R.oylik.pct + '%', 38, 900, R.oylik.pct == null ? NAVY : '#fff');
+    if (R.oylik.pct != null && R.oylik.n > 1) o += T(ox + 296, y + 80, `${R.oylik.rank}-o‘rin / ${R.oylik.n}`, 20, 700, fg, 'end');
+  } else
   [['Guruhdagi o‘rni', R.rankGroup, R.groupSize], ['Markazdagi o‘rni', R.rankCenter, R.centerSize]].forEach((k, i) => {
     const x = 50 + i * 500; o += box(x, y, 480, 96, 22, '#fff');
     o += T(x + 28, y + 58, k[0], 26, 600, MUTED);

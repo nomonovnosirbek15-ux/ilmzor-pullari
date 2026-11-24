@@ -7,6 +7,7 @@ import { SATOSHI_MEDIUM, SATOSHI_BOLD, SATOSHI_BLACK } from './fonts.mjs';
 /*__ASSETS__*/
 
 const DEADLINE_DAYS = 2;
+const OYL = 'Oylik test'; // oylik test: vazifa foiziga qo'shilmaydi, alohida hisoblanadi
 const SESSION_DAYS = 60;
 
 const enc = new TextEncoder();
@@ -98,16 +99,18 @@ async function ranking(env, period, anchor) {
     env.DB.prepare('SELECT id,name FROM users').all(),
   ]);
   const tname = Object.fromEntries(U.map(u => [u.id, u.name]));
-  const st = {}; for (const r of S) { const d = JSON.parse(r.data); if (d.archived) continue; st[r.id] = { name: d.name, group: d.group || 'Guruhsiz', teacher: tname[r.teacher_id] || '', gkey: r.teacher_id + '|' + (d.group || 'Guruhsiz'), b: 0, m: 0, n: 0 }; }
+  const st = {}; for (const r of S) { const d = JSON.parse(r.data); if (d.archived) continue; st[r.id] = { name: d.name, group: d.group || 'Guruhsiz', teacher: tname[r.teacher_id] || '', gkey: r.teacher_id + '|' + (d.group || 'Guruhsiz'), b: 0, m: 0, n: 0, ob: 0, om: 0 }; }
   for (const r of T) {
     const t = JSON.parse(r.data); if (!t.date || t.date < from || t.date > to || t.date > today) continue;
     const max = Number(t.max) || 0; if (!max) continue; const sc = t.scores || {}, ab = t.absent || {}, ow = t.owed || {};
+    const oyl = t.type === OYL;
     for (const id of (t.studentIds || [])) {
       const x = st[id]; if (!x || ab[id]) continue; const v = sc[id]; let ball;
       if (v !== undefined && v !== null && v !== '') ball = Number(v);
       else if (ow[id]) continue;
       else if (addDays(t.date, DEADLINE_DAYS) < today) ball = 0;
       else continue;
+      if (oyl) { x.ob += ball; x.om += max; continue; }
       x.b += ball; x.m += max; x.n++;
     }
   }
@@ -117,7 +120,7 @@ async function ranking(env, period, anchor) {
   rankOf(rated); rated.forEach(x => x.rankCenter = x._r);
   const groups = {}; rated.forEach(x => (groups[x.gkey] = groups[x.gkey] || []).push(x));
   Object.values(groups).forEach(g => { rankOf(g); g.forEach(x => { x.rankGroup = x._r; x.groupSize = g.length; }); });
-  const out = rated.map(x => ({ sid: x.id, name: x.name, group: x.group, teacher: x.teacher, gkey: x.gkey, pct: Math.round(x.pct * 10) / 10, ball: Math.round(x.b * 10) / 10, max: x.m, n: x.n, rankCenter: x.rankCenter, rankGroup: x.rankGroup, groupSize: x.groupSize }));
+  const out = rated.map(x => ({ sid: x.id, name: x.name, group: x.group, teacher: x.teacher, gkey: x.gkey, pct: Math.round(x.pct * 10) / 10, ball: Math.round(x.b * 10) / 10, max: x.m, n: x.n, rankCenter: x.rankCenter, rankGroup: x.rankGroup, groupSize: x.groupSize, oylik: x.om ? Math.round(Math.min(100, x.ob / x.om * 100)) : null }));
   return { period, from, to, today, total: rated.length, list: out };
 }
 /* ---------- natija kartasi (PNG) ---------- */
@@ -144,7 +147,7 @@ async function cardPng(env, V, p) {
   await initCard(RESVG_WASM);
   if (!FONTS) FONTS = [b64u8(SATOSHI_MEDIUM), b64u8(SATOSHI_BOLD), b64u8(SATOSHI_BLACK)];
   const today = V.today; const [from, to] = periodRange(p, today);
-  const inR = (f, t) => V.tasks.filter(x => x.date >= f && x.date <= t && x.date <= today);
+  const inR = (f, t) => V.tasks.filter(x => x.type !== OYL && x.date >= f && x.date <= t && x.date <= today);
   const rows = inR(from, to); const st = cardStats(rows, today);
   const sal = cardStats(rows.filter(x => x.type === 'Saralash testi'), today);
   const [pf, pt] = p === 'week' ? [addDays(from, -7), addDays(from, -1)] : periodRange('month', addDays(from, -1));
@@ -165,7 +168,8 @@ async function cardPng(env, V, p) {
   });
   const R = { period: p, label: rangeLabel(p, from, to), name: V.student.name, group: V.student.group, teacher: V.student.teacher,
     pct: st.pct, prevPct: prev.pct, checked: st.checked, total: st.total, salPct: sal.pct, salN: sal.checked + sal.od, missed: st.zero + st.od, absent: st.abs, owed: st.owed,
-    rankGroup: rk ? rk.rankGroup : null, groupSize: rk ? rk.groupSize : null, rankCenter: rk ? rk.rankCenter : null, centerSize: rk ? rk.total : null, weeks, list };
+    rankGroup: rk ? rk.rankGroup : null, groupSize: rk ? rk.groupSize : null, rankCenter: rk ? rk.rankCenter : null, centerSize: rk ? rk.total : null, weeks, list,
+    oylik: p === 'month' ? (() => { const o = (V.oylik || []).filter(x => x.date >= from && x.date <= to).pop(); return o ? { pct: o.pct, rank: o.rank, n: o.n } : { pct: null } ; })() : undefined };
   return renderPng(R, { fonts: FONTS, logoB64: ASSETS['/brand/logo-gorizontal.png'].b64 });
 }
 const pub = r => ({ ...r, list: r.list.map(({ sid, ...x }) => x) });
@@ -213,8 +217,19 @@ async function studentView(env, s) {
     tasks.push({ id: r.id, title: t.title || 'Vazifa', type: t.type || '', date: t.date, deadline: dl, max, note: t.note || '', status, ball, pct: graded && max ? Math.round(Math.min(100, ball / max * 100)) : null, submittedAt: sub[r.id] || null, late: !!(sub[r.id] && ymd(new Date(sub[r.id] + 5 * 3600e3)) > dl) });
   }
   tasks.sort((a, b) => b.date.localeCompare(a.date));
-  const pick = r => { const x = r.list.find(y => y.sid === sid); return x ? { pct: x.pct, ball: x.ball, max: x.max, rankGroup: x.rankGroup, groupSize: x.groupSize, rankCenter: x.rankCenter, total: r.total } : null; };
-  return { student: { name: s.data.name, group: s.data.group || 'Guruhsiz', teacher: tu ? tu.name : '' }, today, month: pick(rm), week: pick(rw), from: rm.from, to: rm.to, tasks };
+  const oylik = [];
+  for (const r of T) {
+    const t = JSON.parse(r.data); if (t.type !== OYL || !(t.studentIds || []).includes(sid) || !t.date || t.date > today) continue;
+    const max = Number(t.max) || 0; if (!max) continue; const sc = t.scores || {};
+    const pctOf = id => { const v = sc[id]; return (v === undefined || v === null || v === '') ? null : Math.min(100, Number(v) / max * 100); };
+    const mine = pctOf(sid); if (mine == null) continue;
+    const others = (t.studentIds || []).map(pctOf).filter(v => v != null);
+    const d = new Date(t.date + 'T00:00:00Z');
+    oylik.push({ id: r.id, title: t.title || OYL, date: t.date, label: MONS[d.getUTCMonth()][0].toUpperCase() + MONS[d.getUTCMonth()].slice(1) + ' ' + d.getUTCFullYear(), pct: Math.round(mine), rank: 1 + others.filter(v => v > mine + 1e-9).length, n: others.length });
+  }
+  oylik.sort((a, b) => a.date.localeCompare(b.date));
+  const pick = r => { const x = r.list.find(y => y.sid === sid); return x ? { pct: x.pct, ball: x.ball, max: x.max, rankGroup: x.rankGroup, groupSize: x.groupSize, rankCenter: x.rankCenter, total: r.total, oylik: x.oylik } : null; };
+  return { student: { name: s.data.name, group: s.data.group || 'Guruhsiz', teacher: tu ? tu.name : '' }, today, month: pick(rm), week: pick(rw), from: rm.from, to: rm.to, tasks, oylik };
 }
 const norm = s => String(s || '').toLowerCase().replace(/[‘’ʻʼ`']/g, '').replace(/\s+/g, ' ').trim();
 

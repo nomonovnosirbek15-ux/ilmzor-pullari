@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ilmzor — Vazifalar va ballar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:Satoshi;src:url(fonts/Satoshi-Medium.woff2) format('woff2');font-weight:500;font-display:swap}
+@font-face{font-family:Satoshi;src:url(fonts/Satoshi-Bold.woff2) format('woff2');font-weight:700;font-display:swap}
+@font-face{font-family:Satoshi;src:url(fonts/Satoshi-Black.woff2) format('woff2');font-weight:900;font-display:swap}
+:root{
+  --bg:#f4f3ef; --surface:#fcfcfb; --card:#ffffff; --ink:#0b0b0b; --ink2:#52514e; --muted:#85847b;
+  --line:#e4e2da; --grid:#ecebe5; --accent:#2a78d6; --accent-soft:#e3eefb;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b; --shadow:0 1px 2px rgba(0,0,0,.05),0 2px 8px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#121211; --surface:#1a1a19; --card:#1f1f1e; --ink:#f0efec; --ink2:#c3c2b7; --muted:#8f8e85;
+    --line:#33322f; --grid:#2a2a28; --accent:#3987e5; --accent-soft:#1d2d42; --shadow:none; }
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45}
+button,input,select,textarea{font:inherit;color:inherit}
+header{display:flex;align-items:center;gap:16px;padding:14px 20px;background:var(--card);border-bottom:1px solid var(--line);flex-wrap:wrap;position:sticky;top:0;z-index:5}
+.brand{font-weight:700;font-size:17px;letter-spacing:-.01em}
+.brand small{display:block;font-weight:500;font-size:12px;color:var(--ink2)}
+nav{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+nav a{padding:8px 14px;border-radius:8px;text-decoration:none;color:var(--ink2);font-weight:600}
+nav a.on{background:var(--accent-soft);color:var(--accent)}
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 20px}
+.seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:3px}
+.seg button{border:0;background:none;padding:6px 14px;border-radius:7px;cursor:pointer;color:var(--ink2);font-weight:600}
+.seg button.on{background:var(--accent);color:#fff}
+.btn{border:1px solid var(--line);background:var(--card);padding:7px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+.btn:hover{border-color:var(--ink2)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.danger{color:var(--crit)}
+.btn.sm{padding:4px 9px;font-size:13px}
+.plabel{font-weight:700;font-size:15px;min-width:170px;text-align:center}
+select.inp,input.inp,textarea.inp{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:7px 10px;width:100%}
+select.inp{width:auto}
+main{padding:0 20px 40px;max-width:1240px;margin:0 auto}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
+.kpi .lab{color:var(--ink2);font-size:13px;font-weight:600}
+.kpi .val{font-size:30px;font-weight:750;letter-spacing:-.02em;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+.ring{display:flex;align-items:center;gap:14px}
+h2{font-size:15px;margin:0 0 10px}
+.cols{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-top:14px}
+@media (max-width:860px){.cols{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:12px;color:var(--ink2);font-weight:600;padding:8px 6px;border-bottom:1px solid var(--line)}
+td{padding:9px 6px;border-bottom:1px solid var(--grid);vertical-align:middle;font-variant-numeric:tabular-nums}
+tr.click{cursor:pointer} tr.click:hover td{background:var(--accent-soft)}
+.pbar{height:8px;background:var(--grid);border-radius:4px;overflow:hidden;min-width:70px}
+.pbar i{display:block;height:100%;border-radius:0 4px 4px 0}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--ink2);white-space:nowrap}
+.badge b{width:9px;height:9px;border-radius:50%;display:inline-block}
+.muted{color:var(--muted)}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:380px 1fr;gap:14px;align-items:start}
+@media (max-width:900px){.grid2{grid-template-columns:1fr}}
+label.f{display:block;font-size:12.5px;font-weight:600;color:var(--ink2);margin:10px 0 4px}
+.row{display:flex;gap:8px}
+.row>*{flex:1}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:4px 10px;font-size:12.5px;cursor:pointer;font-weight:600}
+.chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.stlist{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--surface)}
+.stlist .gh{font-size:11.5px;font-weight:700;color:var(--muted);margin:6px 0 2px;text-transform:uppercase;letter-spacing:.04em}
+.stlist label{display:flex;gap:8px;align-items:center;padding:3px 0;cursor:pointer}
+.task{display:grid;grid-template-columns:1fr auto;gap:8px;padding:12px 0;border-bottom:1px solid var(--grid)}
+.task:last-child{border-bottom:0}
+.task .t{font-weight:650}
+.task .m{font-size:12.5px;color:var(--ink2)}
+.tag{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:10px;background:var(--accent-soft);color:var(--accent);font-weight:600;margin-left:6px}
+.back{margin-bottom:12px}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:flex-start;justify-content:center;padding:30px 12px;z-index:20;overflow:auto}
+#modal.open{display:flex}
+.mbox{background:var(--card);border-radius:14px;max-width:640px;width:100%;padding:18px;border:1px solid var(--line)}
+.gtab input{width:70px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--card);padding:10px 16px;border-radius:9px;font-weight:600;display:none;z-index:30;max-width:90vw}
+#tip{position:fixed;pointer-events:none;background:var(--card);border:1px solid var(--line);box-shadow:0 4px 14px rgba(0,0,0,.12);border-radius:8px;padding:7px 10px;font-size:12.5px;display:none;z-index:25}
+#tip b{font-size:14px}
+.notice{background:var(--accent-soft);border-radius:10px;padding:10px 14px;margin:0 0 12px;color:var(--ink)}
+.typebar{margin:9px 0}
+.typebar .h{display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px}
+svg text{fill:var(--ink2);font-size:11px}
+.nbadge{display:inline-block;min-width:18px;padding:0 6px;border-radius:9px;background:#c2620a;color:#fff;font-size:11.5px;line-height:18px;text-align:center;margin-left:4px}
+.pill{display:inline-block;padding:2px 9px;border-radius:10px;color:#fff;font-size:12px;font-weight:700}
+.warnbox{border-color:#f1b77a;background:linear-gradient(0deg,var(--card),var(--card)) padding-box;margin-bottom:14px;border-left:4px solid #e07b17}
+.mini{font-size:11.5px;font-weight:600;white-space:nowrap}
+.absrow td{opacity:.6}
+.absrow td:last-child,.absrow td:nth-child(4){opacity:1}
+.btn.on-abs{background:var(--ink2);color:var(--card);border-color:var(--ink2)}
+.btn:disabled{opacity:.45;cursor:default}
+.attbox{border-left:4px solid #d03b3b;margin-bottom:14px}
+.attlist{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.attitem{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px;cursor:pointer;display:grid;grid-template-columns:auto auto;gap:4px 8px;align-items:center;text-align:left;max-width:320px}
+.attitem:hover{border-color:#d03b3b}
+.attitem div{grid-column:1/-1}
+.owebox{border-left:4px solid #7a4bc2;margin-bottom:14px}
+.btn.on-owe{background:#7a4bc2;color:#fff;border-color:#7a4bc2}
+.mfoot{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;position:sticky;bottom:-18px;background:var(--card);padding:10px 0 4px;border-top:1px solid var(--line)}
+@media (max-width:640px){
+  #modal{padding:0}
+  .mbox{border-radius:0;min-height:100%;padding:14px}
+  .gtab input{width:58px;font-size:16px;padding:8px 6px}
+  .gtab .btn.sm{padding:8px 9px;font-size:13.5px}
+  .gtab thead{display:none}
+  .gtab tr{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--grid)}
+  .gtab td{padding:0;border:0}
+  .gtab td:first-child{flex:1 0 100%}
+  .gtab td:nth-child(2) input::placeholder{content:'ball'}
+  .gtab td:last-child{margin-left:auto}
+  .gtab td:nth-child(4){display:flex;flex-wrap:wrap;gap:4px;order:5;flex:1 0 100%}
+  .hidem{display:none}
+  header{padding:10px 12px} main{padding:0 10px 30px} .bar{padding:10px}
+  .kpi .val{font-size:24px}
+}
+.cardgrid{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
+.cardprev{width:100%;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.18);background:#eee}
+@media (max-width:640px){.cardgrid{grid-template-columns:1fr}.cardprev{max-width:320px;margin:0 auto;display:block}}
+.odbox{border-left:4px solid #d03b3b;margin-bottom:14px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+@media (max-width:700px){.strip{grid-template-columns:repeat(2,1fr)}}
+.sitem{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow)}
+.sl{font-size:12.5px;font-weight:600;color:var(--ink2)}
+.sv{font-size:32px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.15;margin-top:2px}
+.ss{font-size:12px;color:var(--ink2);margin-top:2px}
+.ss a,.gname a{color:inherit}
+.planlist{display:flex;flex-direction:column;gap:6px}
+.planitem{display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:pointer}
+.gridwrap{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:10px}
+.ggrid{border-collapse:separate;border-spacing:0;width:auto;min-width:100%}
+.ggrid th,.ggrid td{border-bottom:1px solid var(--grid);padding:4px;text-align:center}
+.ggrid thead th{position:sticky;top:0;background:var(--card);z-index:2;vertical-align:bottom}
+.ggrid .gname{position:sticky;left:0;background:var(--card);z-index:1;text-align:left;white-space:nowrap;padding:6px 10px;font-weight:600;min-width:170px}
+.ggrid thead .gname{z-index:3}
+.gcol{min-width:92px;max-width:120px;position:relative}
+.gdate{font-size:11px;color:var(--ink2);font-weight:600}.gdate.gtoday{color:var(--accent)}
+.gtitle{font-size:11.5px;font-weight:700;color:var(--ink);line-height:1.2;max-height:42px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;margin:2px 0}
+.gdl{font-size:10px;color:var(--muted)}
+.glink{position:absolute;top:2px;right:2px;border:0;background:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 4px}
+.gin{width:58px;height:34px;text-align:center;border:1px solid var(--line);border-radius:8px;font-weight:700;font-size:15px}
+.gin:focus{outline:2px solid var(--accent);outline-offset:1px}
+.gna{color:var(--muted)}
+.gfoot td{border-top:2px solid var(--line)}
+@media (max-width:640px){.ggrid .gname{min-width:110px;max-width:120px;overflow:hidden;text-overflow:ellipsis;font-size:13px;padding:6px}.gcol{min-width:78px}.gin{width:52px}}
+details.more{margin-top:14px}
+details.more>summary{cursor:pointer;font-weight:700;padding:12px 16px;background:var(--card);border:1px solid var(--line);border-radius:12px;list-style:none;margin-bottom:14px}
+details.more>summary::-webkit-details-marker{display:none}
+.bulk{font-size:13px}
+.pcell{display:inline-block;white-space:nowrap;min-width:46px;text-align:center;padding:2px 8px;border-radius:12px;font-weight:700;font-size:12.5px}
+.gtab input{border-width:2px;width:64px}
+.legend{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2);margin:4px 0 10px}
+.legend .grad{height:8px;width:160px;border-radius:4px;background:linear-gradient(90deg,hsl(2,80%,50%),hsl(46,80%,50%),hsl(122,80%,36%))}
+.itm{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px;background:var(--surface)}
+</style>
+</head>
+<body>
+<header>
+  <img src="brand/logo-belgi.png" alt="" style="height:36px;width:auto">
+  <div class="brand">Ilmzor · Vazifalar va ballar<small>Kim qanday vazifa oldi, necha foiz bajardi</small></div>
+  <nav id="nav">
+    <a href="#bugun" data-v="bugun">📅 Bugun</a>
+    <a href="#panel" data-v="panel">📊 Hisobot</a>
+    <a href="#vazifalar" data-v="vazifalar">📝 Vazifalar</a>
+    <a href="#oquvchilar" data-v="oquvchilar">👥 O‘quvchilar</a>
+  </nav>
+</header>
+<div class="bar" id="fbar"></div>
+<main id="view"><div class="empty">Yuklanmoqda…</div></main>
+<div id="modal"></div>
+<div id="toast"></div>
+<div id="tip"></div>
+
+<script>
+const MONTHS=['yanvar','fevral','mart','aprel','may','iyun','iyul','avgust','sentabr','oktabr','noyabr','dekabr'];
+const MONTHS_CAP=MONTHS.map(m=>m[0].toUpperCase()+m.slice(1));
+const DAYS=['Yakshanba','Dushanba','Seshanba','Chorshanba','Payshanba','Juma','Shanba'];
+const DSHORT=['Ya','Du','Se','Ch','Pa','Ju','Sh'];
+const TYPES=['Uy vazifasi','Sinf ishi','Qo‘shimcha vazifa','Test','Saralash testi','Nazorat ishi','Lug‘at yodlash','Oylik test'];
+const SAL='Saralash testi';
+const OYL='Oylik test'; // oylik test — vazifa foiziga qo‘shilmaydi, alohida ko‘rsatiladi
+
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parse=s=>{const [y,m,d]=String(s).split('-').map(Number);return new Date(y,(m||1)-1,d||1);};
+const today=()=>ymd(new Date());
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtP=p=>p==null?'—':(Math.round(p))+'%';
+const fmtN=n=>Number.isInteger(n)?String(n):String(Math.round(n*10)/10);
+const shortDate=s=>{const d=parse(s);return `${d.getDate()}-${MONTHS[d.getMonth()].slice(0,3)}, ${DSHORT[d.getDay()]}`;};
+
+const S={db:null,user:null,canDelete:true,students:[],tasks:[],stuById:{},loaded:{s:false,t:false},err:null,slow:false,names:{},
+  view:'bugun',gmode:'3',plan:null,moreOpen:false,period:'week',anchor:today(),group:'all',studentId:null,
+  form:{mode:'common',items:[{title:'',type:TYPES[0],max:10,manual:false}],each:{},date:today(),note:'',sel:new Set()},
+  sform:{name:'',group:'',bulk:''},editStu:null,confirm:null,modal:null,showArchived:false};
+
+const isActive=x=>x&&!x.archived;
+// A task is checked within DEADLINE_DAYS after it is given; after that an ungraded one counts as 0 ("bajarmadi").
+const DEADLINE_DAYS=2;
+function deadlineOf(date){const d=parse(date);d.setDate(d.getDate()+DEADLINE_DAYS);return ymd(d);}
+const isOverdue=date=>!!date&&deadlineOf(date)<today();
+const activeStudents=()=>S.students.filter(isActive);
+
+/* ---------- colours ---------- */
+function pcolor(p){
+  if(p==null) return 'var(--muted)';
+  p=Math.max(0,Math.min(100,p));
+  let h,l;
+  if(p<50){h=2+44*(p/50);l=50;} else {h=46+76*((p-50)/50);l=50-14*((p-50)/50);}
+  return `hsl(${h.toFixed(0)},80%,${l.toFixed(0)}%)`;
+}
+function status(p){
+  if(p==null) return {c:'var(--muted)',l:'Baholanmagan',i:'○'};
+  const c=pcolor(p);
+  if(p>=100) return {c,l:'Bajardi',i:'✓'};
+  if(p>=80) return {c,l:'A‘lo',i:'▲'};
+  if(p>=50) return {c,l:'O‘rta',i:'■'};
+  if(p>0) return {c,l:'Past',i:'▼'};
+  return {c,l:'Bajarmadi',i:'✗'};
+}
+function badge(p){const s=status(p);return `<span class="badge"><b style="background:${s.c}"></b>${s.i} ${s.l}</span>`;}
+function pbar(p){const s=status(p);return `<div class="pbar"><i style="width:${p==null?0:Math.max(2,p)}%;background:${s.c}"></i></div>`;}
+
+/* ---------- type guess & title numbering ---------- */
+function guessType(title){
+  const t=String(title||'').toLowerCase().replace(/[‘’ʻʼ`']/g,"'");
+  if(/oylik/.test(t)) return 'Oylik test';
+  if(/saralash/.test(t)) return 'Saralash testi';
+  if(/nazorat/.test(t)) return 'Nazorat ishi';
+  if(/sinf\s*ishi|sinfda/.test(t)) return 'Sinf ishi';
+  if(/uy\s*ishi|uyga|uy\s*vazifa/.test(t)) return 'Uy vazifasi';
+  if(/lug'?at|so'?z\s*yodla/.test(t)) return 'Lug‘at yodlash';
+  if(/\blist|worksheet/.test(t)) return 'Uy vazifasi';
+  if(/test|saralash/.test(t)) return 'Test';
+  if(/qo'?shimcha/.test(t)) return 'Qo‘shimcha vazifa';
+  return null;
+}
+// Finds the "counter" number in a title: 6-mavzu / 11-dars, "test - 4", "1-katta test"
+function titleCounter(title){
+  const s=String(title||'');
+  let m,last=null;const re=/(\d+)(\s*-\s*)(mavzu|dars)/gi;
+  while((m=re.exec(s))) last={i:m.index,len:m[1].length,n:+m[1]};
+  if(!last){const r=/[-–]\s*(\d+)(?!.*\d)/.exec(s);if(r) last={i:r.index+r[0].length-r[1].length,len:r[1].length,n:+r[1]};}
+  if(!last){const r=/^(\d+)-/.exec(s);if(r) last={i:0,len:r[1].length,n:+r[1]};}
+  if(!last) return {key:s.trim().toLowerCase(),n:null,build:()=>s};
+  const pre=s.slice(0,last.i),post=s.slice(last.i+last.len);
+  return {key:(pre+'#'+post).trim().toLowerCase(),n:last.n,build:k=>pre+k+post};
+}
+function familyMax(){const mx={};for(const tk of S.tasks){const c=titleCounter(tk.title);if(c.n!=null)mx[c.key]=Math.max(mx[c.key]||0,c.n);}return mx;}
+function nextTitles(titles){
+  // returns next titles; numbered ones continue after the biggest number ever used in that family
+  const mx=familyMax();
+  return titles.map(t=>{const c=titleCounter(t);if(c.n==null) return t;mx[c.key]=(mx[c.key]||c.n)+1;return c.build(mx[c.key]);});
+}
+
+/* ---------- period ---------- */
+function range(anchor=S.anchor,period=S.period){
+  const a=parse(anchor);
+  if(period==='day') return [a,new Date(a)];
+  if(period==='week'){const dow=(a.getDay()+6)%7;const s=new Date(a);s.setDate(a.getDate()-dow);const e=new Date(s);e.setDate(s.getDate()+6);return [s,e];}
+  return [new Date(a.getFullYear(),a.getMonth(),1),new Date(a.getFullYear(),a.getMonth()+1,0)];
+}
+function shifted(dir,anchor=S.anchor,period=S.period){
+  const a=parse(anchor);
+  if(period==='day') a.setDate(a.getDate()+dir);
+  else if(period==='week') a.setDate(a.getDate()+7*dir);
+  else {a.setDate(1);a.setMonth(a.getMonth()+dir);}
+  return ymd(a);
+}
+function plabel(){
+  const [s,e]=range();
+  if(S.period==='day') return `${s.getDate()}-${MONTHS[s.getMonth()]}, ${DAYS[s.getDay()]}`;
+  if(S.period==='week'){
+    if(s.getMonth()===e.getMonth()) return `${s.getDate()}–${e.getDate()}-${MONTHS[e.getMonth()]}`;
+    return `${s.getDate()}-${MONTHS[s.getMonth()]} – ${e.getDate()}-${MONTHS[e.getMonth()]}`;
+  }
+  return `${MONTHS_CAP[s.getMonth()]} ${s.getFullYear()}`;
+}
+function daysIn(s,e){const out=[];const d=new Date(s);while(d<=e){out.push(ymd(d));d.setDate(d.getDate()+1);}return out;}
+
+/* ---------- data ---------- */
+function groups(){return [...new Set(S.students.filter(isActive).map(s=>s.group||'Guruhsiz'))].sort((a,b)=>a.localeCompare(b));}
+const inGroup=(st,group=S.group)=>group==='all'||(st.group||'Guruhsiz')===group;
+function rowsIn(from,to,{group=S.group,sid=null,oyl=false}={}){
+  const f=ymd(from),t=ymd(to),out=[];
+  for(const tk of S.tasks){
+    if(!tk.date||tk.date<f||tk.date>t) continue;
+    if((tk.type===OYL)!==!!oyl) continue;
+    const max=Number(tk.max)||0,sc=tk.scores||{},ab=tk.absent||{},ow=tk.owed||{};
+    for(const id of (tk.studentIds||[])){
+      const st=S.stuById[id]; if(!st) continue;
+      if(!inGroup(st,group)) continue;
+      if(sid&&id!==sid) continue;
+      const absent=!!ab[id];
+      const v=sc[id]; const ball=(absent||v===undefined||v===null||v==='')?null:Number(v);
+      const owed=!absent&&ball==null&&!!ow[id];
+      const overdue=!absent&&!owed&&ball==null&&isOverdue(tk.date);
+      const b=overdue?0:ball;
+      out.push({tk,id,st,max,ball:b,absent,owed,overdue,pct:(b==null||!max)?null:Math.max(0,Math.min(100,b/max*100))});
+    }
+  }
+  return out;
+}
+function stats(rows){
+  let b=0,m=0,ch=0,zero=0,abs=0,pend=0,owed=0,od=0;const tasks=new Set();
+  for(const r of rows){tasks.add(r.tk.id);
+    if(r.absent){abs++;continue;}
+    if(r.owed){owed++;continue;}
+    if(r.overdue){od++;m+=r.max;continue;}
+    if(r.ball!=null){ch++;b+=r.ball;m+=r.max;if(r.ball===0)zero++;}
+    else if(isActive(r.st)) pend++;}
+  return {total:rows.length,tasks:tasks.size,checked:ch,pending:pend,absent:abs,owed,overdue:od,zero,ball:b,max:m,pct:m?Math.min(100,b/m*100):null};
+}
+// tasks (up to today) that still have active students without a score and not marked absent
+function pendingTasks(group=S.group){
+  const t=today(),out=[];
+  for(const tk of S.tasks){
+    if(!tk.date||tk.date>t) continue;
+    const sc=tk.scores||{},ab=tk.absent||{},ow=tk.owed||{};
+    const ids=(tk.studentIds||[]).filter(id=>{const st=S.stuById[id];return isActive(st)&&inGroup(st,group)&&!ab[id]&&!ow[id]&&(sc[id]===undefined||sc[id]===null||sc[id]==='');});
+    if(ids.length) out.push({tk,ids,old:tk.date<t,od:isOverdue(tk.date)});
+  }
+  return out.sort((a,b)=>a.tk.date.localeCompare(b.tk.date));
+}
+
+function owedList(sid){
+  const out=[];
+  for(const tk of S.tasks){const ow=tk.owed||{},sc=tk.scores||{};
+    if(ow[sid]&&(tk.studentIds||[]).includes(sid)&&(sc[sid]===undefined||sc[sid]===null||sc[sid]==='')&&!(tk.absent||{})[sid]) out.push(tk);}
+  return out.sort((a,b)=>a.date.localeCompare(b.date));
+}
+// C. students who need attention, from their most recent graded work (all time, up to today)
+function attention(group=S.group){
+  const t=today(),by={};
+  for(const tk of S.tasks){ if(!tk.date||tk.date>t||tk.type===OYL) continue; const max=Number(tk.max)||0; if(!max) continue;
+    const sc=tk.scores||{},ab=tk.absent||{};
+    const ow=tk.owed||{};
+    for(const id of (tk.studentIds||[])){ if(ab[id]) continue; const v=sc[id]; let p;
+      if(v===undefined||v===null||v===''){ if(ow[id]||!isOverdue(tk.date)) continue; p=0; } else p=Math.max(0,Math.min(100,Number(v)/max*100));
+      (by[id]=by[id]||[]).push({date:tk.date,c:tk.created||0,p,sal:tk.type===SAL}); } }
+  const out=[];
+  for(const x of S.students){ if(!isActive(x)||!inGroup(x,group)) continue;
+    const rs=(by[x.id]||[]).sort((a,b)=>b.date.localeCompare(a.date)||b.c-a.c);
+    if(rs.length<3) continue;
+    const reasons=[];
+    const last3=rs.slice(0,3);if(last3.every(r=>r.p<50)) reasons.push('oxirgi 3 ta vazifa 50% dan past');
+    const z=rs.slice(0,5).filter(r=>r.p===0).length;if(z>=2) reasons.push(`oxirgi 5 tadan ${z} tasi 0`);
+    const sal=rs.filter(r=>r.sal).slice(0,3);if(sal.length>=2){const a=sal.reduce((s,r)=>s+r.p,0)/sal.length;if(a<50) reasons.push(`saralashda ${Math.round(a)}%`);}
+    const avg=rs.slice(0,8).reduce((s,r)=>s+r.p,0)/Math.min(8,rs.length);
+    if(reasons.length) out.push({x,reasons,avg});
+  }
+  return out.sort((a,b)=>b.reasons.length-a.reasons.length||a.avg-b.avg);
+}
+
+/* ---------- ui helpers ---------- */
+let toastT;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>t.style.display='none',3200);}
+function dbErr(e){
+  const c=e&&e.code;
+  if(c==='quota_exceeded') toast('Joy tugadi: eski vazifalarni o‘chirib qayta urinib ko‘ring.');
+  else if(c==='invalid_argument') toast('Yozib bo‘lmadi — sizda tahrirlash huquqi yo‘q bo‘lishi mumkin.');
+  else toast('Saqlanmadi, internetni tekshirib qayta urinib ko‘ring.');
+}
+async function write(fn){
+  if(!S.db){toast('Ma’lumotlar bazasi ulanmagan.');return false;}
+  try{await fn(S.db);return true;}
+  catch(e){ if(e&&e.code==='unavailable'){ await new Promise(r=>setTimeout(r,600+Math.random()*600)); try{await fn(S.db);return true;}catch(e2){dbErr(e2);return false;} } dbErr(e);return false;}
+}
+async function myId(){try{return S.user?await S.user.id():null;}catch(e){return null;}}
+
+/* ---------- charts ---------- */
+const tip=document.getElementById('tip');
+function showTip(ev,html){tip.innerHTML=html;tip.style.display='block';const x=Math.min(ev.clientX+14,window.innerWidth-tip.offsetWidth-8);tip.style.left=x+'px';tip.style.top=(ev.clientY+14)+'px';}
+function hideTip(){tip.style.display='none';}
+document.addEventListener('mousemove',ev=>{
+  const h=ev.target.closest&&ev.target.closest('[data-tip]');
+  if(h) showTip(ev,h.getAttribute('data-tip')); else hideTip();
+});
+
+function barChart(points){
+  const W=720,H=230,pl=38,pr=10,pt=14,pb=30,iw=W-pl-pr,ih=H-pt-pb,n=points.length||1;
+  const slot=iw/n,bw=Math.max(6,Math.min(34,slot*0.62));
+  let g='';
+  for(const v of [0,25,50,75,100]){const y=pt+ih-ih*v/100;g+=`<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" stroke="var(--grid)" stroke-width="1"/><text x="${pl-6}" y="${y+4}" text-anchor="end">${v}%</text>`;}
+  const every=n>16?Math.ceil(n/10):1;
+  let bars='',hits='',best=-1,bi=-1;
+  points.forEach((p,i)=>{if(p.value!=null&&p.value>best){best=p.value;bi=i;}});
+  points.forEach((p,i)=>{
+    const cx=pl+slot*i+slot/2;
+    if(p.value!=null){
+      const h=Math.max(3,ih*p.value/100),x=cx-bw/2,y=pt+ih-h,r=Math.min(4,bw/2,h);
+      bars+=`<path d="M${x},${pt+ih} V${y+r} Q${x},${y} ${x+r},${y} H${x+bw-r} Q${x+bw},${y} ${x+bw},${y+r} V${pt+ih} Z" fill="${pcolor(p.value)}"/>`;
+      if(i===bi&&n<=31) bars+=`<text x="${cx}" y="${y-5}" text-anchor="middle" style="font-weight:700;fill:var(--ink)">${fmtP(p.value)}</text>`;
+    }
+    if(i%every===0||n<=16) bars+=`<text x="${cx}" y="${H-10}" text-anchor="middle">${esc(p.label)}</text>`;
+    const t=`<b>${p.value==null?'—':fmtP(p.value)}</b><br>${esc(p.tipTitle)}<br><span class='muted'>${p.n?p.n+' ta topshiriq baholangan':'Baholangan topshiriq yo‘q'}</span>`;
+    hits+=`<rect x="${pl+slot*i}" y="${pt}" width="${slot}" height="${ih}" fill="transparent" data-tip="${esc(t)}"/>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Bajarish foizi grafigi">${g}<line x1="${pl}" x2="${W-pr}" y1="${pt+ih}" y2="${pt+ih}" stroke="var(--line)"/>${bars}${hits}</svg>`;
+}
+function trendPoints(rows,s,e){
+  if(S.period==='day'){
+    const by={};for(const r of rows){(by[r.tk.id]=by[r.tk.id]||[]).push(r);}
+    return Object.values(by).map(rs=>{const st=stats(rs);const tk=rs[0].tk;return {label:tk.title.length>12?tk.title.slice(0,11)+'…':tk.title,tipTitle:tk.title+' · '+(tk.type||''),value:st.pct,n:st.checked};});
+  }
+  const by={};for(const r of rows){(by[r.tk.date]=by[r.tk.date]||[]).push(r);}
+  return daysIn(s,e).map(d=>{const dt=parse(d);const st=stats(by[d]||[]);
+    return {label:S.period==='week'?DSHORT[dt.getDay()]+' '+dt.getDate():String(dt.getDate()),tipTitle:`${dt.getDate()}-${MONTHS[dt.getMonth()]}, ${DAYS[dt.getDay()]}`,value:st.pct,n:st.checked};});
+}
+function typeBreakdown(rows){
+  const by={};for(const r of rows){const k=r.tk.type||'Boshqa';(by[k]=by[k]||[]).push(r);}
+  const items=Object.entries(by).map(([k,rs])=>({k,st:stats(rs)})).sort((a,b)=>(b.st.pct??-1)-(a.st.pct??-1));
+  if(!items.length) return '<div class="empty">Bu davrda vazifa yo‘q</div>';
+  return items.map(({k,st})=>`<div class="typebar" data-tip="${esc(`<b>${fmtP(st.pct)}</b><br>${esc(k)}<br>${st.tasks} ta vazifa · ${st.checked}/${st.total} baholangan`)}"><div class="h"><span>${esc(k)}</span><b>${fmtP(st.pct)}</b></div>${pbar(st.pct)}</div>`).join('');
+}
+function kpis(st,prev,sal,salPrev){
+  let delta='';
+  if(st.pct!=null&&prev.pct!=null){const d=Math.round(st.pct-prev.pct);delta=`${d>0?'▲ +':d<0?'▼ ':'• '}${d}% oldingi davrga nisbatan`;}
+  else delta='Oldingi davr bilan solishtirib bo‘lmaydi';
+  const need=st.total-st.absent-st.owed;
+  return `<div class="kpis">
+   <div class="card kpi"><div class="lab">O‘rtacha bajarish</div><div class="val">${fmtP(st.pct)}</div><div class="sub">${badge(st.pct)}</div><div class="sub">${delta}</div></div>
+   <div class="card kpi"><div class="lab">Berilgan vazifalar</div><div class="val">${st.tasks}</div><div class="sub">${st.total} ta topshiriq (o‘quvchi × vazifa)</div></div>
+   <div class="card kpi"><div class="lab">Baholangan</div><div class="val">${st.checked}<span class="muted" style="font-size:18px"> / ${need}</span></div><div class="pbar"><i style="width:${need?st.checked/need*100:0}%;background:var(--accent)"></i></div>${st.pending?`<div class="sub" style="color:#c2620a;font-weight:600">⏳ ${st.pending} ta baholanmagan</div>`:'<div class="sub">Hammasi baholangan ✓</div>'}</div>
+   <div class="card kpi"><div class="lab">Bajarmagan (0 ball)</div><div class="val">${st.zero+st.overdue}</div>${st.overdue?`<div class="sub" style="color:#c33;font-weight:600" title="${esc('Vazifa berilganiga 2 kundan oshdi, lekin baho qo‘yilmadi — bajarilmagan deb 0 hisoblandi. Ball qo‘ysangiz o‘zgaradi.')}">❗ ${st.overdue} tasi 2 kunda baholanmagani uchun</div>`:''}<div class="sub">🚫 Kelmagan: ${st.absent} ta${st.owed?` · 📌 Qarzdor: ${st.owed} ta`:''}</div></div>
+   <div class="card kpi salkpi"><div class="lab">🎯 Saralash testlari</div><div class="val" style="color:${sal&&sal.pct!=null?pcolor(sal.pct):'inherit'}">${fmtP(sal?sal.pct:null)}</div><div class="sub">${sal&&(sal.checked+sal.overdue)?`${sal.checked+sal.overdue} ta natija${sal.overdue?` (${sal.overdue} tasi bajarilmagan)`:''} · imtihonga tayyorlik`:'Bu davrda saralash testi yo‘q'}</div>${sal&&salPrev&&sal.pct!=null&&salPrev.pct!=null?`<div class="sub">${(d=>`${d>0?'▲ +':d<0?'▼ ':'• '}${d}% oldingi davrga nisbatan`)(Math.round(sal.pct-salPrev.pct))}</div>`:''}</div>
+   <div class="card kpi"><div class="lab">Jami ball</div><div class="val">${fmtN(st.ball)}</div><div class="sub">mumkin bo‘lgan ${fmtN(st.max)} balldan</div></div>
+  </div>`;
+}
+
+/* ---------- filter bar ---------- */
+function renderBar(){
+  const gopts=['<option value="all">Barcha guruhlar</option>',...groups().map(g=>`<option ${S.group===g?'selected':''} value="${esc(g)}">${esc(g)}</option>`)].join('');
+  const showPeriod=S.view!=='oquvchilar'&&S.view!=='bugun';
+  document.getElementById('fbar').innerHTML=(showPeriod?`
+   <div class="seg">${[['day','Kun'],['week','Hafta'],['month','Oy']].map(([k,l])=>`<button data-act="period" data-p="${k}" class="${S.period===k?'on':''}">${l}</button>`).join('')}</div>
+   <button class="btn" data-act="shift" data-d="-1" aria-label="Oldingi">‹</button>
+   <span class="plabel">${plabel()}</span>
+   <button class="btn" data-act="shift" data-d="1" aria-label="Keyingi">›</button>
+   <button class="btn sm" data-act="today">Bugun</button>
+   <input type="date" class="inp" style="width:auto" id="anchorPick" value="${S.anchor}">`:'')+
+   `<span style="margin-left:auto;display:flex;gap:8px;align-items:center">${showPeriod?'<button class="btn sm" data-act="bestCard" title="Tanlangan davrning eng yaxshi o‘quvchilari — kanal/Instagram uchun rasm">🏆 Eng yaxshilar</button><button class="btn sm" data-act="export" title="Tanlangan davr natijalarini Excel faylga yuklab olish">⬇ Excel</button>':''}<select class="inp" id="groupPick">${gopts}</select></span>`;
+  // nav badge: overdue grading
+  const n=pendingTasks('all').filter(p=>p.old).length;
+  const a=document.querySelector('#nav a[data-v="vazifalar"]');
+  if(a) a.innerHTML='📝 Vazifalar'+(n?` <span class="nbadge" title="Baholanmay qolgan o‘tgan kunlar vazifalari">${n}</span>`:'');
+}
+
+/* ---------- views ---------- */
+function pendingCard(){
+  const list=pendingTasks();const old=list.filter(p=>p.old);
+  if(!list.length) return '';
+  const shown=list.slice(0,8);
+  const studs=new Set();list.forEach(p=>p.ids.forEach(i=>studs.add(i)));
+  return `<div class="card warnbox"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="margin:0">⏳ Baholanmagan vazifalar</h2>
+   <span class="pill" style="background:#c2620a">${old.length} ta o‘tgan kunlardan</span><span class="pill" style="background:var(--muted)">${list.length-old.length} ta bugungi</span>
+   <span class="muted" style="margin-left:auto;font-size:12.5px">${studs.size} nafar o‘quvchida baho yo‘q</span></div>
+   <div class="muted" style="font-size:12.5px;margin-top:4px">Vazifa berilganidan keyin <b>2 kun</b> ichida baholanmasa — <b style="color:#c33">bajarilmagan (0)</b> deb hisoblanadi.</div>
+   <table style="margin-top:8px"><tbody>${shown.map(p=>{const nm=p.ids.map(i=>S.stuById[i].name.split(' ')[0]);
+     return `<tr><td style="width:96px;${p.od?'color:#c33;font-weight:700':p.old?'color:#c2620a;font-weight:700':''}">${shortDate(p.tk.date)}</td><td><b>${esc(p.tk.title)}</b> ${p.od?'<span class="pcell" style="background:#d03b3b;color:#fff;font-size:11px">❗ 0 deb hisoblanmoqda</span>':`<span class="muted" style="font-size:11.5px">· ${shortDate(deadlineOf(p.tk.date))} gacha</span>`}<div class="muted" style="font-size:12px">${p.ids.length} ta: ${esc(nm.slice(0,5).join(', '))}${nm.length>5?' …':''}</div></td>
+     <td style="text-align:right"><button class="btn pri sm" data-act="grade" data-id="${p.tk.id}">✓ Baholash</button></td></tr>`;}).join('')}</tbody></table>
+   ${list.length>shown.length?`<div class="muted" style="font-size:12.5px;margin-top:6px">Yana ${list.length-shown.length} ta vazifa — «📝 Vazifalar» bo‘limida.</div>`:''}</div>`;
+}
+function attentionCard(){
+  const list=attention();if(!list.length) return '';
+  return `<div class="card attbox"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="margin:0">🚩 E‘tibor talab</h2><span class="muted" style="font-size:12.5px">oxirgi baholangan vazifalariga qarab · ${list.length} nafar</span></div>
+   <div class="attlist">${list.map(a=>`<button class="attitem" data-act="openStu" data-id="${a.x.id}"><b>${esc(a.x.name)}</b><span class="pcell" style="background:${pcolor(a.avg)};color:#fff">${fmtP(a.avg)}</span><div class="muted" style="font-size:12px;text-align:left">${a.reasons.map(esc).join(' · ')}</div></button>`).join('')}</div></div>`;
+}
+function viewPanel(){
+  if(S.studentId) return viewStudent();
+  const [s,e]=range();const rows=rowsIn(s,e);const st=stats(rows);
+  const [ps,pe]=range(shifted(-1));const prev=stats(rowsIn(ps,pe));
+  const [ms0,me0]=range(S.anchor,'month');const orows=rowsIn(ms0,me0,{oyl:true});
+  const ids=new Set(rows.map(r=>r.id));
+  const studs=S.students.filter(x=>inGroup(x)&&(isActive(x)||ids.has(x.id)));
+  const rank=studs.map(x=>{const r=rows.filter(q=>q.id===x.id);return {x,st:stats(r)};})
+    .sort((a,b)=>(b.st.pct??-1)-(a.st.pct??-1)||b.st.total-a.st.total||a.x.name.localeCompare(b.x.name));
+  const title=S.period==='day'?'Vazifalar bo‘yicha bajarish foizi':'Kunlik o‘rtacha bajarish foizi';
+  let html='';
+  if(!S.students.length) html+=`<div class="notice">Boshlash uchun avval <a href="#oquvchilar">👥 O‘quvchilar</a> bo‘limiga o‘quvchilarni qo‘shing, so‘ng <a href="#vazifalar">📝 Vazifalar</a> bo‘limida vazifa bering.</div>`;
+  const sal=stats(rows.filter(r=>r.tk.type===SAL)),salP=stats(rowsIn(ps,pe).filter(r=>r.tk.type===SAL));const att=attention();const pend=pendingTasks();
+  const dl=(a,b)=>(a!=null&&b!=null)?(d=>`<div class="ss" style="color:${d>0?'var(--good)':d<0?'var(--crit)':'var(--muted)'}">${d>0?'▲ +':d<0?'▼ ':'• '}${d}% oldingi davrga</div>`)(Math.round(a-b)):'';
+  html+=`<div class="strip">
+    <div class="sitem"><div class="sl">O‘rtacha bajarish</div><div class="sv" style="color:${st.pct!=null?pcolor(st.pct):'inherit'}">${fmtP(st.pct)}</div>${dl(st.pct,prev.pct)}</div>
+    <div class="sitem"><div class="sl">🎯 Saralash testlari</div><div class="sv" style="color:${sal.pct!=null?pcolor(sal.pct):'inherit'}">${fmtP(sal.pct)}</div>${dl(sal.pct,salP.pct)}</div>
+    <div class="sitem"><div class="sl">⏳ Baholash kerak</div><div class="sv" style="color:${pend.length?'#c2620a':'var(--good)'}">${pend.length}</div>${pend.length?'<div class="ss"><a href="#bugun">Jadvalda baholash →</a></div>':''}</div>
+    <div class="sitem"><div class="sl">🚩 E‘tibor talab</div><div class="sv" style="color:${att.length?'#c33':'var(--good)'}">${att.length}</div>${att.length?`<div class="ss">${att.slice(0,3).map(a=>`<a href="#" data-act="openStuR" data-id="${a.x.id}">${esc(a.x.name.split(' ')[1]||a.x.name)}</a>`).join(', ')}</div>`:''}</div>
+  </div>`;
+  let pos=0;
+  html+=`<div class="card"><h2>O‘quvchilar reytingi <span class="muted" style="font-weight:500">— batafsil ko‘rish uchun bosing</span></h2>
+   ${rank.length?`<div style="overflow-x:auto"><table><thead><tr><th>#</th><th>O‘quvchi</th><th title="Baholangan / berilgan">Baholangan</th><th>Ball</th><th style="width:22%">Bajarish</th><th title="Saralash testlari o‘rtachasi">🎯 Saralash</th><th title="Shu davrdagi oylik test natijasi (vazifa foiziga qo‘shilmaydi)">🗓 Oylik test</th><th title="Oxirgi 6 hafta">📈 6 hafta</th><th></th></tr></thead><tbody>
+   ${rank.map(r=>{const extra=[r.st.pending?`<span class="mini" style="color:#c2620a">⏳ ${r.st.pending} baholanmagan</span>`:'',r.st.overdue?`<span class="mini" style="color:#c33">❗ ${r.st.overdue} bajarmadi</span>`:'',r.st.owed?`<span class="mini" style="color:#7a4bc2">📌 ${r.st.owed} qarz</span>`:'',r.st.absent?`<span class="mini">🚫 ${r.st.absent} kelmadi</span>`:''].filter(Boolean).join(' ');
+     const ss=stats(rows.filter(q=>q.id===r.x.id&&q.tk.type===SAL));const os=stats(orows.filter(q=>q.id===r.x.id));
+     return `<tr class="click" data-act="openStu" data-id="${r.x.id}"><td class="muted">${r.st.pct==null?'—':++pos}</td><td><b>${esc(r.x.name)}</b>${r.x.archived?' <span class="tag" style="background:var(--grid);color:var(--ink2)">arxiv</span>':''}<div class="muted" style="font-size:12px">${esc(r.x.group||'Guruhsiz')}${extra?' · '+extra:''}</div></td>
+   <td>${r.st.checked}/${r.st.total-r.st.absent}</td><td>${fmtN(r.st.ball)}/${fmtN(r.st.max)}</td><td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1">${pbar(r.st.pct)}</div><b style="min-width:38px;text-align:right">${fmtP(r.st.pct)}</b></div></td><td>${ss.pct==null?'<span class="muted">—</span>':`<span class="pcell" style="background:${pcolor(ss.pct)};color:#fff">${fmtP(ss.pct)}</span>`}</td><td>${os.pct==null?'<span class="muted">—</span>':`<span class="pcell" style="background:${pcolor(os.pct)};color:#fff">${fmtP(os.pct)}</span>`}</td><td>${spark(weekSeries(r.x.id))}</td><td>${badge(r.st.pct)}</td></tr>`;}).join('')}
+   </tbody></table></div>`:'<div class="empty">O‘quvchi yo‘q</div>'}</div>`;
+  html+=`<details class="more" ${S.moreOpen?'open':''}><summary>Batafsil ▾ <span class="muted" style="font-weight:500">— grafik, e‘tibor talab, baholanmaganlar, vazifa turlari, ustozlar</span></summary>
+   ${attentionCard()}${pendingCard()}
+   ${kpis(st,prev,sal,salP)}
+   <div class="card"><h2>${title}</h2><div class="legend"><span>0% · bajarmadi</span><span class="grad"></span><span>100% · bajardi</span></div>${rows.length?barChart(trendPoints(rows,s,e)):'<div class="empty">Bu davrda berilgan vazifa yo‘q</div>'}</div>
+   <div class="card" style="margin-top:14px"><h2>Vazifa turlari bo‘yicha</h2>${typeBreakdown(rows)}</div>
+   ${teacherCard()}</details>`;
+  return html;
+}
+function resultCell(r){
+  if(r.absent) return '<span class="pcell" style="background:var(--grid);color:var(--ink2)">🚫 Kelmadi</span>';
+  if(r.owed) return '<span class="pcell" style="background:#ece3fa;color:#5b2fa3">📌 Qarzdor</span>';
+  if(r.overdue) return `<span class="pcell" style="background:#d03b3b;color:#fff" title="${esc('Vazifa berilganiga 2 kundan oshdi, lekin baho qo‘yilmadi — bajarilmagan deb 0 hisoblandi. Ball qo‘ysangiz o‘zgaradi.')}">❗ Bajarmadi · 0</span>`;
+  if(r.ball==null) return `<span class="pcell" style="background:#fdebd6;color:#a4530a" title="${esc('Tekshirish muddati: '+shortDate(deadlineOf(r.tk.date))+' gacha')}">⏳ ${shortDate(deadlineOf(r.tk.date))} gacha</span>`;
+  return `<span class="pcell" style="background:${pcolor(r.pct)};color:#fff">${status(r.pct).i} ${fmtN(r.ball)}/${fmtN(r.max)}</span>`;
+}
+function viewStudent(){
+  const x=S.stuById[S.studentId];
+  if(!x){S.studentId=null;return viewPanel();}
+  const [s,e]=range();const rows=rowsIn(s,e,{group:'all',sid:x.id});const st=stats(rows);
+  const [ps,pe]=range(shifted(-1));const prev=stats(rowsIn(ps,pe,{group:'all',sid:x.id}));
+  const list=[...rows].sort((a,b)=>b.tk.date.localeCompare(a.tk.date)||(a.tk.title||'').localeCompare(b.tk.title||''));
+  return `<button class="btn back" data-act="closeStu">‹ Reytingga qaytish</button>
+   <div class="card" style="margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap"><div style="font-size:20px;font-weight:750">${esc(x.name)}</div><span class="tag">${esc(x.group||'Guruhsiz')}</span>${x.archived?'<span class="tag" style="background:var(--grid);color:var(--ink2)">arxivda</span>':''}<span style="margin-left:auto">${badge(st.pct)}</span><button class="btn pri sm" data-act="parentCard" data-id="${x.id}">📤 Ota-onaga hisobot</button></div>
+   ${(()=>{const ol=owedList(x.id);return ol.length?`<div class="card owebox"><h2 style="margin:0 0 6px">📌 Qarzlari — ${ol.length} ta vazifa keyin topshirilishi kerak</h2>${ol.map(tk=>`<div class="task" style="padding:6px 0"><div><b>${esc(tk.title)}</b> <span class="muted" style="font-size:12.5px">${shortDate(tk.date)}</span></div><button class="btn sm" data-act="grade" data-id="${tk.id}">Baholash</button></div>`).join('')}</div>`:'';})()}
+   ${(()=>{const od=rows.filter(r=>r.overdue);return od.length?`<div class="card odbox"><h2 style="margin:0 0 4px">❗ ${od.length} ta vazifa bajarilmagani uchun foiz pasaydi</h2><div class="muted" style="font-size:12.5px;margin-bottom:6px">Bu vazifalar berilganiga 2 kundan oshdi, lekin baho qo‘yilmagan — 0 deb hisoblandi. Aslida bajargan bo‘lsa, ball qo‘ying.</div>${od.map(r=>`<div class="task" style="padding:6px 0"><div><b>${esc(r.tk.title)}</b> <span class="muted" style="font-size:12.5px">${shortDate(r.tk.date)} · muddat ${shortDate(deadlineOf(r.tk.date))}</span></div><button class="btn sm" data-act="grade" data-id="${r.tk.id}">Ball qo‘yish</button></div>`).join('')}</div>`:'';})()}
+   ${kpis(st,prev,stats(rows.filter(r=>r.tk.type===SAL)),stats(rowsIn(ps,pe,{group:'all',sid:x.id}).filter(r=>r.tk.type===SAL)))}
+   <div class="card"><h2>${S.period==='day'?'Vazifalar bo‘yicha':'Kunlar bo‘yicha'} bajarish foizi</h2><div class="legend"><span>0% · bajarmadi</span><span class="grad"></span><span>100% · bajardi</span></div>${rows.length?barChart(trendPoints(rows,s,e)):'<div class="empty">Bu davrda vazifa berilmagan</div>'}</div>
+   <div class="card" style="margin-top:14px"><h2>Haftama-hafta dinamika <span class="muted" style="font-weight:500">— oxirgi 8 hafta</span></h2>${(()=>{const ws=weekSeries(x.id,8);return ws.some(w=>w.pct!=null)?barChart(ws.map(w=>({label:weekLabel(w.s,w.f),tipTitle:weekLabel(w.s,w.f),value:w.pct,n:w.n}))):'<div class="empty">Hali ma’lumot yo‘q</div>';})()}</div>
+   <div class="cols"><div class="card"><h2>Berilgan vazifalar</h2>${list.length?`<div style="overflow-x:auto"><table><thead><tr><th>Sana</th><th>Vazifa</th><th>Natija</th><th style="width:24%">Bajarish</th></tr></thead><tbody>
+   ${list.map(r=>`<tr class="click" data-act="grade" data-id="${r.tk.id}"><td style="white-space:nowrap">${shortDate(r.tk.date)}</td><td><b>${esc(r.tk.title)}</b><span class="tag">${esc(r.tk.type||'')}</span>${r.tk.note?`<div class="muted" style="font-size:12px">${esc(r.tk.note)}</div>`:''}</td><td style="white-space:nowrap">${resultCell(r)}</td><td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1">${pbar(r.pct)}</div><b style="min-width:38px;text-align:right">${fmtP(r.pct)}</b></div></td></tr>`).join('')}
+   </tbody></table></div>`:'<div class="empty">Vazifa yo‘q</div>'}</div>
+   <div class="card"><h2>Vazifa turlari bo‘yicha</h2>${typeBreakdown(rows)}</div></div>`;
+}
+function quickChips(){
+  // distinct recent task families (last 30 days), most used first
+  const from=new Date();from.setDate(from.getDate()-30);const f=ymd(from);
+  const fam={};
+  for(const tk of S.tasks){ if(tk.date<f) continue; if((tk.studentIds||[]).length<2) continue;
+    const c=titleCounter(tk.title);const k=c.key;
+    if(!fam[k]) fam[k]={n:0,last:tk};fam[k].n++; if(tk.date>fam[k].last.date||(tk.date===fam[k].last.date&&(tk.created||0)>(fam[k].last.created||0))) fam[k].last=tk; }
+  const list=Object.values(fam).sort((a,b)=>b.n-a.n||b.last.date.localeCompare(a.last.date)).slice(0,8);
+  if(!list.length) return '';
+  const titles=nextTitles(list.map(x=>x.last.title));
+  S._chips=list.map((x,i)=>({title:titles[i],type:x.last.type||guessType(titles[i])||TYPES[0],max:x.last.max??10}));
+  return `<label class="f">Tez qo‘shish <span class="muted">(oxirgi vazifalaringiz, raqami o‘zi oshadi)</span></label><div class="chips">${S._chips.map((c,i)=>`<button class="chip" data-act="chipAdd" data-i="${i}" title="${esc(c.type)} · ${fmtN(Number(c.max))} ball">+ ${esc(c.title)}</button>`).join('')}</div>`;
+}
+function viewTasks(){
+  const F=S.form;const gs=groups();
+  const byG={};for(const x of activeStudents()){const g=x.group||'Guruhsiz';(byG[g]=byG[g]||[]).push(x);}
+  const chips=gs.map(g=>{const ids=(byG[g]||[]).map(x=>x.id);const all=ids.length&&ids.every(id=>F.sel.has(id));return `<button class="chip ${all?'on':''}" data-act="selGroup" data-g="${esc(g)}">${esc(g)} (${ids.length})</button>`;}).join('');
+  const checklist=gs.map(g=>`<div class="gh">${esc(g)}</div>`+(byG[g]||[]).sort((a,b)=>a.name.localeCompare(b.name)).map(x=>`<label><input type="checkbox" data-act="selStu" data-id="${x.id}" ${F.sel.has(x.id)?'checked':''}> ${esc(x.name)}</label>`).join('')).join('');
+  const [s,e]=range();const f=ymd(s),t=ymd(e);
+  const tasks=S.tasks.filter(tk=>tk.date>=f&&tk.date<=t&&(S.group==='all'||(tk.studentIds||[]).some(id=>S.stuById[id]&&inGroup(S.stuById[id]))))
+    .sort((a,b)=>b.date.localeCompare(a.date)||(b.created||0)-(a.created||0));
+  const typeSel=(id,attr,val)=>`<select class="inp" style="width:100%" id="${id}" ${attr}>${TYPES.map(t=>`<option ${val===t?'selected':''}>${t}</option>`).join('')}</select>`;
+  const itemsHtml=F.items.map((it,i)=>`<div class="itm"><div style="display:flex;align-items:center;gap:6px"><b style="font-size:12.5px;color:var(--ink2)">${i+1}-vazifa</b><span style="flex:1"></span>${F.items.length>1?`<button class="btn sm danger" data-act="delItem" data-i="${i}" aria-label="Olib tashlash">✕</button>`:''}</div>
+    <input class="inp" id="it_title_${i}" data-it="title" data-i="${i}" value="${esc(it.title)}" placeholder="Masalan: 12-dars, 1–20 misollar" style="margin-top:4px">
+    ${it.ids?`<div class="muted" style="font-size:12px;margin-top:4px" title="${esc(it.ids.map(id=>S.stuById[id]?.name||'').join(', '))}">👥 Oldingi safar kabi ${it.ids.length} ta o‘quvchiga · <a href="#" data-act="itemUseSel" data-i="${i}">belgilanganlarga berish</a></div>`:''}
+    <div class="row" style="margin-top:6px"><div style="flex:2">${typeSel('it_type_'+i,`data-it="type" data-i="${i}"`,it.type)}</div><div><input class="inp" type="number" min="1" id="it_max_${i}" data-it="max" data-i="${i}" value="${esc(it.max)}" title="Maksimal ball" placeholder="Maks. ball"></div></div></div>`).join('');
+  const selIds=[...F.sel].filter(id=>S.stuById[id]).sort((a,b)=>S.stuById[a].name.localeCompare(S.stuById[b].name));
+  const eachHtml=selIds.length?selIds.map(id=>{const e=F.each[id]||{title:'',type:TYPES[0],max:10};return `<div class="itm"><b>${esc(S.stuById[id].name)}</b>
+    <input class="inp" id="ea_title_${id}" data-ea="title" data-id="${id}" value="${esc(e.title)}" placeholder="Shu o‘quvchiga vazifa" style="margin-top:4px">
+    <div class="row" style="margin-top:6px"><div style="flex:2">${typeSel('ea_type_'+id,`data-ea="type" data-id="${id}"`,e.type)}</div><div><input class="inp" type="number" min="1" id="ea_max_${id}" data-ea="max" data-id="${id}" value="${esc(e.max)}" placeholder="Maks. ball"></div></div></div>`;}).join('')
+    :'<div class="muted" style="padding:8px 0">Yuqoridan o‘quvchilarni belgilang — har biri uchun alohida qator chiqadi.</div>';
+  const pend=pendingTasks();const pendMap={};pend.forEach(p=>pendMap[p.tk.id]=p.ids.length);
+  return `<div class="grid2"><div class="card"><h2>➕ Vazifa berish</h2>
+   <div class="seg" style="width:100%;margin-bottom:4px"><button style="flex:1" data-act="mode" data-m="common" class="${F.mode==='common'?'on':''}">Hammaga bir xil</button><button style="flex:1" data-act="mode" data-m="each" class="${F.mode==='each'?'on':''}">Har biriga alohida</button></div>
+   <label class="f" for="f_date">Sana</label><input class="inp" type="date" id="f_date" data-f="date" value="${esc(F.date)}">
+   ${F.mode==='common'?`<button class="btn" data-act="repeatLast" style="width:100%;margin-top:10px" title="Oxirgi dars kunidagi vazifalarni o‘quvchilari bilan birga qayta to‘ldiradi">↻ Oxirgi kun vazifalarini takrorlash</button>`:''}
+   <label class="f">Kimga beriladi? <span class="muted" id="selCount">(${F.sel.size} ta tanlandi)</span></label>
+   ${gs.length?`<div class="chips">${chips}<button class="chip" data-act="selNone">Tozalash</button></div><div class="stlist">${checklist}</div>`:'<div class="muted">Avval <a href="#oquvchilar">o‘quvchi qo‘shing</a>.</div>'}
+   ${F.mode==='common'?`${quickChips()}<label class="f">Vazifalar <span class="muted">(belgilangan o‘quvchilarning hammasiga beriladi; tur nomidan o‘zi aniqlanadi)</span></label>${itemsHtml}
+   <button class="btn" data-act="addItem" style="width:100%;margin-top:8px">+ Yana vazifa qo‘shish</button>`
+   :`<label class="f">Har bir o‘quvchiga o‘z vazifasi <span class="muted">(bo‘sh qolgani uchun vazifa yaratilmaydi)</span></label>${eachHtml}`}
+   <label class="f" for="f_note">Izoh (ixtiyoriy)</label><textarea class="inp" id="f_note" rows="2" data-f="note">${esc(F.note)}</textarea>
+   <div style="margin-top:12px"><button class="btn pri" data-act="addTask" style="width:100%">${(F.mode==='each'||F.items.length>1)?'Vazifalarni berish':'Vazifa berish'}</button></div></div>
+   <div class="card"><h2>${plabel()} — berilgan vazifalar (${tasks.length})</h2>
+   ${tasks.length?tasks.map(tk=>{const rs=rowsIn(s,e,{group:'all'}).filter(r=>r.tk.id===tk.id);const st=stats(rs);const d=parse(tk.date);
+     const solo=(tk.studentIds||[]).length===1&&S.stuById[tk.studentIds[0]];const pn=pendMap[tk.id]||0;const old=tk.date<today();
+     return `<div class="task"><div><div class="t">${esc(tk.title)}<span class="tag">${esc(tk.type||'')}</span>${solo?`<span class="tag" style="background:var(--grid);color:var(--ink)">👤 ${esc(solo.name)}</span>`:''}</div>
+     <div class="m">${d.getDate()}-${MONTHS[d.getMonth()]}, ${DAYS[d.getDay()]} · maks. ${fmtN(Number(tk.max)||0)} ball · ${st.total} o‘quvchi · baholangan ${st.checked}/${st.total-st.absent}${st.absent?` · 🚫 ${st.absent} kelmadi`:''}</div>
+     ${pn?`<div class="m" style="color:${old?'#c2620a':'var(--ink2)'};font-weight:600">⏳ ${pn} ta baholanmagan</div>`:''}
+     <div style="display:flex;align-items:center;gap:8px;margin-top:6px;max-width:360px"><div style="flex:1">${pbar(st.pct)}</div><b>${fmtP(st.pct)}</b></div></div>
+     <div style="display:flex;flex-direction:column;gap:6px"><button class="btn pri sm" data-act="grade" data-id="${tk.id}">✓ Baholash</button></div></div>`;}).join('')
+   :'<div class="empty">Bu davrda vazifa yo‘q. Chap tomondan yangi vazifa bering.</div>'}</div></div>`;
+}
+function stuRow(x){
+  if(S.editStu&&S.editStu.id===x.id) return `<tr><td><input class="inp" id="e_name" data-ef="name" value="${esc(S.editStu.name)}"></td><td><input class="inp" id="e_group" list="glist" data-ef="group" value="${esc(S.editStu.group)}"></td><td style="white-space:nowrap"><button class="btn pri sm" data-act="saveStu">Saqlash</button> <button class="btn sm" data-act="cancelStu">Bekor</button></td></tr>`;
+  if(S.confirm===x.id) return `<tr><td colspan="2"><b>${esc(x.name)}</b> butunlay o‘chirilsinmi? Barcha ballari hisobotdan yo‘qoladi. Ketgan o‘quvchi uchun «Arxivlash» yaxshiroq.</td><td style="white-space:nowrap"><button class="btn danger sm" data-act="delStuYes" data-id="${x.id}">Ha, o‘chirish</button> <button class="btn sm" data-act="cancelStu">Yo‘q</button></td></tr>`;
+  if(x.archived) return `<tr><td><b class="muted">${esc(x.name)}</b></td><td class="muted">${esc(x.group||'Guruhsiz')}</td><td style="white-space:nowrap;text-align:right"><button class="btn sm" data-act="unarchive" data-id="${x.id}">↩ Qaytarish</button>${S.canDelete?` <button class="btn sm danger" data-act="delStu" data-id="${x.id}">O‘chirish</button>`:''}</td></tr>`;
+  return `<tr><td><b>${esc(x.name)}</b></td><td class="muted">${esc(x.group||'Guruhsiz')}</td><td style="white-space:nowrap;text-align:right"><button class="btn sm" data-act="editStu" data-id="${x.id}">Tahrirlash</button> <button class="btn sm" data-act="archive" data-id="${x.id}" title="Ketgan o‘quvchi: ro‘yxatlardan yashiriladi, ballari tarixda qoladi">📦 Arxivlash</button>${S.canDelete?` <button class="btn sm danger" data-act="delStu" data-id="${x.id}">O‘chirish</button>`:''}</td></tr>`;
+}
+function viewStudents(){
+  const SF=S.sform;const gs=groups();
+  const byG={};for(const x of activeStudents()){const g=x.group||'Guruhsiz';if(!inGroup(x))continue;(byG[g]=byG[g]||[]).push(x);}
+  const arch=S.students.filter(x=>x.archived&&inGroup(x)).sort((a,b)=>a.name.localeCompare(b.name));
+  const dl=`<datalist id="glist">${gs.map(g=>`<option value="${esc(g)}">`).join('')}</datalist>`;
+  const list=Object.keys(byG).sort().map(g=>`<h2 style="margin-top:14px">${esc(g)} <span class="muted" style="font-weight:500">(${byG[g].length})</span></h2><table><tbody>
+   ${byG[g].sort((a,b)=>a.name.localeCompare(b.name)).map(stuRow).join('')}</tbody></table>`).join('');
+  const archHtml=arch.length?`<div style="margin-top:18px"><button class="btn sm" data-act="toggleArch">${S.showArchived?'▾':'▸'} Arxivdagilar (${arch.length})</button>
+   ${S.showArchived?`<table style="margin-top:6px"><tbody>${arch.map(stuRow).join('')}</tbody></table>`:''}</div>`:'';
+  return `${dl}<div class="grid2"><div class="card"><h2>➕ O‘quvchi qo‘shish</h2>
+   <label class="f" for="s_name">Ism familiya</label><input class="inp" id="s_name" data-sf="name" value="${esc(SF.name)}">
+   <label class="f" for="s_group">Guruh</label><input class="inp" id="s_group" list="glist" data-sf="group" value="${esc(SF.group)}" placeholder="Masalan: 3-sinf toq kunlar 15:00">
+   <div style="margin-top:10px"><button class="btn pri" style="width:100%" data-act="addStu">Qo‘shish</button></div>
+   <label class="f" for="s_bulk" style="margin-top:18px">Bir nechta o‘quvchini birdan qo‘shish (har qatorda bitta ism, yuqoridagi guruhga)</label>
+   <textarea class="inp bulk" id="s_bulk" rows="6" data-sf="bulk">${esc(SF.bulk)}</textarea>
+   <div style="margin-top:8px"><button class="btn" style="width:100%" data-act="addBulk">Ro‘yxatni qo‘shish</button></div></div>
+   <div class="card"><h2>O‘quvchilar — ${activeStudents().length} nafar</h2>${activeStudents().length?list:'<div class="empty">Hali o‘quvchi yo‘q</div>'}${archHtml}</div></div>`;
+}
+
+/* ---------- grading modal ---------- */
+function openGrade(id){
+  const tk=S.tasks.find(t=>t.id===id);if(!tk)return;S.card=null;
+  S.modal={id,confirmDel:false,editStu:false,d:{title:tk.title||'',type:tk.type||TYPES[0],date:tk.date||today(),max:tk.max??10,note:tk.note||'',scores:{...(tk.scores||{})},absent:{...(tk.absent||{})},owed:{...(tk.owed||{})},studentIds:[...(tk.studentIds||[])]},gradedBy:tk.gradedBy||null,updated:tk.updated||null};
+  renderModal();
+  if(tk.gradedBy&&S.user){S.user.profiles([tk.gradedBy]).then(ps=>{const n=ps&&ps[tk.gradedBy]&&ps[tk.gradedBy].name;if(n){S.names[tk.gradedBy]=n;const el=document.getElementById('gradedBy');if(el)el.textContent=n;}}).catch(()=>{});}
+}
+function renderModal(){
+  const m=document.getElementById('modal');
+  if(!S.modal){m.className='';m.innerHTML='';return;}
+  const d=S.modal.d;const max=Number(d.max)||0;
+  const ids=d.studentIds.filter(id=>S.stuById[id]).sort((a,b)=>S.stuById[a].name.localeCompare(S.stuById[b].name));
+  const upd=S.modal.updated?new Date(S.modal.updated):null;
+  const who=S.modal.gradedBy?`<span id="gradedBy">${esc(S.names[S.modal.gradedBy]||'…')}</span>`:'';
+  const meta=upd?`<div class="muted" style="font-size:12px;margin-top:2px">Oxirgi saqlangan: ${upd.getDate()}-${MONTHS[upd.getMonth()]} ${pad(upd.getHours())}:${pad(upd.getMinutes())}${who?' · '+who:''}</div>`:'';
+  // student editor
+  let editor='';
+  if(S.modal.editStu){
+    const cur=new Set(d.studentIds);
+    const pool=S.students.filter(x=>isActive(x)||cur.has(x.id));
+    const byG={};pool.forEach(x=>{const g=x.group||'Guruhsiz';(byG[g]=byG[g]||[]).push(x);});
+    editor=`<div class="itm" style="margin-top:10px"><div class="muted" style="font-size:12.5px;margin-bottom:4px">Belgini olib tashlasangiz — o‘quvchi bu vazifadan chiqariladi (bahosi ham o‘chadi). Yangi kelgan o‘quvchini belgilab qo‘shing.</div><div class="stlist" style="max-height:200px">
+     ${Object.keys(byG).sort().map(g=>`<div class="gh">${esc(g)}</div>`+byG[g].sort((a,b)=>a.name.localeCompare(b.name)).map(x=>`<label><input type="checkbox" data-mstu="${x.id}" ${cur.has(x.id)?'checked':''}> ${esc(x.name)}${x.archived?' <span class="muted">(arxiv)</span>':''}</label>`).join('')).join('')}</div></div>`;
+  }
+  m.className='open';
+  m.innerHTML=`<div class="mbox" role="dialog" aria-modal="true">
+   <div style="display:flex;align-items:center;gap:8px"><div style="flex:1"><h2 style="margin:0">✓ Baholash</h2>${meta}</div><button class="btn sm" data-act="mClose" aria-label="Yopish">✕</button></div>
+   <label class="f" for="m_title">Vazifa nomi</label><input class="inp" id="m_title" data-m="title" value="${esc(d.title)}">
+   <div class="row"><div><label class="f" for="m_type">Turi</label><select class="inp" style="width:100%" id="m_type" data-m="type">${TYPES.map(t=>`<option ${d.type===t?'selected':''}>${t}</option>`).join('')}</select></div>
+   <div><label class="f" for="m_date">Sana</label><input class="inp" type="date" id="m_date" data-m="date" value="${esc(d.date)}"></div>
+   <div><label class="f" for="m_max">Maks. ball</label><input class="inp" type="number" min="1" id="m_max" data-m="max" value="${esc(d.max)}"></div></div>
+   <div style="display:flex;gap:6px;margin:14px 0 6px;flex-wrap:wrap;align-items:center"><span class="muted">Hammaga:</span><button class="btn sm" data-act="mAll" data-v="full">To‘liq ball</button><button class="btn sm" data-act="mAll" data-v="clear">Tozalash</button>
+     <span style="flex:1"></span><button class="btn sm" data-act="mEditStu">${S.modal.editStu?'▾':'👥'} O‘quvchilarni o‘zgartirish (${ids.length})</button></div>
+   ${editor}
+   <div style="overflow-x:auto"><table class="gtab"><thead><tr><th>O‘quvchi</th><th>Ball (0–${fmtN(max)})</th><th>yoki Foiz %</th><th>Tezkor</th><th>Natija</th></tr></thead><tbody>
+   ${ids.map((id,ri)=>{const ab=!!d.absent[id];const ow=!ab&&!!d.owed[id];const arch=S.stuById[id].archived;
+   return `<tr class="${ab?'absrow':''}"><td><b>${esc(S.stuById[id].name)}</b>${arch?' <span class="muted" style="font-size:11px">(arxiv)</span>':''}</td><td><input type="number" inputmode="decimal" min="0" max="${max}" step="any" id="sc_${id}" data-sc="${id}" data-row="${ri}" value="${ab?'':esc(d.scores[id]??'')}" placeholder="ball" title="Ball yozing, Enter — keyingi o‘quvchi" ${ab?'disabled':''}></td>
+   <td><input type="number" inputmode="decimal" min="0" max="100" step="any" id="pp_${id}" data-pp="${id}" data-row="${ri}" placeholder="%" title="Foiz yozing — ball o‘zi hisoblanadi. Enter — keyingi" ${ab?'disabled':''}></td>
+   <td style="white-space:nowrap"><button class="btn sm" data-act="mSet" data-id="${id}" data-v="0" ${ab?'disabled':''}>0</button> <button class="btn sm" data-act="mSet" data-id="${id}" data-v="half" ${ab?'disabled':''}>½</button> <button class="btn sm" data-act="mSet" data-id="${id}" data-v="full" ${ab?'disabled':''}>To‘liq</button> <button class="btn sm ${ab?'on-abs':''}" data-act="mAbs" data-id="${id}" title="Darsga kelmadi — foizga kirmaydi">🚫 Kelmadi</button> <button class="btn sm ${ow?'on-owe':''}" data-act="mOwe" data-id="${id}" title="Keyin topshiradi — o‘quvchining qarzlar ro‘yxatiga tushadi" ${ab?'disabled':''}>📌 Keyin</button></td>
+   <td><span class="pcell" id="pc_${id}"></span></td></tr>`;}).join('')}
+   </tbody></table></div>
+   <p class="muted" style="font-size:12.5px">Ballni yoki foizni yozing — ikkinchisi o‘zi hisoblanadi. <b>0</b> — kelib, vazifani qilmagan (foizni tushiradi). <b>🚫 Kelmadi</b> — darsda yo‘q edi (foizga kirmaydi). <b>❗ Bo‘sh qolsa</b> — vazifa berilganidan 2 kun o‘tgach bajarilmagan (0) hisoblanadi. <b>📌 Keyin</b> — keyin topshiradi (o‘quvchining qarzi bo‘lib turadi, ball yozilsa o‘zi yopiladi). Bo‘sh — hali baholanmagan (eslatmada turadi). <span class="hidem">Ball yozib <b>Enter</b> bosing — keyingi o‘quvchiga o‘tadi.</span></p>
+   <div class="mfoot">
+   ${S.modal.confirmDel?`<span style="align-self:center">Vazifa butunlay o‘chirilsinmi?</span><button class="btn danger" data-act="mDelYes">Ha, o‘chirish</button><button class="btn" data-act="mDelNo">Yo‘q</button>`
+   :`${S.canDelete?'<button class="btn danger" data-act="mDel">O‘chirish</button>':''}<span style="flex:1"></span><button class="btn" data-act="mClose">Bekor</button><button class="btn pri" data-act="mSave">Saqlash</button>`}
+   </div></div>`;
+  ids.forEach(updPct);
+}
+function updPct(id){
+  const d=S.modal.d;const max=Number(d.max)||0;const el=document.getElementById('pc_'+id);if(!el)return;
+  const inp=document.getElementById('sc_'+id);
+  if(d.absent[id]){el.textContent='🚫 Kelmadi';el.style.background='var(--grid)';el.style.color='var(--ink2)';if(inp)inp.style.borderColor='';return;}
+  const v=d.scores[id];
+  const p=(v===undefined||v===''||v===null||!max)?null:Math.max(0,Math.min(100,Number(v)/max*100));
+  if(p==null&&d.owed[id]){el.textContent='📌 Qarzdor';el.style.background='#ece3fa';el.style.color='#5b2fa3';if(inp)inp.style.borderColor='';const pp0=document.getElementById('pp_'+id);if(pp0&&document.activeElement!==pp0)pp0.value='';return;}
+  if(p==null&&isOverdue(d.date)){el.textContent='❗ 0';el.title='Vazifa berilganiga 2 kundan oshdi, lekin baho qo‘yilmadi — bajarilmagan deb 0 hisoblandi. Ball qo‘ysangiz o‘zgaradi.';el.style.background='#d03b3b';el.style.color='#fff';if(inp)inp.style.borderColor='#d03b3b';const pp1=document.getElementById('pp_'+id);if(pp1&&document.activeElement!==pp1)pp1.value='';return;}
+  el.textContent=p==null?'⏳':fmtP(p);el.style.background=p==null?'transparent':pcolor(p);el.style.color=p==null?'#c2620a':'#fff';
+  const pp=document.getElementById('pp_'+id);if(pp&&document.activeElement!==pp)pp.value=p==null?'':String(Math.round(p*10)/10);
+  if(inp)inp.style.borderColor=p==null?'':pcolor(p);
+}
+
+/* ---------- excel export ---------- */
+let xlsxLib=null;
+function loadXlsx(){
+  if(window.XLSX) return Promise.resolve(window.XLSX);
+  if(xlsxLib) return xlsxLib;
+  xlsxLib=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=()=>window.XLSX?res(window.XLSX):rej(new Error('xlsx'));s.onerror=()=>{xlsxLib=null;rej(new Error('xlsx'));};document.head.appendChild(s);});
+  return xlsxLib;
+}
+async function doExport(){
+  const dl=window.claude&&window.claude.use?await window.claude.use('downloads').catch(()=>null):null;
+  if(!dl){toast('Bu ko‘rinishda fayl yuklab bo‘lmaydi — sahifani claude.ai’da oching.');return;}
+  const [s,e]=range();const rows=rowsIn(s,e);
+  if(!rows.length){toast('Bu davrda vazifa yo‘q');return;}
+  const tasks=[...new Map(rows.map(r=>[r.tk.id,r.tk])).values()].sort((a,b)=>a.date.localeCompare(b.date)||(a.created||0)-(b.created||0));
+  const studs=[...new Map(rows.map(r=>[r.id,r.st])).values()].sort((a,b)=>a.name.localeCompare(b.name));
+  const cell={};rows.forEach(r=>cell[r.tk.id+'|'+r.id]=r);
+  // Sheet 1: matrix (%)
+  const head=['O‘quvchi','Guruh',...tasks.map(t=>`${shortDate(t.date)} · ${t.title}`),'Jami %','Baholangan','Kelmadi','Baholanmagan'];
+  const matrix=[head];
+  for(const st of studs){
+    const rs=rows.filter(r=>r.id===st.id);const ss=stats(rs);
+    matrix.push([st.name,st.group||'',...tasks.map(t=>{const r=cell[t.id+'|'+st.id];if(!r) return '';if(r.absent) return 'Kelmadi';if(r.owed) return 'Qarzdor';if(r.pct==null) return '';return Math.round(r.pct);}),ss.pct==null?'':Math.round(ss.pct),ss.checked,ss.absent,ss.pending]);
+  }
+  // Sheet 2: detail
+  const detail=[['Sana','Vazifa','Turi','Maks. ball','O‘quvchi','Guruh','Ball','Foiz %','Holat']];
+  for(const r of [...rows].sort((a,b)=>a.tk.date.localeCompare(b.tk.date)||a.st.name.localeCompare(b.st.name)))
+    detail.push([r.tk.date,r.tk.title,r.tk.type||'',r.max,r.st.name,r.st.group||'',r.ball==null?'':r.ball,r.pct==null?'':Math.round(r.pct*10)/10,r.absent?'Kelmadi':r.owed?'Qarzdor':r.overdue?'Bajarmadi (2 kunda baholanmadi)':r.ball==null?'Baholanmagan':status(r.pct).l]);
+  const label=plabel().replace(/[–—,]/g,'-').replace(/[^\p{L}\p{N}\- ]/gu,'').replace(/\s+/g,'-').replace(/-+/g,'-');
+  const gname=S.group==='all'?'':'-'+S.group.replace(/[^\p{L}\p{N}\-]/gu,'');
+  let data,filename;
+  try{
+    const X=await loadXlsx();
+    const wb=X.utils.book_new();
+    const ws1=X.utils.aoa_to_sheet(matrix);ws1['!cols']=[{wch:26},{wch:12},...tasks.map(()=>({wch:14})),{wch:8},{wch:11},{wch:9},{wch:13}];
+    const ws2=X.utils.aoa_to_sheet(detail);ws2['!cols']=[{wch:11},{wch:36},{wch:16},{wch:9},{wch:26},{wch:12},{wch:7},{wch:8},{wch:13}];
+    X.utils.book_append_sheet(wb,ws1,'Natijalar (%)');X.utils.book_append_sheet(wb,ws2,'Batafsil');
+    data=X.write(wb,{type:'array',bookType:'xlsx'});filename=`Ilmzor-vazifalar-${label}${gname}.xlsx`;
+  }catch(err){
+    const csv='﻿'+detail.map(r=>r.map(v=>{const s=String(v);return /[",;\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}).join(';')).join('\r\n');
+    data=csv;filename=`Ilmzor-vazifalar-${label}${gname}.csv`;
+  }
+  try{await dl.save({filename,data});}
+  catch(e){const c=e&&e.code;if(c==='declined')return;if(c==='rate_limited'){toast('Biroz kutib qayta bosing');return;}if(c==='host_unavailable'){toast('Bu ilovada fayl saqlab bo‘lmaydi — kompyuter yoki brauzerda oching.');return;}toast('Faylni yuklab bo‘lmadi');}
+}
+
+
+/* ================= D. weekly dynamics ================= */
+function weekRanges(n,endDate){
+  // n weeks ending with the week that contains endDate (Mon..Sun)
+  const e=parse(ymd(endDate));const dow=(e.getDay()+6)%7;const mon=new Date(e);mon.setDate(e.getDate()-dow);
+  const out=[];for(let k=n-1;k>=0;k--){const s=new Date(mon);s.setDate(mon.getDate()-7*k);const f=new Date(s);f.setDate(s.getDate()+6);out.push([s,f]);}
+  return out;
+}
+function weekLabel(s,f){return s.getMonth()===f.getMonth()?`${s.getDate()}–${f.getDate()} ${MONTHS[f.getMonth()].slice(0,3)}`:`${s.getDate()} ${MONTHS[s.getMonth()].slice(0,3)}–${f.getDate()} ${MONTHS[f.getMonth()].slice(0,3)}`;}
+function weekSeries(sid,n=6){
+  const end=range()[1];const t=parse(today());const e=end>t?t:end;
+  return weekRanges(n,e).map(([s,f])=>{const st=stats(rowsIn(s,f,{group:'all',sid}));return {s,f,pct:st.pct,n:st.checked};});
+}
+function spark(series){
+  const W=96,H=26,p=4,n=series.length;const pts=series.map((x,i)=>({x:p+i*(W-2*p)/Math.max(1,n-1),y:x.pct==null?null:H-p-(H-2*p)*x.pct/100,v:x}));
+  const seg=[];let cur=[];pts.forEach(q=>{if(q.y==null){if(cur.length)seg.push(cur);cur=[];}else cur.push(q);});if(cur.length)seg.push(cur);
+  const lines=seg.map(sg=>`<polyline points="${sg.map(q=>q.x.toFixed(1)+','+q.y.toFixed(1)).join(' ')}" fill="none" stroke="var(--ink2)" stroke-width="1.5" stroke-linejoin="round"/>`).join('');
+  const dots=pts.filter(q=>q.y!=null).map(q=>`<circle cx="${q.x.toFixed(1)}" cy="${q.y.toFixed(1)}" r="3" fill="${pcolor(q.v.pct)}" stroke="var(--card)" stroke-width="1"/>`).join('');
+  const vals=series.filter(x=>x.pct!=null);
+  let delta='';if(vals.length>=2){const d=Math.round(vals[vals.length-1].pct-vals[vals.length-2].pct);delta=`<span class="mini" style="color:${d>0?'var(--good)':d<0?'var(--crit)':'var(--muted)'}">${d>0?'▲+':d<0?'▼':'•'}${d}</span>`;}
+  const tipTxt=series.map(x=>`${weekLabel(x.s,x.f)}: <b>${x.pct==null?'—':fmtP(x.pct)}</b>`).join('<br>');
+  return `<span style="display:inline-flex;align-items:center;gap:4px" data-tip="${esc(tipTxt)}"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-label="Haftalik dinamika">${lines}${dots}</svg>${delta}</span>`;
+}
+
+/* ================= helpers for cards ================= */
+let jszipP=null;
+function loadScript(src,check){return new Promise((res,rej)=>{if(check())return res(check());const s=document.createElement('script');s.src=src;s.onload=()=>check()?res(check()):rej(new Error('load'));s.onerror=()=>rej(new Error('load'));document.head.appendChild(s);});}
+async function getDownloads(){try{return window.claude&&window.claude.use?await window.claude.use('downloads'):null;}catch(e){return null;}}
+async function saveFile(filename,data){
+  const dl=await getDownloads();
+  if(!dl){toast('Bu ko‘rinishda fayl yuklab bo‘lmaydi — sahifani claude.ai’da oching.');return false;}
+  try{await dl.save({filename,data});return true;}
+  catch(e){const c=e&&e.code;if(c==='declined')return false;if(c==='rate_limited'){toast('Biroz kutib qayta bosing');return false;}if(c==='host_unavailable'){toast('Bu ilovada fayl saqlab bo‘lmaydi — kompyuter yoki brauzerda oching.');return false;}toast('Faylni yuklab bo‘lmadi');return false;}
+}
+const slug=s=>String(s||'').replace(/[‘’ʻʼ']/g,'').replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-|-$/g,'');
+function periodWord(){return S.period==='day'?'Kunlik':S.period==='week'?'Haftalik':'Oylik';}
+function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function ellip(ctx,t,maxW){t=String(t);if(ctx.measureText(t).width<=maxW)return t;while(t.length>1&&ctx.measureText(t+'…').width>maxW)t=t.slice(0,-1);return t+'…';}
+function wrapLines(ctx,text,maxW,maxLines){const words=String(text).split(/\s+/);const lines=[];let cur='';for(const w of words){const tt=cur?cur+' '+w:w;if(ctx.measureText(tt).width>maxW&&cur){lines.push(cur);cur=w;}else cur=tt;}if(cur)lines.push(cur);if(lines.length>maxLines){const l=lines.slice(0,maxLines);l[maxLines-1]=ellip(ctx,l[maxLines-1]+' …',maxW);return l;}return lines;}
+// canvas colour for a percent (hsl string works in canvas)
+const cc=p=>p==null?'#9aa4b2':pcolor(p);
+const NAVY='#0e223a',AQUA='#4ad496',FONT='Satoshi, Manrope, system-ui, sans-serif';
+// official Ilmzor logos (artifact's own files, from the brand folder in Drive)
+const LOGO={};
+function loadImg(src){return new Promise(res=>{const im=new Image();im.onload=()=>res(im);im.onerror=()=>res(null);im.src=src;});}
+async function logosReady(){if(!('h' in LOGO)){const [h,b]=await Promise.all([loadImg('brand/logo-gorizontal.png'),loadImg('brand/logo-belgi.png')]);LOGO.h=h;LOGO.b=b;}return LOGO;}
+function drawLogo(ctx,x,y,h){
+  if(LOGO.h){ctx.drawImage(LOGO.h,x,y,h*LOGO.h.width/LOGO.h.height,h);return;}
+  ctx.fillStyle='#fff';ctx.font=`900 ${Math.round(h*.9)}px ${FONT}`;ctx.fillText('ilmzor',x,y+h*.85);
+}
+function drawMark(ctx,x,y,h,alpha){if(!LOGO.b)return;ctx.save();ctx.globalAlpha=alpha;ctx.drawImage(LOGO.b,x,y,h*LOGO.b.width/LOGO.b.height,h);ctx.restore();}
+async function fontsReady(){try{await Promise.all([document.fonts.load(`900 40px Satoshi`),document.fonts.load(`700 40px Satoshi`),document.fonts.load(`500 40px Satoshi`),logosReady()]);}catch(e){}await logosReady();}
+function brandHeader(ctx,W,sub){
+  ctx.fillStyle=NAVY;ctx.fillRect(0,0,W,190);
+  ctx.save();ctx.beginPath();ctx.rect(0,0,W,190);ctx.clip();drawMark(ctx,W-170,-20,230,.10);ctx.restore();
+  drawLogo(ctx,70,40,74);
+  ctx.fillStyle=AQUA;ctx.font=`700 27px ${FONT}`;ctx.textBaseline='alphabetic';ctx.fillText(sub,72,160);
+}
+function brandFooter(ctx,W,H){
+  ctx.fillStyle=AQUA;ctx.fillRect(0,H-92,W,92);
+  ctx.fillStyle=NAVY;ctx.font=`800 32px ${FONT}`;ctx.textAlign='center';ctx.fillText('ILMZOR — ILM BOG‘INGIZ',W/2,H-36);ctx.textAlign='left';
+}
+function ring(ctx,cx,cy,r,p){
+  ctx.lineWidth=28;ctx.strokeStyle='#e8edf3';ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();
+  if(p!=null){ctx.strokeStyle=cc(p);ctx.lineCap=p>=95?'butt':'round';ctx.beginPath();ctx.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(.005,p/100));ctx.stroke();ctx.lineCap='butt';}
+  ctx.fillStyle=NAVY;ctx.textAlign='center';ctx.font=`800 72px ${FONT}`;ctx.fillText(p==null?'—':Math.round(p)+'%',cx,cy+16);
+  ctx.font=`600 20px ${FONT}`;ctx.fillStyle='#5b6878';ctx.fillText('o‘rtacha bajarish',cx,cy+56);ctx.textAlign='left';
+}
+
+/* ================= G. parent card ================= */
+function studentReport(sid){
+  const x=S.stuById[sid];const [s,e]=range();const rows=rowsIn(s,e,{group:'all',sid});const st=stats(rows);
+  const sal=stats(rows.filter(r=>r.tk.type===SAL));const [ps,pe]=range(shifted(-1));const prev=stats(rowsIn(ps,pe,{group:'all',sid}));
+  const all=[...rows].sort((a,b)=>a.tk.date.localeCompare(b.tk.date)||(a.tk.created||0)-(b.tk.created||0));
+  const done=all.filter(r=>r.ball!=null||r.absent||r.owed);const waiting=all.length-done.length;
+  const list=done.length?done:all;
+  return {x,rows,st,sal,prev,list,waiting:done.length?waiting:0,owed:owedList(sid),weeks:weekSeries(sid,4)};
+}
+function autoNote(R){const od=R.rows.filter(r=>r.overdue);if(!od.length)return '';return `${od.length} ta vazifa bajarilmagani uchun foiz pasaydi: ${od.map(r=>r.tk.title).join(', ')}.`;}
+async function drawParentCard(canvas,sid,teacherNote){
+  await fontsReady();
+  const R=studentReport(sid);const note=[autoNote(R),teacherNote||''].filter(Boolean).join(' ');const W=1080,H=1350;canvas.width=W;canvas.height=H;const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#f4f6f9';ctx.fillRect(0,0,W,H);
+  brandHeader(ctx,W,`${periodWord()} hisobot · ${plabel()}`);
+  // name block
+  ctx.fillStyle=NAVY;ctx.font=`800 52px ${FONT}`;ctx.fillText(ellip(ctx,R.x.name,W-140),70,268);
+  ctx.fillStyle='#5b6878';ctx.font=`600 26px ${FONT}`;ctx.fillText(`${R.x.group||''}`,72,308);
+  // ring card
+  ctx.fillStyle='#fff';rr(ctx,50,340,440,360,28);ctx.fill();
+  ring(ctx,270,505,118,R.st.pct);
+  const stt=status(R.st.pct);ctx.textAlign='center';ctx.font=`700 26px ${FONT}`;ctx.fillStyle=cc(R.st.pct);ctx.fillText(`${stt.i} ${stt.l}`,270,676);ctx.textAlign='left';
+  // tiles
+  const tiles=[
+    ['Vazifalar',`${R.st.checked} / ${R.st.total-R.st.absent}`,'baholangan',null],
+    ['Saralash testlari',fmtP(R.sal.pct),(R.sal.checked+R.sal.overdue)?`${R.sal.checked+R.sal.overdue} ta test`:'bu davrda yo‘q',R.sal.pct],
+    ['Bajarilmagan vazifa',`${R.st.zero+R.st.overdue}`,`kelmadi: ${R.st.absent}${R.owed.length?` · qarz: ${R.owed.length}`:''}`,null],
+  ];
+  tiles.forEach((t,i)=>{const y=340+i*124;ctx.fillStyle='#fff';rr(ctx,520,y,510,112,22);ctx.fill();
+    ctx.fillStyle='#5b6878';ctx.font=`600 24px ${FONT}`;ctx.fillText(t[0],548,y+38);
+    ctx.fillStyle=t[3]!=null?cc(t[3]):NAVY;ctx.font=`800 44px ${FONT}`;ctx.fillText(t[1],548,y+90);
+    ctx.fillStyle='#8a94a3';ctx.font=`500 22px ${FONT}`;ctx.textAlign='right';ctx.fillText(t[2],1006,y+88);ctx.textAlign='left';});
+  // trend
+  let y=720;ctx.fillStyle='#fff';rr(ctx,50,y,980,134,22);ctx.fill();
+  ctx.fillStyle=NAVY;ctx.font=`700 26px ${FONT}`;ctx.fillText('So‘nggi 4 hafta',78,y+42);
+  const d=(R.st.pct!=null&&R.prev.pct!=null)?Math.round(R.st.pct-R.prev.pct):null;
+  if(d!=null){ctx.textAlign='right';ctx.fillStyle=d>0?'#0b8a0b':d<0?'#c33':'#5b6878';ctx.fillText(`${d>0?'▲ +':d<0?'▼ ':''}${d}% oldingi davrga nisbatan`,1002,y+42);ctx.textAlign='left';}
+  R.weeks.forEach((w,i)=>{const bx=78+i*238,bw=210,by=y+56,bh=60;ctx.fillStyle='#eef1f5';rr(ctx,bx,by,bw,bh,12);ctx.fill();
+    if(w.pct!=null){ctx.fillStyle=cc(w.pct);rr(ctx,bx,by,Math.max(14,bw*w.pct/100),bh,12);ctx.fill();}
+    ctx.fillStyle=w.pct!=null&&w.pct>35?'#fff':NAVY;ctx.font=`800 26px ${FONT}`;ctx.fillText(w.pct==null?'—':fmtP(w.pct),bx+14,by+30);
+    ctx.font=`600 18px ${FONT}`;ctx.fillText(weekLabel(w.s,w.f),bx+14,by+52);});
+  // tasks list (height fits the space left; note box takes the bottom when present)
+  y=874;const bottom=H-92-18;const noteH=note?150:0;const avail=bottom-y-(note?noteH+16:0);
+  const maxRows=Math.max(1,Math.floor((avail-70-30)/38));const items=R.list.slice(-maxRows);const more=R.list.length-items.length;
+  const listH=70+Math.max(1,items.length)*38+((more>0||R.waiting)?30:6);
+  ctx.fillStyle='#fff';rr(ctx,50,y,980,listH,22);ctx.fill();
+  ctx.fillStyle=NAVY;ctx.font=`700 26px ${FONT}`;ctx.fillText('Vazifalar',78,y+42);
+  items.forEach((r,i)=>{const ry=y+84+i*38;ctx.fillStyle='#5b6878';ctx.font=`500 21px ${FONT}`;ctx.fillText(shortDate(r.tk.date),78,ry);
+    ctx.fillStyle=NAVY;ctx.font=`600 22px ${FONT}`;ctx.fillText(ellip(ctx,r.tk.title,600),220,ry);
+    const lab=r.absent?'Kelmadi':r.owed?'Qarzdor':r.overdue?'Bajarmadi':r.ball==null?'tekshirilmoqda':`${fmtN(r.ball)}/${fmtN(r.max)}`;
+    const bg=r.absent?'#e4e8ee':r.owed?'#ece3fa':r.overdue?'#d03b3b':r.ball==null?'#f1f3f6':cc(r.pct);
+    ctx.font=`700 20px ${FONT}`;const tw=ctx.measureText(lab).width+28;ctx.fillStyle=bg;rr(ctx,1000-tw,ry-25,tw,34,17);ctx.fill();
+    ctx.fillStyle=(r.absent||r.owed||r.ball==null)?NAVY:'#fff';ctx.fillText(lab,1000-tw+14,ry-1);});
+  if(!items.length){ctx.fillStyle='#8a94a3';ctx.font=`500 22px ${FONT}`;ctx.fillText('Bu davrda vazifa berilmagan',78,y+90);}
+  if(more>0||R.waiting){ctx.fillStyle='#8a94a3';ctx.font=`500 19px ${FONT}`;ctx.fillText([more>0?`+ yana ${more} ta vazifa (oldingi kunlar)`:'',R.waiting?`${R.waiting} ta vazifa tekshirilmoqda`:''].filter(Boolean).join(' · '),78,y+listH-14);}
+  if(note){const ny=bottom-noteH;ctx.fillStyle='#e9fbf2';rr(ctx,50,ny,980,noteH,22);ctx.fill();
+    ctx.fillStyle=NAVY;ctx.font=`700 24px ${FONT}`;ctx.fillText(teacherNote?'Ustoz izohi':'Izoh',78,ny+38);
+    ctx.font=`500 23px ${FONT}`;wrapLines(ctx,note,920,3).forEach((l,i)=>ctx.fillText(l,78,ny+74+i*30));}
+  brandFooter(ctx,W,H);
+}
+function parentText(sid,note){
+  const R=studentReport(sid);
+  const lines=[`📊 ${R.x.name} — ${periodWord().toLowerCase()} hisobot (${plabel()})`,'',
+    `✅ O‘rtacha bajarish: ${fmtP(R.st.pct)} (${status(R.st.pct).l})`,
+    `📝 Vazifalar: ${R.st.checked} ta baholangan, jami ${R.st.total-R.st.absent} ta`,
+    R.sal.checked?`🎯 Saralash testlari: ${fmtP(R.sal.pct)}`:null,
+    R.rows.some(r=>r.overdue)?`❗ Bajarilmagan vazifalar (foiz shu sababli pasaydi): ${R.rows.filter(r=>r.overdue).map(r=>r.tk.title).join('; ')}`:null,
+    R.st.absent?`🚫 Darsga kelmagan: ${R.st.absent} marta`:null,
+    R.owed.length?`📌 Keyin topshirishi kerak: ${R.owed.map(t=>t.title).join('; ')}`:null,
+    (R.st.pct!=null&&R.prev.pct!=null)?`📈 Oldingi davrga nisbatan: ${Math.round(R.st.pct-R.prev.pct)>0?'+':''}${Math.round(R.st.pct-R.prev.pct)}%`:null,
+    note?`\n💬 Ustoz izohi: ${note}`:null,'','Ilmzor o‘quv markazi'];
+  return lines.filter(l=>l!==null).join('\n');
+}
+function openParentCard(sid){S.modal=null;S.card={kind:'parent',sid,note:''};renderCard();}
+
+/* ================= H. best-of card ================= */
+function bestOf(){
+  const [s,e]=range();const rows=rowsIn(s,e);const [ps,pe]=range(shifted(-1));const prow=rowsIn(ps,pe);
+  const studs=activeStudents().filter(x=>inGroup(x));
+  const L=studs.map(x=>{const r=rows.filter(q=>q.id===x.id);const st=stats(r);const need=st.total-st.absent;
+    const sal=stats(r.filter(q=>q.tk.type===SAL));const pv=stats(prow.filter(q=>q.id===x.id));
+    return {x,st,need,sal,grow:(st.pct!=null&&pv.pct!=null)?st.pct-pv.pct:null};});
+  const elig=L.filter(a=>a.st.pct!=null&&a.st.checked>=2&&a.st.checked>=0.6*a.need);
+  const top=[...elig].sort((a,b)=>b.st.pct-a.st.pct||b.st.checked-a.st.checked).slice(0,3);
+  const grow=[...elig].filter(a=>a.grow!=null&&a.grow>=5).sort((a,b)=>b.grow-a.grow)[0]||null;
+  const salTop=[...L].filter(a=>a.sal.pct!=null&&a.sal.checked>=2).sort((a,b)=>b.sal.pct-a.sal.pct)[0]||null;
+  return {top,grow,salTop,count:elig.length};
+}
+const showName=(n,full)=>{if(full)return n;const p=String(n).split(/\s+/);return p.length>1?`${p[1]} ${p[0][0]}.`:n;};
+async function drawBestCard(canvas,full){
+  await fontsReady();
+  const B=bestOf();const W=1080,H=1350;canvas.width=W;canvas.height=H;const ctx=canvas.getContext('2d');
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0e223a');g.addColorStop(1,'#163657');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(74,212,150,.07)';for(let x=20;x<W;x+=48)for(let y=20;y<H;y+=48){ctx.beginPath();ctx.arc(x,y,3,0,7);ctx.fill();}
+  drawMark(ctx,W-250,-70,380,.07);
+  drawLogo(ctx,70,50,70);
+  ctx.textAlign='center';ctx.fillStyle=AQUA;ctx.font=`800 34px ${FONT}`;ctx.fillText(S.period==='month'?'OYNING ENG YAXSHILARI':S.period==='week'?'HAFTANING ENG YAXSHILARI':'KUNNING ENG YAXSHILARI',W/2,230);
+  ctx.fillStyle='#fff';ctx.font=`800 64px ${FONT}`;ctx.fillText('🏆 Vazifalar reytingi',W/2,310);
+  ctx.fillStyle='#b9c7d8';ctx.font=`600 28px ${FONT}`;ctx.fillText(plabel()+(S.group!=='all'?' · '+S.group:''),W/2,358);
+  // podium order 2,1,3
+  const slots=[{i:1,x:W/2-330,h:290,c:'#c0cad6',m:'🥈'},{i:0,x:W/2,h:350,c:'#f5c542',m:'🥇'},{i:2,x:W/2+330,h:260,c:'#d9925b',m:'🥉'}];
+  const baseY=900;
+  slots.forEach(sl=>{const a=B.top[sl.i];const bw=290;
+    ctx.fillStyle='rgba(255,255,255,.08)';rr(ctx,sl.x-bw/2,baseY-sl.h,bw,sl.h,24);ctx.fill();
+    ctx.fillStyle=sl.c;rr(ctx,sl.x-bw/2,baseY-sl.h,bw,10,5);ctx.fill();
+    ctx.font=`400 70px ${FONT}`;ctx.fillText(sl.m,sl.x,baseY-sl.h-24);
+    if(a){ctx.fillStyle='#fff';ctx.font=`800 ${sl.i===0?64:52}px ${FONT}`;ctx.fillText(fmtP(a.st.pct),sl.x,baseY-sl.h+90);
+      ctx.font=`700 27px ${FONT}`;const nm=showName(a.x.name,full);const parts=wrapLines(ctx,nm,bw-30,2);parts.forEach((l,j)=>ctx.fillText(l,sl.x,baseY-sl.h+140+j*34));
+      ctx.fillStyle='#b9c7d8';ctx.font=`500 21px ${FONT}`;ctx.fillText(`${a.st.checked} ta vazifa`,sl.x,baseY-sl.h+140+parts.length*34+8);}
+    else{ctx.fillStyle='#b9c7d8';ctx.font=`600 26px ${FONT}`;ctx.fillText('—',sl.x,baseY-sl.h+90);}});
+  // badges
+  const bad=[B.grow?['📈 Eng ko‘p o‘sgan',showName(B.grow.x.name,full),`+${Math.round(B.grow.grow)}%`]:null,B.salTop?['🎯 Saralash yetakchisi',showName(B.salTop.x.name,full),fmtP(B.salTop.sal.pct)]:null].filter(Boolean);
+  bad.forEach((b,i)=>{const bw=bad.length===1?700:460,bx=bad.length===1?W/2-bw/2:(i===0?W/2-480:W/2+20),by=950;
+    ctx.fillStyle='rgba(74,212,150,.14)';rr(ctx,bx,by,bw,170,24);ctx.fill();ctx.strokeStyle='rgba(74,212,150,.5)';ctx.lineWidth=2;rr(ctx,bx,by,bw,170,24);ctx.stroke();
+    ctx.textAlign='left';ctx.fillStyle=AQUA;ctx.font=`700 26px ${FONT}`;ctx.fillText(b[0],bx+28,by+48);
+    ctx.fillStyle='#fff';ctx.font=`800 32px ${FONT}`;ctx.fillText(ellip(ctx,b[1],bw-56),bx+28,by+98);
+    ctx.fillStyle=AQUA;ctx.font=`800 34px ${FONT}`;ctx.fillText(b[2],bx+28,by+145);ctx.textAlign='center';});
+  ctx.textAlign='left';
+  brandFooter(ctx,W,H);
+}
+function openBestCard(){S.modal=null;S.card={kind:'best',full:true};renderCard();}
+
+/* ================= card modal ================= */
+function renderCard(){
+  const m=document.getElementById('modal');const C=S.card;
+  if(!C){m.className='';m.innerHTML='';return;}
+  m.className='open';
+  if(C.kind==='parent'){
+    const x=S.stuById[C.sid];
+    const ids=activeStudents().filter(s=>inGroup(s)).map(s=>s.id);
+    m.innerHTML=`<div class="mbox" role="dialog" aria-modal="true" style="max-width:760px">
+     <div style="display:flex;align-items:center;gap:8px"><h2 style="margin:0;flex:1">📤 Ota-onaga hisobot — ${esc(x.name)}</h2><button class="btn sm" data-act="cClose" aria-label="Yopish">✕</button></div>
+     <div class="muted" style="font-size:12.5px;margin:4px 0 10px">${periodWord()} · ${plabel()} — davrni yuqoridagi Kun/Hafta/Oy tugmalari bilan o‘zgartiring.</div>
+     <div class="cardgrid"><canvas id="cardCanvas" class="cardprev"></canvas>
+     <div><label class="f" for="c_note">Ustoz izohi (ixtiyoriy, kartaga yoziladi)</label><textarea class="inp" id="c_note" rows="4" placeholder="Masalan: Kasrlar mavzusini yaxshi o‘zlashtirdi, saralash testlariga ko‘proq tayyorlansin.">${esc(C.note)}</textarea>
+     <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+      <button class="btn pri" data-act="cPng">⬇ Rasmni yuklash (PNG)</button>
+      <button class="btn" data-act="cCopy">📋 Telegram uchun matnni nusxalash</button>
+      <button class="btn" data-act="cZip" title="Tanlangan guruhdagi barcha faol o‘quvchilar kartasi">📦 Hamma o‘quvchilar kartasi (ZIP, ${ids.length} ta)</button>
+      <div style="display:flex;gap:6px"><button class="btn sm" data-act="cPrev" style="flex:1">‹ Oldingi o‘quvchi</button><button class="btn sm" data-act="cNext" style="flex:1">Keyingi ›</button></div>
+     </div></div></div></div>`;
+    drawParentCard(document.getElementById('cardCanvas'),C.sid,C.note);
+  } else {
+    const B=bestOf();
+    m.innerHTML=`<div class="mbox" role="dialog" aria-modal="true" style="max-width:760px">
+     <div style="display:flex;align-items:center;gap:8px"><h2 style="margin:0;flex:1">🏆 Eng yaxshilar kartasi</h2><button class="btn sm" data-act="cClose" aria-label="Yopish">✕</button></div>
+     <div class="muted" style="font-size:12.5px;margin:4px 0 10px">${plabel()}${S.group!=='all'?' · '+esc(S.group):''} — vazifalarining kamida 60% i baholangan ${B.count} nafar o‘quvchi orasidan. Davrni yuqoridan o‘zgartiring (Hafta / Oy).</div>
+     <div class="cardgrid"><canvas id="cardCanvas" class="cardprev"></canvas>
+     <div><label style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="c_full" ${C.full?'checked':''}> To‘liq ism-familiya</label>
+     <div class="muted" style="font-size:12px;margin-top:4px">Belgini olib tashlasangiz: «Temurbek Q.» ko‘rinishida chiqadi.</div>
+     <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px"><button class="btn pri" data-act="cBestPng">⬇ Rasmni yuklash (PNG)</button></div>
+     ${B.top.length?'':'<div class="notice" style="margin-top:10px">Bu davrda yetarli baholangan o‘quvchi yo‘q.</div>'}</div></div></div>`;
+    drawBestCard(document.getElementById('cardCanvas'),C.full);
+  }
+}
+async function canvasBlob(cv){return new Promise(res=>cv.toBlob(b=>res(b),'image/png'));}
+async function cardAction(a,el){
+  const C=S.card;
+  if(a==='cClose'){S.card=null;renderCard();return;}
+  if(a==='cPng'){const cv=document.getElementById('cardCanvas');const b=await canvasBlob(cv);await saveFile(`Ilmzor-hisobot-${slug(S.stuById[C.sid].name)}-${slug(plabel())}.png`,b);return;}
+  if(a==='cBestPng'){const cv=document.getElementById('cardCanvas');const b=await canvasBlob(cv);await saveFile(`Ilmzor-eng-yaxshilar-${slug(plabel())}${S.group!=='all'?'-'+slug(S.group):''}.png`,b);return;}
+  if(a==='cCopy'){const t=parentText(C.sid,C.note);try{await navigator.clipboard.writeText(t);toast('Matn nusxalandi ✓ — Telegramga joylang');}catch(e){toast('Nusxalab bo‘lmadi');}return;}
+  if(a==='cPrev'||a==='cNext'){const ids=activeStudents().filter(s=>inGroup(s)).sort((p,q)=>p.name.localeCompare(q.name)).map(s=>s.id);let i=ids.indexOf(C.sid);i=(i+(a==='cNext'?1:-1)+ids.length)%ids.length;C.sid=ids[i];C.note='';renderCard();return;}
+  if(a==='cZip'){
+    el.disabled=true;const old=el.textContent;el.textContent='Tayyorlanmoqda…';
+    try{
+      const JSZip=await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',()=>window.JSZip);
+      const zip=new JSZip();const cv=document.createElement('canvas');
+      const studs=activeStudents().filter(s=>inGroup(s)).sort((p,q)=>p.name.localeCompare(q.name));
+      let txt='';
+      for(const s of studs){await drawParentCard(cv,s.id,s.id===C.sid?C.note:'');zip.file(`Ilmzor-hisobot-${slug(s.name)}-${slug(plabel())}.png`,await canvasBlob(cv));txt+=parentText(s.id,s.id===C.sid?C.note:'')+'\n\n────────\n\n';}
+      zip.file(`Telegram-matnlar-${slug(plabel())}.txt`,txt);
+      const blob=await zip.generateAsync({type:'blob'});
+      await saveFile(`Ilmzor-hisobotlar-${slug(plabel())}${S.group!=='all'?'-'+slug(S.group):''}.zip`,blob);
+    }catch(e){toast('ZIP tayyorlab bo‘lmadi — kartalarni bittadan yuklang');}
+    el.disabled=false;el.textContent=old;return;
+  }
+}
+
+/* ================= teachers ================= */
+function teacherCard(){
+  const [s,e]=range();const f=ymd(s),t=ymd(e);
+  const tasks=S.tasks.filter(tk=>tk.date>=f&&tk.date<=t&&(S.group==='all'||(tk.studentIds||[]).some(id=>S.stuById[id]&&inGroup(S.stuById[id]))));
+  const ids=new Set();tasks.forEach(tk=>{if(tk.createdBy)ids.add(tk.createdBy);if(tk.gradedBy)ids.add(tk.gradedBy);});
+  if(ids.size<2) return '';
+  const by={};const get=id=>by[id]=by[id]||{id,given:0,graded:0,rows:[]};
+  const pend=pendingTasks();const pmap={};pend.forEach(p=>pmap[p.tk.id]=p.ids.length);
+  tasks.forEach(tk=>{const owner=tk.createdBy||tk.gradedBy||'?';const o=get(owner);o.given++;o.pend=(o.pend||0)+(pmap[tk.id]||0);o.rows.push(...rowsIn(s,e).filter(r=>r.tk.id===tk.id));if(tk.gradedBy)get(tk.gradedBy).graded++;});
+  const list=Object.values(by).sort((a,b)=>b.given-a.given);
+  const need=list.map(o=>o.id).filter(x=>x!=='?'&&!S.names[x]);
+  if(need.length&&S.user){S.user.profiles(need).then(ps=>{let ch=false;need.forEach(i=>{const n=ps&&ps[i]&&ps[i].name;if(n&&S.names[i]!==n){S.names[i]=n;ch=true;}});if(ch)render();}).catch(()=>{});}
+  return `<div class="card" style="margin-top:14px"><h2>👩‍🏫 Ustozlar bo‘yicha <span class="muted" style="font-weight:500">— ${plabel()}</span></h2><div style="overflow-x:auto"><table><thead><tr><th>Ustoz</th><th>Bergan vazifa</th><th>Baholagan</th><th>⏳ Baholanmagan</th><th style="width:28%">O‘quvchilar natijasi</th></tr></thead><tbody>
+   ${list.map(o=>{const st=stats(o.rows);return `<tr><td><b>${o.id==='?'?'<span class="muted">Noma’lum (eski vazifalar)</span>':esc(S.names[o.id]||'…')}</b></td><td>${o.given}</td><td>${o.graded}</td><td style="color:${o.pend?'#c2620a':'inherit'};font-weight:${o.pend?700:400}">${o.pend||0}</td><td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1">${pbar(st.pct)}</div><b>${fmtP(st.pct)}</b></div></td></tr>`;}).join('')}
+   </tbody></table></div></div>`;
+}
+
+
+/* ================= BUGUN: plan, grid, autosave ================= */
+function addDays(s,n){const d=parse(s);d.setDate(d.getDate()+n);return ymd(d);}
+// "Kechagidek berish": last day (before today) with group tasks, titles numbered on, same students
+function repeatPlan(){
+  const t=today();
+  const cands=S.tasks.filter(x=>x.date<t&&x.type!==OYL&&(x.studentIds||[]).length>1&&(x.studentIds||[]).some(id=>isActive(S.stuById[id])&&inGroup(S.stuById[id])));
+  if(!cands.length) return null;
+  const last=cands.reduce((m,x)=>x.date>m?x.date:m,'');
+  const set=cands.filter(x=>x.date===last).sort((a,b)=>(a.created||0)-(b.created||0));
+  const titles=nextTitles(set.map(x=>x.title));
+  return {from:last,items:set.map((x,i)=>({title:titles[i],type:x.type||guessType(titles[i])||TYPES[0],max:x.max??10,ids:(x.studentIds||[]).filter(id=>isActive(S.stuById[id]))}))};
+}
+function gridColumns(){
+  const t=today();const back=S.gmode==='today'?0:S.gmode==='3'?3:6;const from=addDays(t,-back);
+  const inG=tk=>S.group==='all'||(tk.studentIds||[]).some(id=>S.stuById[id]&&inGroup(S.stuById[id]));
+  const pend=new Set(pendingTasks().map(p=>p.tk.id));
+  let cols=S.tasks.filter(tk=>tk.date&&tk.date<=t&&inG(tk)&&(tk.date>=from||pend.has(tk.id)));
+  cols.sort((a,b)=>a.date.localeCompare(b.date)||(a.created||0)-(b.created||0));
+  if(cols.length>16) cols=cols.slice(-16);
+  return cols;
+}
+function cellState(tk,id){
+  const sc=tk.scores||{},ab=tk.absent||{},ow=tk.owed||{};const max=Number(tk.max)||0;
+  if(ab[id]) return {k:'abs',txt:'K'};
+  const v=sc[id];
+  if(v!==undefined&&v!==null&&v!==''){const p=max?Math.max(0,Math.min(100,Number(v)/max*100)):0;return {k:'score',p,txt:String(Math.round(p)),ball:Number(v)};}
+  if(ow[id]) return {k:'owe',txt:'Q'};
+  if(isOverdue(tk.date)) return {k:'od',txt:''};
+  return {k:'pend',txt:''};
+}
+function viewToday(){
+  const t=today();const cols=gridColumns();
+  const todayTasks=S.tasks.filter(tk=>tk.date===t&&(S.group==='all'||(tk.studentIds||[]).some(id=>S.stuById[id]&&inGroup(S.stuById[id]))));
+  // ---- top strip
+  const [ws,we]=range(t,'week');const wrows=rowsIn(ws,we);const wst=stats(wrows);const wsal=stats(wrows.filter(r=>r.tk.type===SAL));
+  const pend=pendingTasks();const att=attention();
+  const odN=pend.filter(p=>p.od).length;
+  let h=`<div class="strip">
+    <div class="sitem"><div class="sl">Bu hafta bajarish</div><div class="sv" style="color:${wst.pct!=null?pcolor(wst.pct):'inherit'}">${fmtP(wst.pct)}</div></div>
+    <div class="sitem"><div class="sl">🎯 Saralash (hafta)</div><div class="sv" style="color:${wsal.pct!=null?pcolor(wsal.pct):'inherit'}">${fmtP(wsal.pct)}</div></div>
+    <div class="sitem"><div class="sl">⏳ Baholash kerak</div><div class="sv" style="color:${pend.length?'#c2620a':'var(--good)'}">${pend.length}</div>${odN?`<div class="ss" style="color:#c33">❗ ${odN} tasi 0 hisoblanmoqda</div>`:''}</div>
+    <div class="sitem"><div class="sl">🚩 E‘tibor talab</div><div class="sv" style="color:${att.length?'#c33':'var(--good)'}">${att.length}</div>${att.length?`<div class="ss">${att.slice(0,3).map(a=>`<a href="#" data-act="openStuR" data-id="${a.x.id}">${esc(a.x.name.split(' ')[1]||a.x.name)}</a>`).join(', ')}</div>`:''}</div>
+  </div>`;
+  // ---- today's tasks / repeat plan
+  if(!todayTasks.length){
+    const plan=S.plan||(S.plan=repeatPlan());
+    h+=`<div class="card"><h2>📅 Bugun (${shortDate(t)}) hali vazifa berilmagan</h2>`;
+    if(plan){
+      h+=`<div class="muted" style="font-size:13px;margin-bottom:8px">Oxirgi dars kuni (${shortDate(plan.from)}) vazifalari, raqamlari bittaga oshirilgan. Keraksizini belgidan chiqaring:</div>
+      <div class="planlist">${plan.items.map((it,i)=>`<label class="planitem"><input type="checkbox" data-plan="${i}" ${it.off?'':'checked'}><span><b>${esc(it.title)}</b> <span class="tag">${esc(it.type)}</span> <span class="muted" style="font-size:12px">${it.ids.length} o‘quvchi · ${fmtN(Number(it.max))} ball</span></span></label>`).join('')}</div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn pri" data-act="planGive">↻ Kechagidek berish (${plan.items.filter(i=>!i.off).length} ta)</button><a class="btn" href="#vazifalar">✏️ Boshqa vazifa berish</a></div>`;
+    } else h+=`<a class="btn pri" href="#vazifalar">➕ Vazifa berish</a>`;
+    h+=`</div>`;
+  } else {
+    h+=`<div class="card" style="padding:12px 16px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b>📅 Bugun berilgan:</b>${todayTasks.sort((a,b)=>(a.created||0)-(b.created||0)).map(tk=>`<span class="chip" style="cursor:default">${esc(tk.title)}</span>`).join('')}<a class="btn sm" href="#vazifalar" style="margin-left:auto">+ Yana vazifa</a></div></div>`;
+  }
+  // ---- grid
+  h+=`<div class="card" style="margin-top:14px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0">✍️ Baholash jadvali</h2>
+    <div class="seg">${[['today','Bugun'],['3','3 kun'],['7','Hafta']].map(([k,l])=>`<button data-act="gmode" data-m="${k}" class="${S.gmode===k?'on':''}">${l}</button>`).join('')}</div>
+    <span id="saveInd" class="muted" style="font-size:12.5px;margin-left:auto"></span></div>
+    <div class="muted" style="font-size:12.5px;margin-bottom:8px">Katakka <b>foiz</b> yozing (masalan 80 yoki 7/10) — o‘zi saqlanadi. <b>k</b> = kelmadi, <b>q</b> = keyin topshiradi, bo‘sh = baholanmagan. Enter — pastdagi o‘quvchi. Baholanmagan vazifalar ham shu yerda chiqadi.</div>`;
+  if(!cols.length){h+=`<div class="empty">Bu oraliqda vazifa yo‘q</div></div>`;return h;}
+  const ids=new Set();cols.forEach(tk=>(tk.studentIds||[]).forEach(id=>{const s=S.stuById[id];if(s&&inGroup(s)&&(isActive(s)||cellState(tk,id).k==='score'))ids.add(id);}));
+  const studs=[...ids].map(id=>S.stuById[id]).sort((a,b)=>a.name.localeCompare(b.name));
+  h+=`<div class="gridwrap"><table class="ggrid"><thead><tr><th class="gname">O‘quvchi</th>${cols.map(tk=>{const od=isOverdue(tk.date);return `<th class="gcol" title="${esc(tk.title)} · ${esc(tk.type||'')} · maks ${fmtN(Number(tk.max)||0)} ball"><div class="gdate ${tk.date===t?'gtoday':''}">${shortDate(tk.date)}</div><div class="gtitle">${esc(tk.title)}</div><button class="glink" data-act="grade" data-id="${tk.id}" title="Batafsil / tahrirlash">⋯</button>${od?'':`<div class="gdl">${shortDate(deadlineOf(tk.date))} gacha</div>`}</th>`;}).join('')}<th>O‘rtacha</th></tr></thead><tbody>`;
+  for(const s of studs){
+    let b=0,m=0;
+    h+=`<tr><td class="gname"><a href="#" data-act="openStuR" data-id="${s.id}">${esc(s.name)}</a></td>`;
+    cols.forEach((tk,ci)=>{
+      if(!(tk.studentIds||[]).includes(s.id)){h+=`<td class="gna" title="Bu vazifa berilmagan">·</td>`;return;}
+      const c=cellState(tk,s.id);const max=Number(tk.max)||0;
+      if(c.k==='score'){b+=c.ball;m+=max;} else if(c.k==='od'&&isActive(s)){m+=max;}
+      const bg=c.k==='score'?pcolor(c.p):c.k==='abs'?'var(--grid)':c.k==='owe'?'#ece3fa':c.k==='od'?'#fbe3e3':'transparent';
+      const fg=c.k==='score'?'#fff':c.k==='owe'?'#5b2fa3':c.k==='od'?'#c33':'var(--ink)';
+      const ph=c.k==='od'?'0!':c.k==='pend'?'…':'';
+      const tip=c.k==='score'?`${fmtN(c.ball)}/${fmtN(max)} ball`:c.k==='abs'?'Kelmadi':c.k==='owe'?'Keyin topshiradi (qarz)':c.k==='od'?'2 kunda baholanmadi — 0 hisoblanmoqda':'Baholanmagan';
+      h+=`<td class="gc"><input class="gin" id="g_${tk.id}_${s.id}" data-g="${tk.id}" data-s="${s.id}" data-c="${ci}" value="${esc(c.txt)}" placeholder="${ph}" title="${esc(tip)}" inputmode="text" autocomplete="off" style="background:${bg};color:${fg}"></td>`;
+    });
+    const avg=m?b/m*100:null;
+    h+=`<td><span class="pcell" style="background:${avg==null?'transparent':pcolor(avg)};color:${avg==null?'var(--muted)':'#fff'}">${fmtP(avg)}</span></td></tr>`;
+  }
+  // column averages
+  h+=`<tr class="gfoot"><td class="gname muted">O‘rtacha</td>${cols.map(tk=>{const st=stats(rowsIn(parse(tk.date),parse(tk.date)).filter(r=>r.tk.id===tk.id));return `<td><span class="pcell" style="background:${st.pct==null?'transparent':pcolor(st.pct)};color:${st.pct==null?'var(--muted)':'#fff'}">${fmtP(st.pct)}</span></td>`;}).join('')}<td></td></tr>`;
+  h+=`</tbody></table></div></div>`;
+  return h;
+}
+// parse a grid input: % | a/b | k | q | ''
+function parseCell(raw,max){
+  const v=String(raw).trim().toLowerCase().replace(',','.');
+  if(v==='') return {k:'clear'};
+  if(v==='k'||v==='к') return {k:'abs'};
+  if(v==='q'||v==='-'||v==='қ') return {k:'owe'};
+  const fr=v.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
+  if(fr){const a=+fr[1],b=+fr[2];if(b>0&&a<=b) return {k:'score',ball:Math.round(max*a/b*100)/100};return {k:'bad'};}
+  const n=Number(v.replace('%',''));
+  if(isFinite(n)&&n>=0&&n<=100) return {k:'score',ball:Math.round(max*n)/100};
+  return {k:'bad'};
+}
+const saveQ={};let saving=0;
+function setInd(txt){const el=document.getElementById('saveInd');if(el)el.textContent=txt;}
+function saveCell(tid,sid,raw){
+  const tk0=S.tasks.find(x=>x.id===tid);if(!tk0)return;
+  const pc=parseCell(raw,Number(tk0.max)||0);
+  if(pc.k==='bad'){toast('0–100 oraliqda foiz, 7/10, k yoki q yozing');return false;}
+  saving++;setInd('Saqlanmoqda…');
+  saveQ[tid]=(saveQ[tid]||Promise.resolve()).then(async()=>{
+    const tk=S.tasks.find(x=>x.id===tid);if(!tk)return;
+    const body={...tk};delete body.id;
+    const scores={...(tk.scores||{})},absent={...(tk.absent||{})},owed={...(tk.owed||{})};
+    delete scores[sid];delete absent[sid];delete owed[sid];
+    if(pc.k==='score') scores[sid]=pc.ball; else if(pc.k==='abs') absent[sid]=true; else if(pc.k==='owe') owed[sid]=true;
+    Object.assign(body,{scores,absent,owed,updated:Date.now()});
+    const uid=await myId();if(uid) body.gradedBy=uid;
+    const ok=await write(db=>db.doc('tasks/'+tid).set(body));
+    saving--;setInd(ok?(saving?'Saqlanmoqda…':'Saqlandi ✓'):'Saqlanmadi');
+  });
+  return true;
+}
+function gridCommit(inp){
+  const prev=inp.dataset.v!==undefined?inp.dataset.v:null;
+  const tk=S.tasks.find(x=>x.id===inp.dataset.g);if(!tk)return;
+  const cur=cellState(tk,inp.dataset.s);
+  if(String(inp.value).trim().toLowerCase()===String(cur.txt).toLowerCase())return;
+  saveCell(inp.dataset.g,inp.dataset.s,inp.value);
+}
+async function planGive(btn){
+  const plan=S.plan;if(!plan)return;const items=plan.items.filter(i=>!i.off&&i.ids.length);
+  if(!items.length){toast('Kamida bitta vazifani belgilang');return;}
+  btn.disabled=true;const uid=await myId();const base=Date.now();let n=0;
+  for(const [i,it] of items.entries()){if(await write(db=>db.collection('tasks').add({title:it.title,type:it.type,max:Number(it.max)||10,studentIds:it.ids,date:today(),note:'',scores:{},absent:{},owed:{},created:base+i,...(uid?{createdBy:uid}:{})})))n++;else break;}
+  btn.disabled=false;S.plan=null;if(n)toast(`${n} ta vazifa berildi ✓`);render();
+}
+
+/* ---------- render ---------- */
+function render(){
+  document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===S.view));
+  renderBar();
+  const v=document.getElementById('view');
+  const ae=document.activeElement;const fid=ae&&ae.id&&v.contains(ae)?ae.id:null;let sel=null;try{sel=fid?[ae.selectionStart,ae.selectionEnd]:null;}catch(e){}
+  const keepVal=fid&&ae.classList.contains('gin')?ae.value:null;const gscroll=document.querySelector('.gridwrap')?.scrollLeft;
+  if(!S.db){v.innerHTML=`<div class="card empty">${S.err||'Yuklanmoqda…'}</div>`;return;}
+  if(!(S.loaded.s&&S.loaded.t)){v.innerHTML=`<div class="card empty">${S.slow?'Ma’lumotlarga hali ulanib bo‘lmadi. Internetni tekshiring — ulanish tiklanganda o‘zi yangilanadi.':'Yuklanmoqda…'}</div>`;return;}
+  v.innerHTML=(S.slow?'<div class="notice">Ma’lumotlar eskirgan bo‘lishi mumkin — ulanish kutilmoqda.</div>':'')+
+    (S.view==='bugun'?viewToday():S.view==='vazifalar'?viewTasks():S.view==='oquvchilar'?viewStudents():viewPanel());
+  const gw=document.querySelector('.gridwrap');if(gw&&gscroll)gw.scrollLeft=gscroll;else if(gw&&gscroll===undefined)gw.scrollLeft=gw.scrollWidth;
+  if(fid){const el=document.getElementById(fid);if(el){if(keepVal!==null)el.value=keepVal;el.focus();try{if(sel)el.setSelectionRange(sel[0],sel[1]);}catch(e){}}}
+}
+
+/* ---------- form helpers ---------- */
+function addFormItem(item){
+  const F=S.form;const blank=F.items.findIndex(it=>!it.title.trim());
+  const it={title:item.title,type:item.type,max:item.max,manual:true};
+  if(blank>=0) F.items[blank]=it; else F.items.push(it);
+}
+function repeatLast(){
+  const F=S.form;const before=F.date||today();
+  const cands=S.tasks.filter(t=>t.date<before&&(t.studentIds||[]).length>1&&(t.studentIds||[]).some(id=>isActive(S.stuById[id])&&inGroup(S.stuById[id])));
+  if(!cands.length){toast('Oldingi kunlarda guruh vazifasi topilmadi');return;}
+  const last=cands.reduce((m,t)=>t.date>m?t.date:m,'');
+  const set=cands.filter(t=>t.date===last).sort((a,b)=>(a.created||0)-(b.created||0));
+  const titles=nextTitles(set.map(t=>t.title));
+  F.items=F.items.filter(it=>it.title.trim());
+  set.forEach((t,i)=>F.items.push({title:titles[i],type:t.type||guessType(titles[i])||TYPES[0],max:t.max??10,manual:true,
+    ids:(t.studentIds||[]).filter(id=>isActive(S.stuById[id]))}));
+  if(!F.items.length) F.items=[{title:'',type:TYPES[0],max:10,manual:false}];
+  toast(`${shortDate(last)} dagi ${set.length} ta vazifa o‘sha o‘quvchilari bilan qo‘shildi — tekshirib «Vazifalarni berish»ni bosing`);
+  render();
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click',async ev=>{
+  const el=ev.target.closest('[data-act]');if(!el)return;
+  const a=el.dataset.act;
+  if(el.tagName==='INPUT'&&el.type==='checkbox'){return;}
+  if(a&&a[0]==='c'&&/^c[A-Z]/.test(a)){await cardAction(a,el);return;}
+  if(a==='parentCard'){openParentCard(el.dataset.id);return;}
+  if(a==='gmode'){S.gmode=el.dataset.m;render();return;}
+  if(a==='planGive'){await planGive(el);return;}
+  if(a==='openStuR'){ev.preventDefault();S.studentId=el.dataset.id;if(location.hash!=='#panel'){location.hash='#panel';}else render();window.scrollTo(0,0);return;}
+  if(a==='bestCard'){openBestCard();return;}
+  if(a==='period'){S.period=el.dataset.p;render();}
+  else if(a==='shift'){S.anchor=shifted(Number(el.dataset.d));render();}
+  else if(a==='today'){S.anchor=today();render();}
+  else if(a==='export'){el.disabled=true;await doExport();el.disabled=false;}
+  else if(a==='openStu'){S.studentId=el.dataset.id;render();window.scrollTo(0,0);}
+  else if(a==='closeStu'){S.studentId=null;render();}
+  else if(a==='selGroup'){const g=el.dataset.g;const ids=activeStudents().filter(x=>(x.group||'Guruhsiz')===g).map(x=>x.id);const all=ids.every(id=>S.form.sel.has(id));ids.forEach(id=>all?S.form.sel.delete(id):S.form.sel.add(id));render();}
+  else if(a==='selNone'){S.form.sel.clear();render();}
+  else if(a==='mode'){S.form.mode=el.dataset.m;render();}
+  else if(a==='repeatLast'){repeatLast();}
+  else if(a==='chipAdd'){const c=(S._chips||[])[Number(el.dataset.i)];if(c){addFormItem(c);render();}}
+  else if(a==='addItem'){const last=S.form.items[S.form.items.length-1];S.form.items.push({title:'',type:last.type,max:last.max,manual:false});render();document.getElementById('it_title_'+(S.form.items.length-1))?.focus();}
+  else if(a==='itemUseSel'){ev.preventDefault();delete S.form.items[Number(el.dataset.i)].ids;render();}
+  else if(a==='delItem'){S.form.items.splice(Number(el.dataset.i),1);render();}
+  else if(a==='addTask'){
+    const F=S.form;
+    const needSel=F.mode==='each'||F.items.some(it=>it.title.trim()&&!it.ids);
+    if(needSel&&!F.sel.size){toast('Kamida bitta o‘quvchini tanlang');return;} if(!F.date){toast('Sanani tanlang');return;}
+    const sel=[...F.sel].filter(id=>isActive(S.stuById[id]));const note=F.note.trim();const list=[];
+    if(F.mode==='common'){
+      for(const it of F.items){const title=it.title.trim();if(!title)continue;const max=Number(it.max);if(!(max>0)){toast(`“${title}” uchun maksimal ball 0 dan katta bo‘lsin`);return;}const ids=it.ids?it.ids.filter(id=>isActive(S.stuById[id])):sel;if(!ids.length)continue;list.push({title,type:it.type,max,studentIds:ids});}
+      if(!list.length){toast('Vazifa nomini yozing');return;}
+    } else {
+      for(const id of sel){const e=F.each[id];const title=(e?.title||'').trim();if(!title)continue;const max=Number(e.max??10);if(!(max>0)){toast(`${S.stuById[id].name}: maksimal ball 0 dan katta bo‘lsin`);return;}list.push({title,type:e.type||TYPES[0],max,studentIds:[id]});}
+      if(!list.length){toast('Kamida bitta o‘quvchiga vazifa yozing');return;}
+    }
+    el.disabled=true;let n=0;const base=Date.now();const uid=await myId();
+    for(const [i,t] of list.entries()){if(await write(db=>db.collection('tasks').add({...t,date:F.date,note,scores:{},absent:{},created:base+i,...(uid?{createdBy:uid}:{})})))n++;else break;}
+    el.disabled=false;
+    if(n){toast(`${n} ta vazifa berildi ✓`);
+      if(n===list.length){if(F.mode==='common')F.items=[{title:'',type:F.items[0].type,max:F.items[0].max,manual:false}];else F.each={};F.note='';}
+      if(F.date<ymd(range()[0])||F.date>ymd(range()[1])){S.anchor=F.date;}render();}
+  }
+  else if(a==='grade'){openGrade(el.dataset.id);}
+  else if(a==='addStu'){
+    const name=S.sform.name.trim();const group=S.sform.group.trim()||'Guruhsiz';if(!name){toast('Ism familiyani yozing');return;}
+    if(await write(db=>db.collection('students').add({name,group,created:Date.now()}))){S.sform.name='';toast('Qo‘shildi ✓');render();document.getElementById('s_name')?.focus();}
+  }
+  else if(a==='addBulk'){
+    const names=S.sform.bulk.split('\n').map(s=>s.trim()).filter(Boolean);const group=S.sform.group.trim()||'Guruhsiz';
+    if(!names.length){toast('Ro‘yxat bo‘sh');return;}
+    el.disabled=true;let n=0;for(const name of names){if(await write(db=>db.collection('students').add({name,group,created:Date.now()})))n++;else break;}
+    el.disabled=false;if(n===names.length)S.sform.bulk='';toast(`${n} ta o‘quvchi qo‘shildi`);render();
+  }
+  else if(a==='editStu'){const x=S.stuById[el.dataset.id];S.editStu={id:x.id,name:x.name,group:x.group||''};S.confirm=null;render();}
+  else if(a==='cancelStu'){S.editStu=null;S.confirm=null;render();}
+  else if(a==='saveStu'){const E=S.editStu;if(!E.name.trim()){toast('Ism bo‘sh bo‘lmasin');return;}
+    if(await write(db=>db.doc('students/'+E.id).update({name:E.name.trim(),group:E.group.trim()||'Guruhsiz'}))){S.editStu=null;render();}}
+  else if(a==='archive'){const id=el.dataset.id;if(await write(db=>db.doc('students/'+id).update({archived:true,archivedAt:Date.now()}))){S.form.sel.delete(id);toast('Arxivga olindi — ballari tarixda saqlanadi');}}
+  else if(a==='unarchive'){const id=el.dataset.id;if(await write(db=>db.doc('students/'+id).update({archived:false}))){toast('Qaytarildi ✓');}}
+  else if(a==='toggleArch'){S.showArchived=!S.showArchived;render();}
+  else if(a==='delStu'){S.confirm=el.dataset.id;S.editStu=null;render();}
+  else if(a==='delStuYes'){const id=el.dataset.id;if(await write(db=>db.doc('students/'+id).delete())){S.confirm=null;toast('O‘chirildi');render();}}
+  else if(a==='mClose'){S.modal=null;renderModal();}
+  else if(a==='mEditStu'){S.modal.editStu=!S.modal.editStu;renderModal();}
+  else if(a==='mAbs'){const id=el.dataset.id;const d=S.modal.d;if(d.absent[id]){delete d.absent[id];}else{d.absent[id]=true;d.scores[id]='';delete d.owed[id];}renderModal();}
+  else if(a==='mOwe'){const id=el.dataset.id;const d=S.modal.d;if(d.owed[id]){delete d.owed[id];}else{d.owed[id]=true;d.scores[id]='';}renderModal();}
+  else if(a==='mSet'||a==='mAll'){
+    const d=S.modal.d;const max=Number(d.max)||0;const val=v=>v==='0'?0:v==='half'?Math.round(max/2*2)/2:v==='full'?max:'';
+    const ids=a==='mAll'?d.studentIds.filter(id=>!d.absent[id]&&!d.owed[id]):[el.dataset.id];
+    for(const id of ids){const v=a==='mAll'&&el.dataset.v==='clear'?'':val(el.dataset.v);d.scores[id]=v;const inp=document.getElementById('sc_'+id);if(inp)inp.value=v;updPct(id);}
+  }
+  else if(a==='mDel'){S.modal.confirmDel=true;renderModal();}
+  else if(a==='mDelNo'){S.modal.confirmDel=false;renderModal();}
+  else if(a==='mDelYes'){const id=S.modal.id;if(await write(db=>db.doc('tasks/'+id).delete())){S.modal=null;renderModal();toast('Vazifa o‘chirildi');}}
+  else if(a==='mSave'){
+    const d=S.modal.d;const max=Number(d.max);if(!d.title.trim()){toast('Vazifa nomi bo‘sh');return;}if(!(max>0)){toast('Maks. ball noto‘g‘ri');return;}
+    if(!d.studentIds.length){toast('Vazifada kamida bitta o‘quvchi bo‘lsin');return;}
+    const scores={},absent={},owed={};
+    for(const id of d.studentIds){
+      if(d.absent[id]){absent[id]=true;continue;}
+      const v=d.scores[id];if(v===''||v===undefined||v===null){if(d.owed[id])owed[id]=true;continue;}const n=Number(v);
+      if(!isFinite(n)||n<0){toast('Ball manfiy bo‘lmasin');return;}if(n>max){toast(`Ball ${fmtN(max)} dan oshmasin (${S.stuById[id]?.name||''})`);return;}scores[id]=Math.round(n*100)/100;}
+    const orig=S.tasks.find(t=>t.id===S.modal.id)||{};
+    const uid=await myId();
+    const body={...orig,title:d.title.trim(),type:d.type,date:d.date,max,note:d.note||'',studentIds:d.studentIds,scores,absent,owed,created:orig.created||Date.now(),updated:Date.now()};
+    delete body.id; if(uid) body.gradedBy=uid;
+    el.disabled=true;const ok=await write(db=>db.doc('tasks/'+S.modal.id).set(body));el.disabled=false;
+    if(ok){S.modal=null;renderModal();toast('Saqlandi ✓');}
+  }
+});
+let noteT;
+document.addEventListener('input',ev=>{
+  const t=ev.target;
+  if(t.id==='c_note'&&S.card){S.card.note=t.value;clearTimeout(noteT);noteT=setTimeout(()=>drawParentCard(document.getElementById('cardCanvas'),S.card.sid,S.card.note),250);return;}
+  if(t.dataset.f){S.form[t.dataset.f]=t.value;}
+  else if(t.dataset.it){const it=S.form.items[Number(t.dataset.i)];it[t.dataset.it]=t.value;
+    if(t.dataset.it==='title'&&!it.manual){const g=guessType(t.value);if(g&&g!==it.type){it.type=g;const s=document.getElementById('it_type_'+t.dataset.i);if(s)s.value=g;}}}
+  else if(t.dataset.ea){const id=t.dataset.id;const e=S.form.each[id]=S.form.each[id]||{title:'',type:TYPES[0],max:10,manual:false};e[t.dataset.ea]=t.value;
+    if(t.dataset.ea==='title'&&!e.manual){const g=guessType(t.value);if(g&&g!==e.type){e.type=g;const s=document.getElementById('ea_type_'+id);if(s)s.value=g;}}}
+  else if(t.dataset.sf){S.sform[t.dataset.sf]=t.value;}
+  else if(t.dataset.ef&&S.editStu){S.editStu[t.dataset.ef]=t.value;}
+  else if(t.dataset.m&&S.modal){S.modal.d[t.dataset.m]=t.value;if(t.dataset.m==='max')S.modal.d.studentIds.forEach(updPct);}
+  else if(t.dataset.sc&&S.modal){S.modal.d.scores[t.dataset.sc]=t.value;if(t.value!==''&&S.modal.d.owed[t.dataset.sc]){delete S.modal.d.owed[t.dataset.sc];document.querySelector(`[data-act=mOwe][data-id="${t.dataset.sc}"]`)?.classList.remove('on-owe');}updPct(t.dataset.sc);}
+  else if(t.dataset.pp&&S.modal){const id=t.dataset.pp;const max=Number(S.modal.d.max)||0;
+    if(t.value===''){S.modal.d.scores[id]='';}
+    else{let p=Math.max(0,Math.min(100,Number(t.value)));const b=Math.round(max*p)/100;S.modal.d.scores[id]=String(b);if(S.modal.d.owed[id]){delete S.modal.d.owed[id];document.querySelector(`[data-act=mOwe][data-id="${id}"]`)?.classList.remove('on-owe');}}
+    const inp=document.getElementById('sc_'+id);if(inp)inp.value=S.modal.d.scores[id];updPct(id);}
+});
+document.addEventListener('change',ev=>{
+  const t=ev.target;
+  if(t.dataset.plan!=null&&S.plan){S.plan.items[Number(t.dataset.plan)].off=!t.checked;render();return;}
+  if(t.classList&&t.classList.contains('gin')){gridCommit(t);return;}
+  if(t.id==='c_full'&&S.card){S.card.full=t.checked;drawBestCard(document.getElementById('cardCanvas'),S.card.full);return;}
+  if(t.id==='groupPick'){S.group=t.value;render();}
+  else if(t.id==='anchorPick'&&t.value){S.anchor=t.value;render();}
+  else if(t.dataset.act==='selStu'){t.checked?S.form.sel.add(t.dataset.id):S.form.sel.delete(t.dataset.id);
+    if(S.form.mode==='each'){const sc=document.querySelector('.stlist')?.scrollTop;render();const l=document.querySelector('.stlist');if(l&&sc!=null)l.scrollTop=sc;}
+    else{const lab=document.getElementById('selCount');if(lab)lab.textContent=`(${S.form.sel.size} ta tanlandi)`;}}
+  else if(t.dataset.mstu&&S.modal){const id=t.dataset.mstu;const d=S.modal.d;
+    if(t.checked){if(!d.studentIds.includes(id))d.studentIds.push(id);}else{d.studentIds=d.studentIds.filter(x=>x!==id);delete d.scores[id];delete d.absent[id];}
+    const sc=document.querySelector('#modal .stlist')?.scrollTop;renderModal();const l=document.querySelector('#modal .stlist');if(l&&sc!=null)l.scrollTop=sc;}
+  else if(t.dataset.f){S.form[t.dataset.f]=t.value;}
+  else if(t.dataset.it){S.form.items[Number(t.dataset.i)][t.dataset.it]=t.value;if(t.dataset.it==='type')S.form.items[Number(t.dataset.i)].manual=true;}
+  else if(t.dataset.ea){const id=t.dataset.id;S.form.each[id]=S.form.each[id]||{title:'',type:TYPES[0],max:10};S.form.each[id][t.dataset.ea]=t.value;if(t.dataset.ea==='type')S.form.each[id].manual=true;}
+  else if(t.dataset.m&&S.modal){S.modal.d[t.dataset.m]=t.value;}
+});
+document.addEventListener('toggle',ev=>{if(ev.target.classList&&ev.target.classList.contains('more'))S.moreOpen=ev.target.open;},true);
+document.addEventListener('focusin',ev=>{const t=ev.target;if(t.classList&&t.classList.contains('gin'))setTimeout(()=>{try{t.select();}catch(e){}},0);});
+document.addEventListener('keydown',ev=>{
+  const g=ev.target;
+  if(g.classList&&g.classList.contains('gin')&&(ev.key==='Enter'||ev.key==='ArrowDown'||ev.key==='ArrowUp')){
+    ev.preventDefault();gridCommit(g);
+    const col=[...document.querySelectorAll(`.gin[data-c="${g.dataset.c}"]`)];const i=col.indexOf(g);
+    const nx=col[i+(ev.key==='ArrowUp'?-1:1)];if(nx)nx.focus();else g.blur();return;}
+  if(ev.key==='Escape'&&S.card){S.card=null;renderCard();return;}
+  if(ev.key==='Escape'&&S.modal){S.modal=null;renderModal();return;}
+  const t=ev.target;
+  if(ev.key==='Enter'&&S.modal&&t.dataset&&t.dataset.row!=null){
+    ev.preventDefault();
+    if(ev.ctrlKey||ev.metaKey){document.querySelector('[data-act=mSave]')?.click();return;}
+    const kind=t.dataset.sc!=null?'sc':'pp';
+    const inputs=[...document.querySelectorAll(`#modal input[data-${kind}]`)].filter(x=>!x.disabled);
+    const i=inputs.indexOf(t);const nx=inputs[i+1];
+    if(nx){nx.focus();nx.select&&nx.select();} else {document.querySelector('[data-act=mSave]')?.focus();}
+  }
+});
+document.getElementById('modal').addEventListener('mousedown',ev=>{if(ev.target.id==='modal'){if(S.card){S.card=null;renderCard();}else{S.modal=null;renderModal();}}});
+
+function route(){const h=(location.hash||'#bugun').slice(1);S.view=['bugun','panel','vazifalar','oquvchilar'].includes(h)?h:'bugun';if(S.view!=='panel')S.studentId=null;render();}
+window.addEventListener('hashchange',route);
+
+/* ---------- boot ---------- */
+route();
+(async()=>{
+  let db=null;
+  try{db=window.claude&&window.claude.use?await window.claude.use('db'):null;}catch(e){db=null;}
+  if(!db){S.err='Ma’lumotlar bazasi bu yerda ishlamayapti. Sahifani claude.ai’da tizimga kirgan holda oching.';render();return;}
+  S.db=db;render();
+  // who is viewing: delete only for editors/owner
+  try{S.user=await window.claude.use('user');if(S.user){S.canDelete=!!(await S.user.canEdit());}}catch(e){S.user=null;}
+  const timer=setTimeout(()=>{S.slow=true;render();},10000);
+  const done=()=>{if(S.loaded.s&&S.loaded.t){clearTimeout(timer);}};
+  db.collection('students').onSnapshot(snap=>{
+    S.students=snap.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.name);
+    S.stuById={};S.students.forEach(x=>S.stuById[x.id]=x);
+    S.form.sel=new Set([...S.form.sel].filter(id=>isActive(S.stuById[id])));
+    S.loaded.s=true;if(!snap.metadata.fromCache)S.slow=false;done();render();
+  },e=>{S.loaded.s=true;clearTimeout(timer);S.slow=true;render();});
+  db.collection('tasks').onSnapshot(snap=>{
+    S.tasks=snap.docs.map(d=>({id:d.id,...d.data()})).filter(t=>t.date);
+    S.loaded.t=true;if(!snap.metadata.fromCache)S.slow=false;done();render();
+  },e=>{S.loaded.t=true;clearTimeout(timer);S.slow=true;render();});
+})();
+
+</script>
+</body>
+</html>
