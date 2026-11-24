@@ -247,8 +247,10 @@ export default {
         if (cands.length > 1) return json({ status: 'many', options: cands.map(x => ({ sid: x.id, name: x.d.name, group: x.d.group || 'Guruhsiz', teacher: x.tname })) });
         const x = cands[0];
         const cl = await env.DB.prepare('SELECT tg FROM claims WHERE student_id=?').bind(x.id).first();
-        if (cl && cl.tg !== tg) return json({ status: 'taken', name: x.d.name, group: x.d.group || 'Guruhsiz', teacher: x.tname });
-        if (!cl) await env.DB.prepare('INSERT INTO claims(student_id,tg,ts) VALUES(?,?,?)').bind(x.id, tg, Date.now()).run();
+        // nobind: staff (ustoz/rahbar) just looks — never binds or blocks the student's own Telegram
+        if (cl && cl.tg !== tg && !b.nobind) return json({ status: 'taken', name: x.d.name, group: x.d.group || 'Guruhsiz', teacher: x.tname });
+        if (b.probe) return json({ status: 'ok' });
+        if (!cl && !b.nobind) await env.DB.prepare('INSERT INTO claims(student_id,tg,ts) VALUES(?,?,?)').bind(x.id, tg, Date.now()).run();
         const codes = await ensureCodes(env, [x.id]);
         return json({ status: 'ok', code: codes[x.id], name: x.d.name, group: x.d.group || 'Guruhsiz', teacher: x.tname });
       }
