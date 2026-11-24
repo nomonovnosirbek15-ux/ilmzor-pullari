@@ -14,6 +14,7 @@ rep("S.view=['bugun','panel','vazifalar','oquvchilar'].includes(h)?h:'bugun';","
 rep("const showPeriod=S.view!=='oquvchilar'&&S.view!=='bugun';","const showPeriod=S.view!=='oquvchilar'&&S.view!=='bugun'&&S.view!=='ustozlar';")
 rep("""  let pos=0;
   html+=`<div class="card"><h2>O‘quvchilar reytingi""","""  if(isAdmin()&&S.group==='all'&&!window.__REAL) html+=teacherBoard();
+  html+=oylikBoard();
   let pos=0;
   html+=`<div class="card"><h2>O‘quvchilar reytingi""")
 rep("""  // ---- grid

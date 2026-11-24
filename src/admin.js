@@ -127,3 +127,39 @@ async function codesAction(a,el){
     try{const j=await window.__api('POST','/api/codes/reset',{id:x.id});Object.assign(S.codes,j.codes);S.linked&&S.linked.delete(x.id);render();toast('Yangi kod: '+j.codes[x.id]);}catch(e){toast(e.message);}return;}
   if(a==='subDismiss'){try{await window.__api('DELETE','/api/subs',{taskId:el.dataset.t,studentId:el.dataset.s});window.__refreshAll();toast('Olib tashlandi');}catch(e){toast(e.message);}return;}
 }
+/* ---- Hisobot: oylik testlar — barcha oylar bir joyda ---- */
+function oylikBoard(){
+  const by={},months=new Set();
+  for(const tk of S.tasks){ if(tk.type!==OYL||!tk.date||tk.date>today()) continue; const max=Number(tk.max)||0; if(!max) continue;
+    const ym=tk.date.slice(0,7); const sc=tk.scores||{};
+    for(const id of (tk.studentIds||[])){ const st=S.stuById[id]; if(!st||!isActive(st)||!inGroup(st)) continue; const v=sc[id]; if(v===undefined||v===null||v==='') continue;
+      months.add(ym); const k=(by[id]=by[id]||{})[ym]=(by[id][ym]||{s:0,n:0}); k.s+=Math.min(100,Number(v)/max*100); k.n++; } }
+  const M=[...months].sort().slice(-9);
+  if(!M.length) return `<div class="card"><h2>🗓 Oylik testlar</h2><div class="empty">Hali oylik test kiritilmagan. Vazifa berishda turini <b>«Oylik test»</b> qilib tanlang.</div></div>`;
+  const val=(id,ym)=>{const k=(by[id]||{})[ym];return k?k.s/k.n:null;};
+  const lab=ym=>{const [y,m]=ym.split('-');return MONTHS[+m-1].slice(0,3)+(M[0].slice(0,4)!==M[M.length-1].slice(0,4)?` ${y.slice(2)}`:'');};
+  const rows=Object.keys(by).map(id=>{const vals=M.map(ym=>val(id,ym));const have=vals.map((v,i)=>[v,i]).filter(x=>x[0]!=null);
+    const last=have.length?have[have.length-1]:null,prev=have.length>1?have[have.length-2]:null;
+    return {x:S.stuById[id],vals,last:last?last[0]:null,lastI:last?last[1]:-1,d:last&&prev?last[0]-prev[0]:null};})
+    .sort((a,b)=>(b.lastI-a.lastI)||((b.last??-1)-(a.last??-1))||a.x.name.localeCompare(b.x.name));
+  const avg=M.map((ym,i)=>{const v=rows.map(r=>r.vals[i]).filter(x=>x!=null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;});
+  const up=rows.filter(r=>r.d!=null&&r.d>=5).sort((a,b)=>b.d-a.d),down=rows.filter(r=>r.d!=null&&r.d<=-5).sort((a,b)=>a.d-b.d);
+  const cell=p=>p==null?'<span class="muted">—</span>':`<span class="pcell" style="background:${pcolor(p)};color:#fff">${fmtP(p)}</span>`;
+  const dch=d=>d==null?'<span class="muted">—</span>':`<b style="color:${d>=5?'var(--good)':d<=-5?'var(--crit)':'var(--muted)'}">${d>0?'▲ +':d<0?'▼ ':'• '}${Math.round(d)}%</b>`;
+  const chip=(r,c)=>`<a href="#" data-act="openStuR" data-id="${r.x.id}" class="chip" style="cursor:pointer;border-color:${c};color:${c}">${esc(r.x.name.split(' ').slice(0,2).join(' '))} ${r.d>0?'+':''}${Math.round(r.d)}%</a>`;
+  const ag=avg[avg.length-1],ap=avg.length>1?avg[avg.length-2]:null;
+  // group average mini chart
+  const bars=avg.map((a,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:34px"><b style="font-size:12px">${a==null?'—':Math.round(a)+'%'}</b><div style="width:100%;max-width:46px;height:70px;background:var(--grid);border-radius:8px;display:flex;align-items:flex-end;overflow:hidden"><i style="display:block;width:100%;height:${a==null?0:Math.max(4,a)}%;background:${a==null?'transparent':pcolor(a)};border-radius:8px"></i></div><span class="muted" style="font-size:12px">${lab(M[i])}</span></div>`).join('');
+  return `<div class="card"><h2>🗓 Oylik testlar <span class="muted" style="font-weight:500">— barcha oylar bir joyda${S.group!=='all'?' · '+esc(S.group):''}. Vazifa foiziga qo‘shilmaydi</span></h2>
+   <div class="grid2" style="gap:14px;align-items:stretch">
+    <div style="background:var(--bg);border-radius:12px;padding:12px"><div class="muted" style="font-size:12.5px;font-weight:700;margin-bottom:6px">Guruh o‘rtachasi oyma-oy ${ap!=null&&ag!=null?dch(ag-ap):''}</div><div style="display:flex;gap:8px;align-items:flex-end">${bars}</div></div>
+    <div style="background:var(--bg);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px">
+      <div><div style="font-size:13px;font-weight:700;color:var(--good);margin-bottom:6px">📈 Ko‘tarildi (${up.length})</div>${up.length?`<div style="display:flex;flex-wrap:wrap;gap:6px">${up.map(r=>chip(r,'var(--good)')).join('')}</div>`:'<span class="muted" style="font-size:13px">yo‘q</span>'}</div>
+      <div><div style="font-size:13px;font-weight:700;color:var(--crit);margin-bottom:6px">📉 Pastladi (${down.length})</div>${down.length?`<div style="display:flex;flex-wrap:wrap;gap:6px">${down.map(r=>chip(r,'var(--crit)')).join('')}</div>`:'<span class="muted" style="font-size:13px">yo‘q</span>'}</div>
+      <div class="muted" style="font-size:12px">Oxirgi ikki natija solishtiriladi; 5% dan ortiq o‘zgarish hisobga olinadi.</div></div>
+   </div>
+   <div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>#</th><th>O‘quvchi</th>${M.map(ym=>`<th style="text-align:center">${lab(ym)}</th>`).join('')}<th>O‘zgarish</th></tr></thead><tbody>
+   ${rows.map((r,i)=>`<tr class="click" data-act="openStu" data-id="${r.x.id}"><td class="muted">${i+1}</td><td><b>${esc(r.x.name)}</b><div class="muted" style="font-size:12px">${esc(r.x.group||'Guruhsiz')}</div></td>${r.vals.map(v=>`<td style="text-align:center">${cell(v)}</td>`).join('')}<td>${dch(r.d)}</td></tr>`).join('')}
+   <tr style="background:var(--bg)"><td></td><td><b>Guruh o‘rtachasi</b></td>${avg.map(a=>`<td style="text-align:center">${cell(a)}</td>`).join('')}<td>${ap!=null&&ag!=null?dch(ag-ap):''}</td></tr>
+   </tbody></table></div></div>`;
+}
