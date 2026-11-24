@@ -15,7 +15,7 @@ const json = (o, s = 200, h = {}) => new Response(JSON.stringify(o), { status: s
 const err = (msg, s = 400, code = 'invalid_argument') => json({ error: msg, code }, s);
 const rid = (n = 20) => { const a = new Uint8Array(n); crypto.getRandomValues(a); return [...a].map(b => 'abcdefghijklmnopqrstuvwxyz0123456789'[b % 36]).join(''); };
 const normPhone = p => { const s = String(p || '').trim().toLowerCase(); if (s === 'admin') return 'admin'; const d = s.replace(/\D/g, ''); return d.length >= 9 ? d.slice(-9) : d; };
-function genPassword() { const a = new Uint8Array(6); crypto.getRandomValues(a); const w = 'abcdefghjkmnpqrstuvwxyz'; return [...a].slice(0, 3).map(b => w[b % w.length]).join('') + String(100 + (a[3] * 256 + a[4]) % 900); }
+function genPassword() { const a = new Uint8Array(8); crypto.getRandomValues(a); const w = 'abcdefghjkmnpqrstuvwxyz'; return [...a].slice(0, 4).map(b => w[b % w.length]).join('') + String(1000 + (a[4] * 256 + a[5]) % 9000); }
 async function hashPw(pw, salt) {
   const k = await crypto.subtle.importKey('raw', enc.encode(pw), 'PBKDF2', false, ['deriveBits']);
   const b = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: enc.encode(salt), iterations: 100000, hash: 'SHA-256' }, k, 256);
@@ -30,10 +30,25 @@ async function ensureSchema(env) {
     env.DB.prepare('CREATE TABLE IF NOT EXISTS docs(coll TEXT, id TEXT, teacher_id TEXT, data TEXT, updated INTEGER, PRIMARY KEY(coll,id))'),
     env.DB.prepare('CREATE INDEX IF NOT EXISTS docs_t ON docs(coll, teacher_id)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS codes(code TEXT PRIMARY KEY, student_id TEXT UNIQUE, created INTEGER)'),
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS attempts(k TEXT PRIMARY KEY, n INTEGER, first INTEGER, until INTEGER)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS claims(student_id TEXT PRIMARY KEY, tg TEXT, ts INTEGER)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS subs(task_id TEXT, student_id TEXT, ts INTEGER, PRIMARY KEY(task_id, student_id))'),
   ]);
 }
+/* ---------- brute-force himoyasi ---------- */
+// limit: shu oynada nechta xato urinishga ruxsat; keyin `lockMin` daqiqa bloklanadi
+async function isLocked(env, k) { const r = await env.DB.prepare('SELECT until FROM attempts WHERE k=?').bind(k).first(); return r && r.until > Date.now() ? Math.ceil((r.until - Date.now()) / 60000) : 0; }
+async function failHit(env, k, limit, winMin, lockMin) {
+  const now = Date.now(); const r = await env.DB.prepare('SELECT n,first FROM attempts WHERE k=?').bind(k).first();
+  let n = 1, first = now; if (r && now - r.first < winMin * 60000) { n = r.n + 1; first = r.first; }
+  const until = n >= limit ? now + lockMin * 60000 : 0;
+  await env.DB.prepare('INSERT INTO attempts(k,n,first,until) VALUES(?,?,?,?) ON CONFLICT(k) DO UPDATE SET n=excluded.n,first=excluded.first,until=excluded.until').bind(k, until ? 0 : n, until ? now : first, until).run();
+}
+const clientIp = req => req.headers.get('cf-connecting-ip') || 'x';
+const lockedMsg = m => err(`Juda ko‘p noto‘g‘ri urinish. ${m} daqiqadan keyin qayta urinib ko‘ring.`, 429, 'resource_exhausted');
+const SEC_HEADERS = { 'x-frame-options': 'DENY', 'x-content-type-options': 'nosniff', 'referrer-policy': 'same-origin', 'content-security-policy': "frame-ancestors 'none'" };
+const html = (body) => new Response(body, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache', ...SEC_HEADERS } });
+
 async function me(req, env) {
   const t = cookie(req, 'sid'); if (!t) return null;
   const r = await env.DB.prepare('SELECT u.id,u.name,u.phone,u.role,u.active FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND s.expires>?').bind(t, Date.now()).first();
@@ -249,8 +264,10 @@ export default {
     try {
       if (!globalThis.__schema) { await ensureSchema(env); globalThis.__schema = true; }
       // static
-      if (M === 'GET' && (p === '/' || p === '/index.html')) return new Response(APP_HTML, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' } });
-      if (M === 'GET' && (p === '/reyting' || p === '/reyting/')) return new Response(RANK_HTML, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' } });
+      if (M === 'GET' && (p === '/' || p === '/index.html')) return html(APP_HTML);
+      if (M === 'GET' && (p === '/reyting' || p === '/reyting/')) return html(RANK_HTML);
+      // CSRF: boshqa saytdan kelgan o'zgartiruvchi so'rovlarni rad etish
+      if (M !== 'GET' && p.startsWith('/api/')) { const o = req.headers.get('origin'); if (o && o !== url.origin) return err('Ruxsat yo‘q', 403, 'permission_denied'); }
       if (M === 'GET' && ASSETS[p]) { const a = ASSETS[p]; const bin = Uint8Array.from(atob(a.b64), c => c.charCodeAt(0)); return new Response(bin, { headers: { 'content-type': a.type, 'cache-control': 'public, max-age=604800' } }); }
 
       // public ranking (no task details)
@@ -278,12 +295,14 @@ export default {
         const codes = await ensureCodes(env, [x.id]);
         return json({ status: 'ok', code: codes[x.id], name: x.d.name, group: x.d.group || 'Guruhsiz', teacher: x.tname });
       }
-      if (M === 'GET' && (p === '/men' || p === '/men/')) return new Response(STU_HTML, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' } });
+      if (M === 'GET' && (p === '/men' || p === '/men/')) return html(STU_HTML);
       // student self-view by personal code (web page /men and Telegram bot)
       if (p.startsWith('/api/s/')) {
         const code = req.headers.get('x-code') || url.searchParams.get('code');
+        const rk = url.hostname === 'baho' ? 'code:bot' : 'code:' + clientIp(req);
+        const lm = await isLocked(env, rk); if (lm) return lockedMsg(lm);
         const s = await studentByCode(env, code);
-        if (!s) { await new Promise(r => setTimeout(r, 400)); return err('Kod noto‘g‘ri yoki o‘quvchi topilmadi', 404, 'not_found'); }
+        if (!s) { await failHit(env, rk, url.hostname === 'baho' ? 300 : 15, 15, 30); await new Promise(r => setTimeout(r, 400)); return err('Kod noto‘g‘ri yoki o‘quvchi topilmadi', 404, 'not_found'); }
         if (M === 'GET' && p === '/api/s/me') return json(await studentView(env, s));
         if (M === 'GET' && p === '/api/s/card.png') {
           const qp = url.searchParams.get('p'); const per = qp === 'week' ? 'week' : qp === 'oylik' ? 'oylik' : 'month';
@@ -320,8 +339,11 @@ export default {
       }
       if (M === 'POST' && p === '/api/login') {
         const b = await req.json().catch(() => ({})); const ph = normPhone(b.phone);
+        const kp = 'login:' + ph, ki = 'loginip:' + clientIp(req);
+        const lm = Math.max(await isLocked(env, kp), await isLocked(env, ki)); if (lm) return lockedMsg(lm);
         const u = await env.DB.prepare('SELECT * FROM users WHERE phone=? AND active=1').bind(ph).first();
-        if (!u || (await hashPw(String(b.password || ''), u.salt)) !== u.hash) { await new Promise(r => setTimeout(r, 700)); return err('Telefon raqam yoki parol noto‘g‘ri', 401, 'auth'); }
+        if (!u || (await hashPw(String(b.password || ''), u.salt)) !== u.hash) { await failHit(env, kp, 5, 15, 15); await failHit(env, ki, 20, 15, 30); await new Promise(r => setTimeout(r, 700)); return err('Telefon raqam yoki parol noto‘g‘ri', 401, 'auth'); }
+        await env.DB.prepare('DELETE FROM attempts WHERE k=?').bind(kp).run();
         const t = rid(32); await env.DB.prepare('INSERT INTO sessions(token,user_id,expires) VALUES(?,?,?)').bind(t, u.id, Date.now() + SESSION_DAYS * 864e5).run();
         return json({ ok: true, user: { id: u.id, name: u.name, role: u.role } }, 200, { 'set-cookie': `sid=${t}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}` });
       }
@@ -335,6 +357,7 @@ export default {
         const u = await env.DB.prepare('SELECT salt,hash FROM users WHERE id=?').bind(user.id).first();
         if ((await hashPw(String(b.old || ''), u.salt)) !== u.hash) return err('Eski parol noto‘g‘ri', 403);
         const salt = rid(16); await env.DB.prepare('UPDATE users SET salt=?,hash=? WHERE id=?').bind(salt, await hashPw(String(b.password), salt), user.id).run();
+        await env.DB.prepare('DELETE FROM sessions WHERE user_id=? AND token<>?').bind(user.id, cookie(req, 'sid') || '').run(); // boshqa qurilmalardan chiqarish
         return json({ ok: true });
       }
 
@@ -425,7 +448,8 @@ export default {
     } catch (e) {
       if (String(e && e.message) === 'scope') return err('Bu sizning guruhingiz emas', 403);
       if (String(e && e.message) === 'missing') return err('Topilmadi', 404);
-      return err('Server xatosi: ' + (e && e.message), 500, 'unavailable');
+      console.log('error', p, e && e.stack || e);
+      return err('Server xatosi. Birozdan keyin qayta urinib ko‘ring.', 500, 'unavailable');
     }
   },
 };
