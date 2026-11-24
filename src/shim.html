@@ -11,14 +11,19 @@
   }
   // ---- db with the same surface the app uses (collection/doc, onSnapshot, add, set, update, delete)
   const subs={};
-  async function refresh(c){const j=await api('GET','/api/c/'+c);const docs=j.docs.map(d=>({id:d.id,exists:true,data:()=>d.data,metadata:{fromCache:false,hasPendingWrites:false}}));const snap={docs,size:docs.length,empty:!docs.length,metadata:{fromCache:false,hasPendingWrites:false},docChanges:()=>[]};(subs[c]||[]).forEach(f=>f.cb(snap));}
+  const VA=()=>{try{return sessionStorage.getItem('viewAs')||'';}catch(e){return '';}};
+  async function viewFilter(c,docs){const va=VA();if(!va||!window.__REAL)return docs;
+    if(c==='students')return docs.filter(d=>(d.data||{}).teacherId===va);
+    if(c==='tasks'){const st=await api('GET','/api/c/students');const ids=new Set(st.docs.filter(d=>(d.data||{}).teacherId===va).map(d=>d.id));return docs.filter(d=>((d.data||{}).studentIds||[]).some(x=>ids.has(x)));}
+    return docs;}
+  async function refresh(c){const j=await api('GET','/api/c/'+c);j.docs=await viewFilter(c,j.docs);const docs=j.docs.map(d=>({id:d.id,exists:true,data:()=>d.data,metadata:{fromCache:false,hasPendingWrites:false}}));const snap={docs,size:docs.length,empty:!docs.length,metadata:{fromCache:false,hasPendingWrites:false},docChanges:()=>[]};(subs[c]||[]).forEach(f=>f.cb(snap));}
   let rt=null;function refreshAll(){clearTimeout(rt);rt=setTimeout(()=>Object.keys(subs).forEach(c=>refresh(c).catch(()=>{})),150);}
   setInterval(()=>{if(!document.hidden)Object.keys(subs).forEach(c=>refresh(c).catch(()=>{}));},20000);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshAll();});
   const db={
     collection(c){return{
       onSnapshot(cb,err){(subs[c]=subs[c]||[]).push({cb,err});refresh(c).catch(e=>err&&err(e));return()=>{};},
-      async add(d){const j=await api('POST','/api/c/'+c,d);refreshAll();return {id:j.id};},
+      async add(d){if(c==='students'&&VA()&&window.__REAL&&!d.teacherId)d={...d,teacherId:VA()};const j=await api('POST','/api/c/'+c,d);refreshAll();return {id:j.id};},
       doc(id){return db.doc(c+'/'+id);}
     };},
     doc(p){const [c,id]=p.split('/');return{
@@ -53,7 +58,8 @@
   function userChip(){
     const h=document.querySelector('header');if(!h)return;
     const c=document.createElement('div');c.className='uchip';
-    c.innerHTML=`<span>${ME.role==='admin'?'👑':'👩‍🏫'} <b>${esc(ME.name)}</b> <span class="muted">${ME.role==='admin'?'rahbar':'ustoz'}</span></span><button class="btn sm" id="pwBtn" title="Parolni almashtirish">🔑</button><button class="btn sm" id="outBtn">Chiqish</button>`;
+    if(window.__REAL){const b=document.createElement('div');b.id='vaBar';b.innerHTML=`👁 Siz <b>${esc(ME.name)}</b> ustoz ko‘zi bilan ko‘ryapsiz — u aynan shuni ko‘radi. <button class="btn sm" id="vaBack">↩ Rahbar ko‘rinishiga qaytish</button>`;document.body.prepend(b);b.querySelector('#vaBack').onclick=()=>{try{sessionStorage.removeItem('viewAs');sessionStorage.removeItem('viewAsName');}catch(e){}location.hash='#ustozlar';location.reload();};}
+    c.innerHTML=`<span>${window.__REAL?'👁':ME.role==='admin'?'👑':'👩‍🏫'} <b>${esc(ME.name)}</b> <span class="muted">${ME.role==='admin'?'rahbar':'ustoz'}</span></span><button class="btn sm" id="pwBtn" title="Parolni almashtirish">🔑</button><button class="btn sm" id="outBtn">Chiqish</button>`;
     h.appendChild(c);
     c.querySelector('#outBtn').onclick=async()=>{await api('POST','/api/logout',{});location.reload();};
     c.querySelector('#pwBtn').onclick=async()=>{
@@ -65,6 +71,7 @@
   }
   async function boot(){
     try{ME=await api('GET','/api/me');}catch(e){showLogin();return;}
+    if(ME.role==='admin'&&VA()){window.__REAL=ME;let nm='';try{nm=sessionStorage.getItem('viewAsName')||'';}catch(e){}ME={id:VA(),name:nm||'Ustoz',role:'teacher'};}
     window.__ME=ME;userChip();readyRes();document.dispatchEvent(new Event('me-ready'));
   }
   document.addEventListener('DOMContentLoaded',boot);
@@ -74,5 +81,6 @@
 #loginBox{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
 .lgbox{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px;max-width:380px;width:100%;box-shadow:var(--shadow);text-align:left}
 .lgbox h1{font-size:20px;margin:10px 0 2px}
+#vaBar{position:sticky;top:0;z-index:40;background:#fff4d6;border-bottom:2px solid #f0b429;padding:8px 14px;font-size:14px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
 .uchip{display:flex;align-items:center;gap:8px;font-size:13px;flex-wrap:wrap}
 </style>
