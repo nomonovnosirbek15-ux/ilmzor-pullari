@@ -81,7 +81,7 @@ const app=document.getElementById('app');
 async function api(m,p,b){const r=await fetch(p,{method:m,headers:{'x-code':CODE,'content-type':'application/json'},body:b?JSON.stringify(b):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error(j.error||'Xatolik'),{status:r.status});return j;}
 function login(msg){
   document.getElementById('sub').textContent='Shaxsiy kodingiz bilan kiring';
-  app.innerHTML=`<div class="card login"><h2>🔑 Shaxsiy kod</h2><p class="muted">6 belgili kodni ustozingiz beradi. U Telegram botda ham ishlaydi: <b>@ilmzor_test_bot</b> → «📝 Vazifalarim».</p>
+  app.innerHTML=`<div class="card login"><h2>🔑 Shaxsiy kod</h2><p class="muted">Kodingiz yo‘qmi? Telegram’da <a href="https://t.me/ilmzor_test_bot" target="_blank"><b>@ilmzor_test_bot</b></a> → «📝 Vazifalarim» ga <b>ism va familiyangizni</b> yozing — bot kodingizni yuboradi.</p>
   <input id="code" maxlength="6" placeholder="K7M2PQ" autocomplete="off" value="${esc(CODE)}"><div class="err" id="err">${esc(msg||'')}</div>
   <button class="btn" style="width:100%;padding:13px" id="go">Kirish</button></div>`;
   const i=document.getElementById('code');i.focus();
@@ -90,7 +90,7 @@ function login(msg){
 }
 async function load(first){
   try{D=await api('GET','/api/s/me');store.set(CODE);render();}
-  catch(e){if(e.status===404){store.set('');login(first?'Kod noto‘g‘ri. Ustozingizdan tekshirib oling.':'');}else app.innerHTML=`<div class="card empty">⚠️ ${esc(e.message)} <br><br><button class="btn" onclick="load()">Qayta urinish</button></div>`;}
+  catch(e){if(e.status===404){store.set('');login(first?'Kod noto‘g‘ri. Botga ism-familiyangizni yozib, kodingizni oling.':'');}else app.innerHTML=`<div class="card empty">⚠️ ${esc(e.message)} <br><br><button class="btn" onclick="load()">Qayta urinish</button></div>`;}
 }
 const ST={overdue:['❗ Muddati o‘tgan','#fde8e8','#b42318'],owed:['📌 Keyin topshiradi','#f1e9fb','#6b3fb5'],pending:['⏳ Bajarilishi kerak','#fff4d6','#a15c00'],submitted:['🙋 Ustozga topshirishga tayyor','#e6f0ff','#1d4fb8'],done:['✅ Bajarildi','#e6f7ee','#13804b'],absent:['🚫 Darsga kelmagan','#eef2f6','#53627a']};
 function row(t){

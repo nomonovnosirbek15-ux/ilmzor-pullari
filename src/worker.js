@@ -26,6 +26,7 @@ async function ensureSchema(env) {
     env.DB.prepare('CREATE TABLE IF NOT EXISTS docs(coll TEXT, id TEXT, teacher_id TEXT, data TEXT, updated INTEGER, PRIMARY KEY(coll,id))'),
     env.DB.prepare('CREATE INDEX IF NOT EXISTS docs_t ON docs(coll, teacher_id)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS codes(code TEXT PRIMARY KEY, student_id TEXT UNIQUE, created INTEGER)'),
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS claims(student_id TEXT PRIMARY KEY, tg TEXT, ts INTEGER)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS subs(task_id TEXT, student_id TEXT, ts INTEGER, PRIMARY KEY(task_id, student_id))'),
   ]);
 }
@@ -182,6 +183,24 @@ export default {
         const r = await ranking(env, url.searchParams.get('p') === 'week' ? 'week' : url.searchParams.get('p') === 'all' ? 'all' : 'month', url.searchParams.get('d'));
         return json(pub(r), 200, { 'access-control-allow-origin': '*' });
       }
+      // bot-only (reachable just through the service binding, host "baho"): student gets own code by name
+      if (p === '/api/bot/claim' && M === 'POST') {
+        if (url.hostname !== 'baho') return err('Topilmadi', 404, 'not_found');
+        const b = await req.json().catch(() => ({})); const tg = String(b.tg || ''); if (!tg) return err('tg kerak');
+        const { results } = await env.DB.prepare("SELECT d.id, d.data, d.teacher_id, u.name tname FROM docs d LEFT JOIN users u ON u.id=d.teacher_id WHERE d.coll='students'").all();
+        const key = s => norm(s).split(' ').filter(Boolean).sort().join(' ');
+        const want = key(b.name);
+        let cands = results.map(r => ({ id: r.id, d: JSON.parse(r.data), tname: r.tname || '' })).filter(x => !x.d.archived && key(x.d.name) === want && want.split(' ').length >= 2);
+        if (b.sid) cands = cands.filter(x => x.id === b.sid);
+        if (!cands.length) return json({ status: 'notfound' });
+        if (cands.length > 1) return json({ status: 'many', options: cands.map(x => ({ sid: x.id, name: x.d.name, group: x.d.group || 'Guruhsiz', teacher: x.tname })) });
+        const x = cands[0];
+        const cl = await env.DB.prepare('SELECT tg FROM claims WHERE student_id=?').bind(x.id).first();
+        if (cl && cl.tg !== tg) return json({ status: 'taken', name: x.d.name, group: x.d.group || 'Guruhsiz', teacher: x.tname });
+        if (!cl) await env.DB.prepare('INSERT INTO claims(student_id,tg,ts) VALUES(?,?,?)').bind(x.id, tg, Date.now()).run();
+        const codes = await ensureCodes(env, [x.id]);
+        return json({ status: 'ok', code: codes[x.id], name: x.d.name, group: x.d.group || 'Guruhsiz', teacher: x.tname });
+      }
       if (M === 'GET' && (p === '/men' || p === '/men/')) return new Response(STU_HTML, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' } });
       // student self-view by personal code (web page /men and Telegram bot)
       if (p.startsWith('/api/s/')) {
@@ -283,12 +302,14 @@ export default {
       // student codes (teacher: own students; admin: all)
       if (p === '/api/codes' && M === 'GET') {
         const sts = (await listDocs(env, 'students', user)).filter(d => !d.data.archived);
-        return json({ codes: await ensureCodes(env, sts.map(d => d.id)) });
+        const { results: cl } = await env.DB.prepare('SELECT student_id FROM claims').all();
+        const ids = new Set(sts.map(d => d.id));
+        return json({ codes: await ensureCodes(env, sts.map(d => d.id)), linked: cl.map(r => r.student_id).filter(id => ids.has(id)) });
       }
       if (p === '/api/codes/reset' && M === 'POST') {
         const b = await req.json(); const d = await getDoc(env, 'students', String(b.id || ''));
         if (!d || (user.role !== 'admin' && d.teacher_id !== user.id)) return err('Ruxsat yo‘q', 403, 'permission_denied');
-        await env.DB.prepare('DELETE FROM codes WHERE student_id=?').bind(b.id).run();
+        await env.DB.batch([env.DB.prepare('DELETE FROM codes WHERE student_id=?').bind(b.id), env.DB.prepare('DELETE FROM claims WHERE student_id=?').bind(b.id)]);
         return json({ codes: await ensureCodes(env, [b.id]) });
       }
       // "bajardim" submissions waiting for the teacher

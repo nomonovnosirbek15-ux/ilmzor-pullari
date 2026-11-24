@@ -105,24 +105,25 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.dataset&&e.
 S.codes=null;S.codesOpen=false;
 function codesBlock(){
   const base=location.origin;
-  if(!S.codesOpen) return `<div class="card" style="margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b>🔑 O‘quvchilar shaxsiy kodi</b><span class="muted" style="font-size:13px">— o‘quvchi (yoki ota-ona) o‘z vazifalarini ko‘radi va «Bajardim» deb belgilaydi: botda «📝 Vazifalarim» yoki <a href="/men" target="_blank">${base}/men</a></span><button class="btn sm pri" data-act="codesOpen" style="margin-left:auto">Kodlarni ko‘rsatish</button></div>`;
+  if(!S.codesOpen) return `<div class="card" style="margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b>🔑 O‘quvchilar kabineti</b><span class="muted" style="font-size:13px">— o‘quvchi @ilmzor_test_bot → «📝 Vazifalarim» ga ism-familiyasini yozib kiradi (kodni bot beradi); sayt: <a href="/men" target="_blank">${base}/men</a></span><button class="btn sm pri" data-act="codesOpen" style="margin-left:auto">Kodlarni ko‘rsatish</button></div>`;
   if(!S.codes) return `<div class="card empty">Kodlar yuklanmoqda…</div>`;
   const list=activeStudents().filter(x=>inGroup(x)&&S.codes[x.id]).sort((a,b)=>(a.group||'').localeCompare(b.group||'')||a.name.localeCompare(b.name));
   return `<div class="card" style="margin-bottom:14px"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h2 style="margin:0">🔑 Shaxsiy kodlar <span class="muted" style="font-weight:500">(${list.length})</span></h2>
     <button class="btn sm pri" data-act="codesCopyAll" style="margin-left:auto">📋 Hammasini nusxalash</button><button class="btn sm" data-act="codesClose">Yopish</button></div>
-    <p class="muted" style="font-size:12.5px">Har bir o‘quvchiga o‘z kodini bering. Kod bilan: Telegram <b>@ilmzor_test_bot</b> → «📝 Vazifalarim» yoki sayt <a href="/men" target="_blank">${base}/men</a>. Kod boshqaga o‘tib qolsa — 🔄 bilan yangilang (eskisi ishlamay qoladi).</p>
-    <table><tbody>${list.map(x=>`<tr><td><b>${esc(x.name)}</b><div class="muted" style="font-size:12px">${esc(x.group||'Guruhsiz')}</div></td><td><code style="font-size:17px;font-weight:800;letter-spacing:2px">${S.codes[x.id]}</code></td>
-      <td style="text-align:right;white-space:nowrap"><button class="btn sm" data-act="codeCopy" data-id="${x.id}">📋 Xabar</button> <button class="btn sm" data-act="codeReset" data-id="${x.id}" title="Yangi kod berish">🔄</button></td></tr>`).join('')}</tbody></table></div>`;
+    <p style="font-size:13px;background:#e6f7ee;border-radius:8px;padding:8px 10px">✅ Kod berish shart emas: o‘quvchi <b>@ilmzor_test_bot</b> → «📝 Vazifalarim» ga <b>ism-familiyasini</b> yozadi — bot kodini o‘zi beradi. Har o‘quvchi bitta Telegram’ga bog‘lanadi; boshqa telefondan kirish kerak bo‘lsa — 🔄 bosing.</p>
+    <p class="muted" style="font-size:12.5px">Xohlasangiz kodni o‘zingiz ham berishingiz mumkin. Kod bilan: Telegram <b>@ilmzor_test_bot</b> → «📝 Vazifalarim» yoki sayt <a href="/men" target="_blank">${base}/men</a>. Kod boshqaga o‘tib qolsa — 🔄 bilan yangilang (eskisi ishlamay qoladi).</p>
+    <table><tbody>${list.map(x=>`<tr><td><b>${esc(x.name)}</b><div class="muted" style="font-size:12px">${esc(x.group||'Guruhsiz')}</div></td><td><code style="font-size:17px;font-weight:800;letter-spacing:2px">${S.codes[x.id]}</code></td><td>${S.linked&&S.linked.has(x.id)?'<span style="color:var(--good);font-weight:700;font-size:13px">📱 Telegram ulangan</span>':'<span class="muted" style="font-size:13px">hali kirmagan</span>'}</td>
+      <td style="text-align:right;white-space:nowrap"><button class="btn sm" data-act="codeCopy" data-id="${x.id}">📋 Xabar</button> <button class="btn sm" data-act="codeReset" data-id="${x.id}" title="Yangi kod va Telegram bog‘lanishini yangilash">🔄</button></td></tr>`).join('')}</tbody></table></div>`;
 }
 function codeMsg(x){return `Ilmzor — ${x.name}\nShaxsiy kod: ${S.codes[x.id]}\n\nVazifalaringizni ko‘rish va «Bajardim» deb belgilash:\n• Telegram: @ilmzor_test_bot → «📝 Vazifalarim»\n• Sayt: ${location.origin}/men?kod=${S.codes[x.id]}`;}
 async function codesAction(a,el){
-  if(a==='codesOpen'){S.codesOpen=true;render();try{S.codes=(await window.__api('GET','/api/codes')).codes;}catch(e){toast(e.message);S.codesOpen=false;}render();return;}
+  if(a==='codesOpen'){S.codesOpen=true;render();try{const j=await window.__api('GET','/api/codes');S.codes=j.codes;S.linked=new Set(j.linked||[]);}catch(e){toast(e.message);S.codesOpen=false;}render();return;}
   if(a==='codesClose'){S.codesOpen=false;render();return;}
   if(a==='codeCopy'){const x=S.stuById[el.dataset.id];try{await navigator.clipboard.writeText(codeMsg(x));toast('Nusxalandi ✓ — o‘quvchiga yuboring');}catch(e){toast('Nusxalab bo‘lmadi');}return;}
   if(a==='codesCopyAll'){const list=activeStudents().filter(x=>inGroup(x)&&S.codes[x.id]).sort((a,b)=>a.name.localeCompare(b.name));
     const txt=`Ilmzor — o‘quvchilar shaxsiy kodlari\nTelegram: @ilmzor_test_bot → «📝 Vazifalarim» · Sayt: ${location.origin}/men\n\n`+list.map(x=>`${x.name} (${x.group||'Guruhsiz'}) — ${S.codes[x.id]}`).join('\n');
     try{await navigator.clipboard.writeText(txt);toast('Hammasi nusxalandi ✓');}catch(e){toast('Nusxalab bo‘lmadi');}return;}
-  if(a==='codeReset'){const x=S.stuById[el.dataset.id];if(!confirm(x.name+' uchun yangi kod berilsinmi? Eski kod ishlamay qoladi.'))return;
-    try{const j=await window.__api('POST','/api/codes/reset',{id:x.id});Object.assign(S.codes,j.codes);render();toast('Yangi kod: '+j.codes[x.id]);}catch(e){toast(e.message);}return;}
+  if(a==='codeReset'){const x=S.stuById[el.dataset.id];if(!confirm(x.name+' uchun yangi kod berilsinmi? Eski kod ishlamay qoladi va Telegram bog‘lanishi o‘chadi — o‘quvchi botga ism-familiyasini qayta yozib kiradi.'))return;
+    try{const j=await window.__api('POST','/api/codes/reset',{id:x.id});Object.assign(S.codes,j.codes);S.linked&&S.linked.delete(x.id);render();toast('Yangi kod: '+j.codes[x.id]);}catch(e){toast(e.message);}return;}
   if(a==='subDismiss'){try{await window.__api('DELETE','/api/subs',{taskId:el.dataset.t,studentId:el.dataset.s});window.__refreshAll();toast('Olib tashlandi');}catch(e){toast(e.message);}return;}
 }
