@@ -25,6 +25,8 @@ async function ensureSchema(env) {
     env.DB.prepare('CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY, user_id TEXT, expires INTEGER)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS docs(coll TEXT, id TEXT, teacher_id TEXT, data TEXT, updated INTEGER, PRIMARY KEY(coll,id))'),
     env.DB.prepare('CREATE INDEX IF NOT EXISTS docs_t ON docs(coll, teacher_id)'),
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS codes(code TEXT PRIMARY KEY, student_id TEXT UNIQUE, created INTEGER)'),
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS subs(task_id TEXT, student_id TEXT, ts INTEGER, PRIMARY KEY(task_id, student_id))'),
   ]);
 }
 async function me(req, env) {
@@ -65,6 +67,7 @@ async function ownerFor(env, coll, data, user, existing) {
 async function putDoc(env, coll, id, data, user, merge) {
   const ex = await getDoc(env, coll, id);
   if (merge) { if (!ex) throw new Error('missing'); data = { ...ex.data, ...data }; }
+  if (coll === 'tasks') delete data.submitted;
   const owner = await ownerFor(env, coll, data, user, ex);
   if (coll === 'students') data.teacherId = owner;
   await env.DB.prepare('INSERT INTO docs(coll,id,teacher_id,data,updated) VALUES(?,?,?,?,?) ON CONFLICT(coll,id) DO UPDATE SET teacher_id=excluded.teacher_id,data=excluded.data,updated=excluded.updated')
@@ -110,8 +113,56 @@ async function ranking(env, period, anchor) {
   rankOf(rated); rated.forEach(x => x.rankCenter = x._r);
   const groups = {}; rated.forEach(x => (groups[x.gkey] = groups[x.gkey] || []).push(x));
   Object.values(groups).forEach(g => { rankOf(g); g.forEach(x => { x.rankGroup = x._r; x.groupSize = g.length; }); });
-  const out = rated.map(x => ({ name: x.name, group: x.group, teacher: x.teacher, gkey: x.gkey, pct: Math.round(x.pct * 10) / 10, ball: Math.round(x.b * 10) / 10, max: x.m, n: x.n, rankCenter: x.rankCenter, rankGroup: x.rankGroup, groupSize: x.groupSize }));
+  const out = rated.map(x => ({ sid: x.id, name: x.name, group: x.group, teacher: x.teacher, gkey: x.gkey, pct: Math.round(x.pct * 10) / 10, ball: Math.round(x.b * 10) / 10, max: x.m, n: x.n, rankCenter: x.rankCenter, rankGroup: x.rankGroup, groupSize: x.groupSize }));
   return { period, from, to, today, total: rated.length, list: out };
+}
+const pub = r => ({ ...r, list: r.list.map(({ sid, ...x }) => x) });
+
+/* ---------- student codes & self-view ---------- */
+const CODE_ALPH = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function newStudentCode() { const a = new Uint8Array(6); crypto.getRandomValues(a); return [...a].map(b => CODE_ALPH[b % 32]).join(''); }
+async function ensureCodes(env, ids) {
+  if (!ids.length) return {};
+  const { results } = await env.DB.prepare('SELECT code,student_id FROM codes').all();
+  const map = {}; for (const r of results) map[r.student_id] = r.code;
+  const used = new Set(results.map(r => r.code)); const st = [];
+  for (const id of ids) if (!map[id]) { let c; do c = newStudentCode(); while (used.has(c)); used.add(c); map[id] = c; st.push(env.DB.prepare('INSERT INTO codes(code,student_id,created) VALUES(?,?,?)').bind(c, id, Date.now())); }
+  for (let i = 0; i < st.length; i += 50) await env.DB.batch(st.slice(i, i + 50));
+  return Object.fromEntries(ids.map(id => [id, map[id]]));
+}
+async function studentByCode(env, code) {
+  code = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); if (code.length !== 6) return null;
+  const r = await env.DB.prepare("SELECT c.student_id id, d.data, d.teacher_id FROM codes c JOIN docs d ON d.coll='students' AND d.id=c.student_id WHERE c.code=?").bind(code).first();
+  if (!r) return null; const d = JSON.parse(r.data); if (d.archived) return null;
+  return { id: r.id, data: d, teacher_id: r.teacher_id };
+}
+async function studentView(env, s) {
+  const today = tashkentToday(); const sid = s.id;
+  const [{ results: T }, { results: SB }, tu, rm, rw] = await Promise.all([
+    env.DB.prepare("SELECT id,data FROM docs WHERE coll='tasks' AND data LIKE ?").bind('%"' + sid + '"%').all(),
+    env.DB.prepare('SELECT task_id,ts FROM subs WHERE student_id=?').bind(sid).all(),
+    env.DB.prepare('SELECT name FROM users WHERE id=?').bind(s.teacher_id).first(),
+    ranking(env, 'month'), ranking(env, 'week'),
+  ]);
+  const sub = Object.fromEntries(SB.map(r => [r.task_id, r.ts]));
+  const tasks = [];
+  for (const r of T) {
+    const t = JSON.parse(r.data); if (!(t.studentIds || []).includes(sid) || !t.date) continue;
+    const max = Number(t.max) || 0, v = (t.scores || {})[sid], dl = addDays(t.date, DEADLINE_DAYS);
+    const graded = v !== undefined && v !== null && v !== '';
+    let status;
+    if ((t.absent || {})[sid]) status = 'absent';
+    else if (graded) status = 'done';
+    else if (sub[r.id]) status = 'submitted';
+    else if ((t.owed || {})[sid]) status = 'owed';
+    else if (dl < today) status = 'overdue';
+    else status = 'pending';
+    const ball = graded ? Number(v) : null;
+    tasks.push({ id: r.id, title: t.title || 'Vazifa', type: t.type || '', date: t.date, deadline: dl, max, note: t.note || '', status, ball, pct: graded && max ? Math.round(Math.min(100, ball / max * 100)) : null, submittedAt: sub[r.id] || null, late: !!(sub[r.id] && ymd(new Date(sub[r.id] + 5 * 3600e3)) > dl) });
+  }
+  tasks.sort((a, b) => b.date.localeCompare(a.date));
+  const pick = r => { const x = r.list.find(y => y.sid === sid); return x ? { pct: x.pct, ball: x.ball, max: x.max, rankGroup: x.rankGroup, groupSize: x.groupSize, rankCenter: x.rankCenter, total: r.total } : null; };
+  return { student: { name: s.data.name, group: s.data.group || 'Guruhsiz', teacher: tu ? tu.name : '' }, today, month: pick(rm), week: pick(rw), from: rm.from, to: rm.to, tasks };
 }
 const norm = s => String(s || '').toLowerCase().replace(/[‘’ʻʼ`']/g, '').replace(/\s+/g, ' ').trim();
 
@@ -129,13 +180,31 @@ export default {
       // public ranking (no task details)
       if (M === 'GET' && p === '/api/public/ranking') {
         const r = await ranking(env, url.searchParams.get('p') === 'week' ? 'week' : url.searchParams.get('p') === 'all' ? 'all' : 'month', url.searchParams.get('d'));
-        return json(r, 200, { 'access-control-allow-origin': '*' });
+        return json(pub(r), 200, { 'access-control-allow-origin': '*' });
+      }
+      if (M === 'GET' && (p === '/men' || p === '/men/')) return new Response(STU_HTML, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' } });
+      // student self-view by personal code (web page /men and Telegram bot)
+      if (p.startsWith('/api/s/')) {
+        const code = req.headers.get('x-code') || url.searchParams.get('code');
+        const s = await studentByCode(env, code);
+        if (!s) { await new Promise(r => setTimeout(r, 400)); return err('Kod noto‘g‘ri yoki o‘quvchi topilmadi', 404, 'not_found'); }
+        if (M === 'GET' && p === '/api/s/me') return json(await studentView(env, s));
+        if (M === 'POST' && (p === '/api/s/submit' || p === '/api/s/unsubmit')) {
+          const b = await req.json().catch(() => ({})); const t = await getDoc(env, 'tasks', String(b.taskId || ''));
+          if (!t || !(t.data.studentIds || []).includes(s.id)) return err('Vazifa topilmadi', 404, 'not_found');
+          const v = (t.data.scores || {})[s.id]; if (v !== undefined && v !== null && v !== '') return err('Bu vazifa allaqachon baholangan');
+          if ((t.data.absent || {})[s.id]) return err('Bu kuni darsga kelmagansiz — vazifa hisobga kirmaydi');
+          if (p === '/api/s/submit') await env.DB.prepare('INSERT OR REPLACE INTO subs(task_id,student_id,ts) VALUES(?,?,?)').bind(b.taskId, s.id, Date.now()).run();
+          else await env.DB.prepare('DELETE FROM subs WHERE task_id=? AND student_id=?').bind(b.taskId, s.id).run();
+          return json({ ok: true });
+        }
+        return err('Topilmadi', 404, 'not_found');
       }
       if (M === 'GET' && p === '/api/public/find') { // for the Telegram bot: ?q=name&p=month|week
         const q = norm(url.searchParams.get('q')); if (q.length < 3) return json({ matches: [] }, 200, { 'access-control-allow-origin': '*' });
         const r = await ranking(env, url.searchParams.get('p') === 'week' ? 'week' : 'month', null);
         const words = q.split(' ');
-        const matches = r.list.filter(x => { const n = norm(x.name); return words.every(w => n.includes(w)); }).slice(0, 5).map(x => ({ ...x, total: r.total }));
+        const matches = pub(r).list.filter(x => { const n = norm(x.name); return words.every(w => n.includes(w)); }).slice(0, 5).map(x => ({ ...x, total: r.total }));
         return json({ period: r.period, from: r.from, to: r.to, total: r.total, matches }, 200, { 'access-control-allow-origin': '*' });
       }
 
@@ -209,6 +278,29 @@ export default {
           for (let i = 0; i < st.length; i += 50) await env.DB.batch(st.slice(i, i + 50));
           return json({ ok: true, n: st.length });
         }
+      }
+
+      // student codes (teacher: own students; admin: all)
+      if (p === '/api/codes' && M === 'GET') {
+        const sts = (await listDocs(env, 'students', user)).filter(d => !d.data.archived);
+        return json({ codes: await ensureCodes(env, sts.map(d => d.id)) });
+      }
+      if (p === '/api/codes/reset' && M === 'POST') {
+        const b = await req.json(); const d = await getDoc(env, 'students', String(b.id || ''));
+        if (!d || (user.role !== 'admin' && d.teacher_id !== user.id)) return err('Ruxsat yo‘q', 403, 'permission_denied');
+        await env.DB.prepare('DELETE FROM codes WHERE student_id=?').bind(b.id).run();
+        return json({ codes: await ensureCodes(env, [b.id]) });
+      }
+      // "bajardim" submissions waiting for the teacher
+      if (p === '/api/subs' && M === 'GET') {
+        const tasks = await listDocs(env, 'tasks', user); const ids = new Set(tasks.map(t => t.id));
+        const { results } = await env.DB.prepare('SELECT task_id,student_id,ts FROM subs').all();
+        return json({ subs: results.filter(r => ids.has(r.task_id)) });
+      }
+      if (p === '/api/subs' && M === 'DELETE') {
+        const b = await req.json(); const t = await getDoc(env, 'tasks', String(b.taskId || ''));
+        if (!t || (user.role !== 'admin' && t.teacher_id !== user.id)) return err('Ruxsat yo‘q', 403, 'permission_denied');
+        await env.DB.prepare('DELETE FROM subs WHERE task_id=? AND student_id=?').bind(b.taskId, b.studentId).run(); return json({ ok: true });
       }
 
       // collections

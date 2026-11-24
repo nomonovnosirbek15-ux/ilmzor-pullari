@@ -16,7 +16,15 @@ rep("""  let pos=0;
   html+=`<div class="card"><h2>O‘quvchilar reytingi""","""  if(isAdmin()&&S.group==='all'&&!window.__REAL) html+=teacherBoard();
   let pos=0;
   html+=`<div class="card"><h2>O‘quvchilar reytingi""")
-rep("""  if(a==='parentCard'){openParentCard(el.dataset.id);return;}""","""  if(['addTeacher','viewAs','resetPw','toggleUser','copyPw','closePw','copyRank'].includes(a)){await adminAction(a,el);return;}
+rep("""  // ---- grid
+  h+=`<div class="card" style="margin-top:14px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0">✍️ Baholash jadvali</h2>""","""  h+=subsCard();
+  // ---- grid
+  h+=`<div class="card" style="margin-top:14px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0">✍️ Baholash jadvali</h2>""")
+rep("""      const ph=c.k==='od'?'0!':c.k==='pend'?'…':'';""","""      const sb=c.k!=='score'&&c.k!=='abs'&&(tk.submitted||{})[s.id];const ph=sb?'🙋':c.k==='od'?'0!':c.k==='pend'?'…':'';""")
+rep("""placeholder="${ph}" title="${esc(tip)}" inputmode="text" autocomplete="off" style="background:${bg};""","""placeholder="${ph}" title="${esc(sb?'🙋 O‘quvchi «Bajardim» dedi — tekshirib foiz yozing':tip)}" inputmode="text" autocomplete="off" style="background:${sb?'#e6f0ff':bg};${sb?'box-shadow:inset 0 0 0 2px #1d4fb8;':''}""")
+rep("""  return `${dl}<div class="grid2"><div class="card"><h2>➕ O‘quvchi qo‘shish</h2>""","""  return `${codesBlock()}${dl}<div class="grid2"><div class="card"><h2>➕ O‘quvchi qo‘shish</h2>""")
+rep("""  if(a==='parentCard'){openParentCard(el.dataset.id);return;}""","""  if(['codesOpen','codesClose','codeCopy','codesCopyAll','codeReset','subDismiss'].includes(a)){await codesAction(a,el);return;}
+  if(['addTeacher','viewAs','resetPw','toggleUser','copyPw','closePw','copyRank'].includes(a)){await adminAction(a,el);return;}
   if(a==='parentCard'){openParentCard(el.dataset.id);return;}""")
 rep("""  if(t.dataset.f){S.form[t.dataset.f]=t.value;}
   else if(t.dataset.it){const it=""","""  if(t.dataset.tf){S.tform=S.tform||{};S.tform[t.dataset.tf]=t.value;return;}
@@ -40,7 +48,7 @@ A={}
 for p,t in [('brand/logo-gorizontal.png','image/png'),('brand/logo-belgi.png','image/png'),('fonts/Satoshi-Medium.woff2','font/woff2'),('fonts/Satoshi-Bold.woff2','font/woff2'),('fonts/Satoshi-Black.woff2','font/woff2')]:
     A['/'+p]={'type':t,'b64':base64.b64encode(open('/home/claude/vazifalar/'+p,'rb').read()).decode()}
 w=open('/home/claude/baho/src/worker.js').read()
-head='const APP_HTML = '+json.dumps(s,ensure_ascii=False)+';\nconst RANK_HTML = '+json.dumps(open('/home/claude/baho/src/reyting.html').read(),ensure_ascii=False)+';\nconst ASSETS = '+json.dumps(A)+';\n'
+head='const APP_HTML = '+json.dumps(s,ensure_ascii=False)+';\nconst RANK_HTML = '+json.dumps(open('/home/claude/baho/src/reyting.html').read(),ensure_ascii=False)+';\nconst STU_HTML = '+json.dumps(open('/home/claude/baho/src/men.html').read(),ensure_ascii=False)+';\nconst ASSETS = '+json.dumps(A)+';\n'
 w=w.replace('/*__ASSETS__*/',head)
 open('/home/claude/baho/dist/worker.js','w').write(w)
 print(len(w)//1024,'KB')

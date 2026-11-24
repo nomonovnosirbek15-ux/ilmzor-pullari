@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ilmzor — Mening vazifalarim</title>
+<link rel="icon" href="/brand/logo-belgi.png">
+<style>
+@font-face{font-family:Satoshi;src:url(/fonts/Satoshi-Medium.woff2) format('woff2');font-weight:500}
+@font-face{font-family:Satoshi;src:url(/fonts/Satoshi-Bold.woff2) format('woff2');font-weight:700}
+@font-face{font-family:Satoshi;src:url(/fonts/Satoshi-Black.woff2) format('woff2');font-weight:900}
+:root{--navy:#0e223a;--aqua:#4ad496;--bg:#f2f5f8;--card:#fff;--ink:#0e223a;--ink2:#53627a;--line:#e3e8ef}
+*{box-sizing:border-box}
+body{margin:0;font-family:Satoshi,system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+header{background:var(--navy);color:#fff;padding:18px 16px 70px;position:relative;overflow:hidden}
+header .in{max-width:760px;margin:0 auto}
+header img{height:40px}
+header h1{font-size:26px;font-weight:900;margin:14px 0 4px}
+header p{margin:0;color:var(--aqua);font-weight:700}
+main{max-width:760px;margin:-52px auto 40px;padding:0 12px;position:relative}
+.card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 2px 10px rgba(14,34,58,.08);margin-bottom:14px}
+.seg{display:inline-flex;background:#eef2f6;border-radius:10px;padding:3px}
+.seg button{border:0;background:none;padding:8px 16px;border-radius:8px;font:inherit;font-weight:700;color:var(--ink2);cursor:pointer}
+.seg button.on{background:var(--navy);color:#fff}
+input,select{font:inherit;border:1px solid var(--line);border-radius:10px;padding:11px 12px;width:100%;background:#fff;color:var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.me{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.me .b{background:#f4f7fa;border-radius:12px;padding:12px;text-align:center}
+.me .v{font-size:28px;font-weight:900}
+.me .l{font-size:12px;color:var(--ink2);font-weight:700}
+table{width:100%;border-collapse:collapse}
+td,th{padding:9px 6px;border-bottom:1px solid var(--line);text-align:left;font-variant-numeric:tabular-nums}
+th{font-size:12px;color:var(--ink2)}
+.rk{width:40px;font-weight:900;text-align:center}
+.medal{font-size:20px}
+.bar{height:8px;background:#eef2f6;border-radius:4px;overflow:hidden;min-width:60px}
+.bar i{display:block;height:100%;border-radius:0 4px 4px 0}
+.pct{font-weight:900;min-width:48px;text-align:right}
+.hl td{background:#e9fbf2}
+.muted{color:var(--ink2);font-size:13px}
+h2{font-size:17px;margin:0 0 10px}
+footer{text-align:center;padding:20px;background:var(--aqua);color:var(--navy);font-weight:900}
+.empty{color:var(--ink2);text-align:center;padding:20px}
+</style>
+<style>
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tile{background:#f4f7fa;border-radius:12px;padding:12px;text-align:center}
+.tile .v{font-size:26px;font-weight:900;line-height:1.1}
+.tile .l{font-size:12px;color:var(--ink2);font-weight:700;margin-bottom:4px}
+.tile .s{font-size:12px;color:var(--ink2)}
+.tk{display:flex;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
+.tk:last-child{border-bottom:0}
+.tk .t{flex:1;min-width:0}
+.tk .n{font-weight:700}
+.tk .d{font-size:12.5px;color:var(--ink2)}
+.chip{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px}
+.pc{min-width:54px;text-align:center;font-weight:900;color:#fff;border-radius:10px;padding:6px 4px}
+.btn{border:0;border-radius:10px;padding:9px 12px;font:inherit;font-weight:700;cursor:pointer;background:var(--navy);color:#fff;white-space:nowrap}
+.btn.ghost{background:#eef2f6;color:var(--ink)}
+.btn:disabled{opacity:.5}
+.sec h2 .c{color:var(--ink2);font-weight:700}
+.login{max-width:420px;margin:0 auto;text-align:center}
+.login input{text-align:center;font-size:24px;letter-spacing:6px;font-weight:900;text-transform:uppercase}
+.err{color:#c33;font-weight:700;min-height:20px;margin-top:8px}
+.who{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+@media(max-width:480px){.tile .v{font-size:22px}}
+</style>
+</head>
+<body>
+<header><div class="in"><img src="/brand/logo-gorizontal.png" alt="ilmzor"><h1>📝 Mening vazifalarim</h1><p id="sub">Shaxsiy kodingiz bilan kiring</p></div></header>
+<main id="app"><div class="card empty">Yuklanmoqda…</div></main>
+<footer>ILMZOR — ILM BOG‘INGIZ</footer>
+<script>
+const MON=['yanvar','fevral','mart','aprel','may','iyun','iyul','avgust','sentabr','oktabr','noyabr','dekabr'];
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pcolor=p=>`hsl(${Math.round(Math.max(0,Math.min(100,p))*1.2)},72%,${p>=50?38:44}%)`;
+const dt=s=>{const d=new Date(s+'T00:00:00');return d.getDate()+'-'+MON[d.getMonth()];};
+const store={get(){try{return localStorage.getItem('ilmzor_code')||'';}catch(e){return '';}},set(v){try{v?localStorage.setItem('ilmzor_code',v):localStorage.removeItem('ilmzor_code');}catch(e){}}};
+let CODE=(new URLSearchParams(location.search).get('kod')||store.get()).toUpperCase(),D=null,BUSY=false;
+const app=document.getElementById('app');
+async function api(m,p,b){const r=await fetch(p,{method:m,headers:{'x-code':CODE,'content-type':'application/json'},body:b?JSON.stringify(b):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error(j.error||'Xatolik'),{status:r.status});return j;}
+function login(msg){
+  document.getElementById('sub').textContent='Shaxsiy kodingiz bilan kiring';
+  app.innerHTML=`<div class="card login"><h2>🔑 Shaxsiy kod</h2><p class="muted">6 belgili kodni ustozingiz beradi. U Telegram botda ham ishlaydi: <b>@ilmzor_test_bot</b> → «📝 Vazifalarim».</p>
+  <input id="code" maxlength="6" placeholder="K7M2PQ" autocomplete="off" value="${esc(CODE)}"><div class="err" id="err">${esc(msg||'')}</div>
+  <button class="btn" style="width:100%;padding:13px" id="go">Kirish</button></div>`;
+  const i=document.getElementById('code');i.focus();
+  const go=()=>{CODE=i.value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(CODE.length!==6){document.getElementById('err').textContent='Kod 6 belgidan iborat';return;}load(true);};
+  document.getElementById('go').onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go();};
+}
+async function load(first){
+  try{D=await api('GET','/api/s/me');store.set(CODE);render();}
+  catch(e){if(e.status===404){store.set('');login(first?'Kod noto‘g‘ri. Ustozingizdan tekshirib oling.':'');}else app.innerHTML=`<div class="card empty">⚠️ ${esc(e.message)} <br><br><button class="btn" onclick="load()">Qayta urinish</button></div>`;}
+}
+const ST={overdue:['❗ Muddati o‘tgan','#fde8e8','#b42318'],owed:['📌 Keyin topshiradi','#f1e9fb','#6b3fb5'],pending:['⏳ Bajarilishi kerak','#fff4d6','#a15c00'],submitted:['🙋 Ustozga topshirishga tayyor','#e6f0ff','#1d4fb8'],done:['✅ Bajarildi','#e6f7ee','#13804b'],absent:['🚫 Darsga kelmagan','#eef2f6','#53627a']};
+function row(t){
+  const s=ST[t.status];let right='';
+  if(t.status==='done') right=`<div class="pc" style="background:${pcolor(t.pct)}">${t.pct}%</div>`;
+  else if(['overdue','owed','pending'].includes(t.status)) right=`<button class="btn" data-sub="${t.id}">🙋 Bajardim</button>`;
+  else if(t.status==='submitted') right=`<button class="btn ghost" data-uns="${t.id}">Bekor qilish</button>`;
+  const info=t.status==='done'?`${t.ball} / ${t.max} ball`:t.status==='pending'?`${dt(t.deadline)} gacha`:t.status==='overdue'?'0 hisoblanmoqda — bajarib ustozga olib boring':t.status==='submitted'?'Ishingizni ustozga olib boring — u tekshirib ball qo‘yadi':t.status==='owed'?'Bajarib ustozga olib boring':'Hisobga kirmaydi';
+  return `<div class="tk"><div class="t"><div class="n">${esc(t.title)}</div><div class="d">${dt(t.date)} · ${esc(t.type)}${t.late?' · <b>kech topshirildi</b>':''}</div><div class="d">${info}${t.note?' · '+esc(t.note):''}</div></div>${right}</div>`;
+}
+function sec(title,list,open=true){if(!list.length)return '';return `<div class="card sec"><h2>${title} <span class="c">${list.length}</span></h2>${list.map(row).join('')}</div>`;}
+function render(){
+  const s=D.student,m=D.month,w=D.week,T=D.tasks;
+  const a=new Date(D.from+'T00:00:00');
+  document.getElementById('sub').textContent=`${s.group}${s.teacher?' · '+s.teacher:''}`;
+  const by=k=>T.filter(t=>t.status===k);
+  const back=[...by('overdue'),...by('owed')];
+  app.innerHTML=`<div class="card"><div class="who"><div><div style="font-size:20px;font-weight:900">👋 ${esc(s.name)}</div><div class="muted">${MON[a.getMonth()][0].toUpperCase()+MON[a.getMonth()].slice(1)} oyi natijasi</div></div><button class="btn ghost" id="out">Chiqish</button></div>
+    <div class="tiles" style="margin-top:12px">
+      <div class="tile"><div class="l">Bu oy</div><div class="v" style="color:${m?pcolor(m.pct):'inherit'}">${m?m.pct+'%':'—'}</div><div class="s">${m?m.ball+' / '+m.max+' ball':'hali baho yo‘q'}</div></div>
+      <div class="tile"><div class="l">Guruhda</div><div class="v">${m?m.rankGroup:'—'}<span style="font-size:15px;color:var(--ink2)">${m?' / '+m.groupSize:''}</span></div><div class="s">o‘rin</div></div>
+      <div class="tile"><div class="l">Markazda</div><div class="v">${m?m.rankCenter:'—'}<span style="font-size:15px;color:var(--ink2)">${m?' / '+m.total:''}</span></div><div class="s">o‘rin</div></div>
+    </div>
+    ${w?`<p class="muted" style="margin:10px 0 0">📅 Bu hafta: <b style="color:${pcolor(w.pct)}">${w.pct}%</b> · guruhda ${w.rankGroup}-o‘rin</p>`:''}
+    ${back.length?`<p style="margin:10px 0 0;color:#b42318;font-weight:700">❗ ${back.length} ta vazifa orqada qolgan. Bajarib, «🙋 Bajardim» ni bosing va ishni ustozga olib boring — ball qo‘yilgach foizingiz oshadi.</p>`:''}
+  </div>
+  ${sec('❗ Orqada qolgan',back)}${sec('⏳ Bajarilishi kerak',by('pending'))}${sec('🙋 Topshirishga tayyor',by('submitted'))}${sec('✅ Bajarilgan',by('done').slice(0,30))}
+  ${T.length?'':'<div class="card empty">Hozircha vazifa berilmagan</div>'}
+  <p class="muted" style="text-align:center">Foiz — berilgan vazifalardan olingan ball ulushi. Vazifa 2 kun ichida bajarilmasa 0 hisoblanadi, kech bajarsangiz ham ustoz tekshirgach to‘liq ball qo‘yiladi. <a href="/reyting">🏆 Umumiy reyting</a></p>`;
+  document.getElementById('out').onclick=()=>{store.set('');CODE='';login();};
+  app.querySelectorAll('[data-sub],[data-uns]').forEach(b=>b.onclick=async()=>{if(BUSY)return;BUSY=true;b.disabled=true;const id=b.dataset.sub||b.dataset.uns;
+    try{await api('POST',b.dataset.sub?'/api/s/submit':'/api/s/unsubmit',{taskId:id});await load();}catch(e){alert(e.message);b.disabled=false;}BUSY=false;});
+}
+CODE?load(true):login();
+</script>
+</body>
+</html>

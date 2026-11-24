@@ -16,7 +16,9 @@
     if(c==='students')return docs.filter(d=>(d.data||{}).teacherId===va);
     if(c==='tasks'){const st=await api('GET','/api/c/students');const ids=new Set(st.docs.filter(d=>(d.data||{}).teacherId===va).map(d=>d.id));return docs.filter(d=>((d.data||{}).studentIds||[]).some(x=>ids.has(x)));}
     return docs;}
-  async function refresh(c){const j=await api('GET','/api/c/'+c);j.docs=await viewFilter(c,j.docs);const docs=j.docs.map(d=>({id:d.id,exists:true,data:()=>d.data,metadata:{fromCache:false,hasPendingWrites:false}}));const snap={docs,size:docs.length,empty:!docs.length,metadata:{fromCache:false,hasPendingWrites:false},docChanges:()=>[]};(subs[c]||[]).forEach(f=>f.cb(snap));}
+  async function refresh(c){const j=await api('GET','/api/c/'+c);
+    if(c==='tasks'){const sb=await api('GET','/api/subs').catch(()=>({subs:[]}));const m={};(sb.subs||[]).forEach(x=>{(m[x.task_id]=m[x.task_id]||{})[x.student_id]=x.ts;});j.docs.forEach(d=>{if(m[d.id])d.data={...d.data,submitted:m[d.id]};});}
+    j.docs=await viewFilter(c,j.docs);const docs=j.docs.map(d=>({id:d.id,exists:true,data:()=>d.data,metadata:{fromCache:false,hasPendingWrites:false}}));const snap={docs,size:docs.length,empty:!docs.length,metadata:{fromCache:false,hasPendingWrites:false},docChanges:()=>[]};(subs[c]||[]).forEach(f=>f.cb(snap));}
   let rt=null;function refreshAll(){clearTimeout(rt);rt=setTimeout(()=>Object.keys(subs).forEach(c=>refresh(c).catch(()=>{})),150);}
   setInterval(()=>{if(!document.hidden)Object.keys(subs).forEach(c=>refresh(c).catch(()=>{}));},20000);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshAll();});
