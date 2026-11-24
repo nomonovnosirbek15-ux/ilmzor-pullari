@@ -12,6 +12,10 @@ rep("""    (S.view==='bugun'?viewToday():S.view==='vazifalar'?viewTasks():S.view
     """    (S.view==='bugun'?viewToday():S.view==='ustozlar'?viewAdmin():S.view==='vazifalar'?viewTasks():S.view==='oquvchilar'?viewStudents():viewPanel());""")
 rep("S.view=['bugun','panel','vazifalar','oquvchilar'].includes(h)?h:'bugun';","S.view=['bugun','panel','vazifalar','oquvchilar','ustozlar'].includes(h)?h:'bugun';")
 rep("const showPeriod=S.view!=='oquvchilar'&&S.view!=='bugun';","const showPeriod=S.view!=='oquvchilar'&&S.view!=='bugun'&&S.view!=='ustozlar';")
+rep("""  let pos=0;
+  html+=`<div class="card"><h2>O‘quvchilar reytingi""","""  if(isAdmin()&&S.group==='all'&&!window.__REAL) html+=teacherBoard();
+  let pos=0;
+  html+=`<div class="card"><h2>O‘quvchilar reytingi""")
 rep("""  if(a==='parentCard'){openParentCard(el.dataset.id);return;}""","""  if(['addTeacher','viewAs','resetPw','toggleUser','copyPw','closePw','copyRank'].includes(a)){await adminAction(a,el);return;}
   if(a==='parentCard'){openParentCard(el.dataset.id);return;}""")
 rep("""  if(t.dataset.f){S.form[t.dataset.f]=t.value;}
