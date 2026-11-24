@@ -1,6 +1,9 @@
 // Ilmzor — Vazifalar va ballar (server). Cloudflare Worker + D1.
 // Roles: admin (rahbar) sees everything; teacher sees only own students/tasks.
 // Public: /reyting page and /api/public/* (ranking only — no task details).
+import { initCard, renderPng, pcolor as cardColor } from './card.mjs';
+import RESVG_WASM from './resvg.wasm';
+import { SATOSHI_MEDIUM, SATOSHI_BOLD, SATOSHI_BLACK } from './fonts.mjs';
 /*__ASSETS__*/
 
 const DEADLINE_DAYS = 2;
@@ -117,6 +120,54 @@ async function ranking(env, period, anchor) {
   const out = rated.map(x => ({ sid: x.id, name: x.name, group: x.group, teacher: x.teacher, gkey: x.gkey, pct: Math.round(x.pct * 10) / 10, ball: Math.round(x.b * 10) / 10, max: x.m, n: x.n, rankCenter: x.rankCenter, rankGroup: x.rankGroup, groupSize: x.groupSize }));
   return { period, from, to, today, total: rated.length, list: out };
 }
+/* ---------- natija kartasi (PNG) ---------- */
+const MONS = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'];
+const DSH = ['Ya', 'Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh'];
+const b64u8 = b => Uint8Array.from(atob(b), c => c.charCodeAt(0));
+let FONTS = null;
+function rangeLabel(p, from, to) {
+  const a = new Date(from + 'T00:00:00Z'), b = new Date(to + 'T00:00:00Z');
+  if (p === 'month') return MONS[a.getUTCMonth()][0].toUpperCase() + MONS[a.getUTCMonth()].slice(1) + ' ' + a.getUTCFullYear();
+  return a.getUTCMonth() === b.getUTCMonth() ? `${a.getUTCDate()}–${b.getUTCDate()}-${MONS[b.getUTCMonth()]}` : `${a.getUTCDate()}-${MONS[a.getUTCMonth()]} – ${b.getUTCDate()}-${MONS[b.getUTCMonth()]}`;
+}
+function cardStats(rows, today) {
+  let b = 0, m = 0, checked = 0, zero = 0, abs = 0, owed = 0, od = 0;
+  for (const t of rows) {
+    if (t.status === 'absent') { abs++; continue; }
+    if (t.status === 'done') { checked++; b += t.ball; m += t.max; if (t.ball === 0) zero++; continue; }
+    if (t.status === 'owed') { owed++; continue; }
+    if (t.deadline < today) { od++; m += t.max; }
+  }
+  return { pct: m ? Math.min(100, b / m * 100) : null, checked, zero, abs, owed, od, total: rows.length - abs };
+}
+async function cardPng(env, V, p) {
+  await initCard(RESVG_WASM);
+  if (!FONTS) FONTS = [b64u8(SATOSHI_MEDIUM), b64u8(SATOSHI_BOLD), b64u8(SATOSHI_BLACK)];
+  const today = V.today; const [from, to] = periodRange(p, today);
+  const inR = (f, t) => V.tasks.filter(x => x.date >= f && x.date <= t && x.date <= today);
+  const rows = inR(from, to); const st = cardStats(rows, today);
+  const sal = cardStats(rows.filter(x => x.type === 'Saralash testi'), today);
+  const [pf, pt] = p === 'week' ? [addDays(from, -7), addDays(from, -1)] : periodRange('month', addDays(from, -1));
+  const prev = cardStats(inR(pf, pt), today);
+  const [wk0] = periodRange('week', today); const weeks = [];
+  for (let i = 3; i >= 0; i--) { const f = addDays(wk0, -7 * i), t = addDays(f, 6); const a = new Date(f + 'T00:00:00Z'), b = new Date(t + 'T00:00:00Z');
+    weeks.push({ label: `${a.getUTCDate()}–${b.getUTCDate()} ${MONS[b.getUTCMonth()].slice(0, 3)}`, pct: cardStats(inR(f, t), today).pct }); }
+  const rk = p === 'week' ? V.week : V.month;
+  const list = [...rows].sort((a, b) => a.date.localeCompare(b.date)).map(t => {
+    const d = new Date(t.date + 'T00:00:00Z'); const dateLabel = `${d.getUTCDate()}-${MONS[d.getUTCMonth()].slice(0, 3)}, ${DSH[d.getUTCDay()]}`;
+    let lab, bg, fg = '#0e223a';
+    if (t.status === 'absent') { lab = 'Kelmadi'; bg = '#e4e8ee'; }
+    else if (t.status === 'done') { lab = `${Math.round(t.ball * 10) / 10}/${t.max}`; bg = cardColor(t.pct); fg = '#fff'; }
+    else if (t.status === 'owed') { lab = 'Qarzdor'; bg = '#ece3fa'; }
+    else if (t.deadline < today) { lab = 'Bajarmadi'; bg = '#d03b3b'; fg = '#fff'; }
+    else { lab = t.status === 'submitted' ? 'tekshirilmoqda' : 'kutilmoqda'; bg = '#f1f3f6'; }
+    return { dateLabel, title: t.title, lab, bg, fg };
+  });
+  const R = { period: p, label: rangeLabel(p, from, to), name: V.student.name, group: V.student.group, teacher: V.student.teacher,
+    pct: st.pct, prevPct: prev.pct, checked: st.checked, total: st.total, salPct: sal.pct, salN: sal.checked + sal.od, missed: st.zero + st.od, absent: st.abs, owed: st.owed,
+    rankGroup: rk ? rk.rankGroup : null, groupSize: rk ? rk.groupSize : null, rankCenter: rk ? rk.rankCenter : null, centerSize: rk ? rk.total : null, weeks, list };
+  return renderPng(R, { fonts: FONTS, logoB64: ASSETS['/brand/logo-gorizontal.png'].b64 });
+}
 const pub = r => ({ ...r, list: r.list.map(({ sid, ...x }) => x) });
 
 /* ---------- student codes & self-view ---------- */
@@ -208,6 +259,12 @@ export default {
         const s = await studentByCode(env, code);
         if (!s) { await new Promise(r => setTimeout(r, 400)); return err('Kod noto‘g‘ri yoki o‘quvchi topilmadi', 404, 'not_found'); }
         if (M === 'GET' && p === '/api/s/me') return json(await studentView(env, s));
+        if (M === 'GET' && p === '/api/s/card.png') {
+          const per = url.searchParams.get('p') === 'week' ? 'week' : 'month';
+          const png = await cardPng(env, await studentView(env, s), per);
+          const fn = `ilmzor-${per === 'week' ? 'haftalik' : 'oylik'}-${String(s.data.name).toLowerCase().replace(/[^a-z0-9]+/g, '-')}.png`;
+          return new Response(png, { headers: { 'content-type': 'image/png', 'cache-control': 'no-store', 'content-disposition': `${url.searchParams.get('dl') ? 'attachment' : 'inline'}; filename="${fn}"` } });
+        }
         if (M === 'POST' && (p === '/api/s/submit' || p === '/api/s/unsubmit')) {
           const b = await req.json().catch(() => ({})); const t = await getDoc(env, 'tasks', String(b.taskId || ''));
           if (!t || !(t.data.studentIds || []).includes(s.id)) return err('Vazifa topilmadi', 404, 'not_found');

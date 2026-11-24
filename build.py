@@ -52,3 +52,5 @@ head='const APP_HTML = '+json.dumps(s,ensure_ascii=False)+';\nconst RANK_HTML = 
 w=w.replace('/*__ASSETS__*/',head)
 open('/home/claude/baho/dist/worker.js','w').write(w)
 print(len(w)//1024,'KB')
+import shutil
+for f in ['card.mjs','resvg.mjs','resvg.wasm','fonts.mjs']: shutil.copy('/home/claude/baho/src/'+f,'/home/claude/baho/dist/'+f)

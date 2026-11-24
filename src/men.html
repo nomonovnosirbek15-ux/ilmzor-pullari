@@ -115,6 +115,7 @@ function render(){
       <div class="tile"><div class="l">Markazda</div><div class="v">${m?m.rankCenter:'—'}<span style="font-size:15px;color:var(--ink2)">${m?' / '+m.total:''}</span></div><div class="s">o‘rin</div></div>
     </div>
     ${w?`<p class="muted" style="margin:10px 0 0">📅 Bu hafta: <b style="color:${pcolor(w.pct)}">${w.pct}%</b> · guruhda ${w.rankGroup}-o‘rin</p>`:''}
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><a class="btn ghost" style="flex:1;text-align:center;text-decoration:none" href="/api/s/card.png?code=${CODE}&p=week&dl=1">🖼 Haftalik karta</a><a class="btn ghost" style="flex:1;text-align:center;text-decoration:none" href="/api/s/card.png?code=${CODE}&p=month&dl=1">🖼 Oylik karta</a></div>
     ${back.length?`<p style="margin:10px 0 0;color:#b42318;font-weight:700">❗ ${back.length} ta vazifa orqada qolgan. Bajarib, «🙋 Bajardim» ni bosing va ishni ustozga olib boring — ball qo‘yilgach foizingiz oshadi.</p>`:''}
   </div>
   ${sec('❗ Orqada qolgan',back)}${sec('⏳ Bajarilishi kerak',by('pending'))}${sec('🙋 Topshirishga tayyor',by('submitted'))}${sec('✅ Bajarilgan',by('done').slice(0,30))}
