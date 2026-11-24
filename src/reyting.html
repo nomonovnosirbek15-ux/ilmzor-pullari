@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ilmzor — O‘quvchilar reytingi</title>
+<style>
+@font-face{font-family:Satoshi;src:url(/fonts/Satoshi-Medium.woff2) format('woff2');font-weight:500}
+@font-face{font-family:Satoshi;src:url(/fonts/Satoshi-Bold.woff2) format('woff2');font-weight:700}
+@font-face{font-family:Satoshi;src:url(/fonts/Satoshi-Black.woff2) format('woff2');font-weight:900}
+:root{--navy:#0e223a;--aqua:#4ad496;--bg:#f2f5f8;--card:#fff;--ink:#0e223a;--ink2:#53627a;--line:#e3e8ef}
+*{box-sizing:border-box}
+body{margin:0;font-family:Satoshi,system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+header{background:var(--navy);color:#fff;padding:18px 16px 70px;position:relative;overflow:hidden}
+header .in{max-width:760px;margin:0 auto}
+header img{height:40px}
+header h1{font-size:26px;font-weight:900;margin:14px 0 4px}
+header p{margin:0;color:var(--aqua);font-weight:700}
+main{max-width:760px;margin:-52px auto 40px;padding:0 12px;position:relative}
+.card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 2px 10px rgba(14,34,58,.08);margin-bottom:14px}
+.seg{display:inline-flex;background:#eef2f6;border-radius:10px;padding:3px}
+.seg button{border:0;background:none;padding:8px 16px;border-radius:8px;font:inherit;font-weight:700;color:var(--ink2);cursor:pointer}
+.seg button.on{background:var(--navy);color:#fff}
+input,select{font:inherit;border:1px solid var(--line);border-radius:10px;padding:11px 12px;width:100%;background:#fff;color:var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.me{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.me .b{background:#f4f7fa;border-radius:12px;padding:12px;text-align:center}
+.me .v{font-size:28px;font-weight:900}
+.me .l{font-size:12px;color:var(--ink2);font-weight:700}
+table{width:100%;border-collapse:collapse}
+td,th{padding:9px 6px;border-bottom:1px solid var(--line);text-align:left;font-variant-numeric:tabular-nums}
+th{font-size:12px;color:var(--ink2)}
+.rk{width:40px;font-weight:900;text-align:center}
+.medal{font-size:20px}
+.bar{height:8px;background:#eef2f6;border-radius:4px;overflow:hidden;min-width:60px}
+.bar i{display:block;height:100%;border-radius:0 4px 4px 0}
+.pct{font-weight:900;min-width:48px;text-align:right}
+.hl td{background:#e9fbf2}
+.muted{color:var(--ink2);font-size:13px}
+h2{font-size:17px;margin:0 0 10px}
+footer{text-align:center;padding:20px;background:var(--aqua);color:var(--navy);font-weight:900}
+.empty{color:var(--ink2);text-align:center;padding:20px}
+</style>
+</head>
+<body>
+<header><div class="in"><img src="/brand/logo-gorizontal.png" alt="ilmzor"><h1>🏆 O‘quvchilar reytingi</h1><p id="per">…</p></div></header>
+<main>
+  <div class="card">
+    <div class="row" style="justify-content:space-between"><div class="seg"><button data-p="week">Bu hafta</button><button data-p="month" class="on">Bu oy</button></div><span class="muted" id="upd"></span></div>
+    <div style="margin-top:12px"><input id="q" placeholder="🔎 Ismingizni yozing — o‘rningizni ko‘rasiz" autocomplete="off"></div>
+    <div id="mine"></div>
+  </div>
+  <div class="card"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 style="margin:0">Guruh reytingi</h2><select id="grp" style="width:auto;max-width:60%"></select></div><div id="glist"></div></div>
+  <div class="card"><h2>Markaz bo‘yicha — eng yaxshi 20</h2><div id="clist"></div></div>
+  <p class="muted" style="text-align:center">Foiz — berilgan vazifalardan olingan ball ulushi. Vazifa berilganidan 2 kun ichida bajarilmasa 0 hisoblanadi; darsga kelmagan kunlar hisobga kirmaydi.</p>
+</main>
+<footer>ILMZOR — ILM BOG‘INGIZ</footer>
+<script>
+const MON=['yanvar','fevral','mart','aprel','may','iyun','iyul','avgust','sentabr','oktabr','noyabr','dekabr'];
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function pcolor(p){p=Math.max(0,Math.min(100,p));let h,l;if(p<50){h=2+44*(p/50);l=50;}else{h=46+76*((p-50)/50);l=50-14*((p-50)/50);}return `hsl(${h.toFixed(0)},80%,${l.toFixed(0)}%)`;}
+const norm=s=>String(s||'').toLowerCase().replace(/[‘’ʻʼ`']/g,'').replace(/\s+/g,' ').trim();
+let P='month',D=null,G=null;
+const medal=r=>r===1?'<span class="medal">🥇</span>':r===2?'<span class="medal">🥈</span>':r===3?'<span class="medal">🥉</span>':r;
+function rowHtml(x,rk,hl){return `<tr class="${hl?'hl':''}"><td class="rk">${medal(rk)}</td><td><b>${esc(x.name)}</b><div class="muted">${esc(x.group)}</div></td><td style="width:30%"><div class="bar"><i style="width:${Math.max(2,x.pct)}%;background:${pcolor(x.pct)}"></i></div></td><td class="pct" style="color:${pcolor(x.pct)}">${Math.round(x.pct)}%</td></tr>`;}
+function fmtD(s){const [y,m,d]=s.split('-').map(Number);return `${d}-${MON[m-1]}`;}
+async function load(){
+  document.getElementById('upd').textContent='Yuklanmoqda…';
+  const r=await fetch('/api/public/ranking?p='+P).then(r=>r.json()).catch(()=>null);
+  if(!r){document.getElementById('upd').textContent='Yuklab bo‘lmadi';return;}
+  D=r;document.getElementById('per').textContent=(P==='week'?'Bu hafta: ':'Bu oy: ')+fmtD(r.from)+' – '+fmtD(r.to);
+  document.getElementById('upd').textContent=r.total+' nafar o‘quvchi';
+  const gs=[...new Map(r.list.map(x=>[x.gkey,x])).values()];
+  const sel=document.getElementById('grp');if(!G||!gs.some(x=>x.gkey===G))G=gs[0]&&gs[0].gkey;
+  sel.innerHTML=gs.map(x=>`<option value="${esc(x.gkey)}" ${x.gkey===G?'selected':''}>${esc(x.group)}${x.teacher?' · '+esc(x.teacher):''}</option>`).join('');
+  draw();
+}
+function draw(){
+  if(!D)return;const q=norm(document.getElementById('q').value);
+  let mine=null;if(q.length>=3){const w=q.split(' ');const m=D.list.filter(x=>w.every(t=>norm(x.name).includes(t)));if(m.length===1||(m.length&&norm(m[0].name)===q))mine=m[0];
+    document.getElementById('mine').innerHTML=mine?`<div class="me"><div class="b"><div class="l">Guruhdagi o‘rni</div><div class="v">${mine.rankGroup}<span style="font-size:15px;color:var(--ink2)"> / ${mine.groupSize}</span></div></div><div class="b"><div class="l">Markazdagi o‘rni</div><div class="v">${mine.rankCenter}<span style="font-size:15px;color:var(--ink2)"> / ${D.total}</span></div></div><div class="b"><div class="l">Bajarish</div><div class="v" style="color:${pcolor(mine.pct)}">${Math.round(mine.pct)}%</div><div class="muted">${mine.ball} / ${mine.max} ball</div></div></div><p class="muted" style="margin:8px 2px 0"><b>${esc(mine.name)}</b> · ${esc(mine.group)}</p>`
+      :m.length>1?`<p class="muted">Bir nechta o‘quvchi topildi — familiyani ham yozing: ${m.slice(0,5).map(x=>esc(x.name)).join(', ')}</p>`:`<p class="muted">Topilmadi. Ism-familiyani to‘liqroq yozing.</p>`;
+    if(mine&&mine.gkey!==G){G=mine.gkey;document.getElementById('grp').value=G;}
+  } else document.getElementById('mine').innerHTML='';
+  const g=D.list.filter(x=>x.gkey===G);
+  document.getElementById('glist').innerHTML=g.length?`<table>${g.map(x=>rowHtml(x,x.rankGroup,mine&&mine.name===x.name&&mine.gkey===x.gkey)).join('')}</table>`:'<div class="empty">Hali natija yo‘q</div>';
+  const c=D.list.slice(0,20);
+  document.getElementById('clist').innerHTML=c.length?`<table>${c.map(x=>rowHtml(x,x.rankCenter,mine&&mine.name===x.name&&mine.gkey===x.gkey)).join('')}</table>`+(mine&&mine.rankCenter>20?`<table>${rowHtml(mine,mine.rankCenter,true)}</table>`:''):'<div class="empty">Hali natija yo‘q</div>';
+}
+document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{P=b.dataset.p;document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x===b));load();});
+document.getElementById('q').addEventListener('input',draw);
+document.getElementById('grp').addEventListener('change',e=>{G=e.target.value;draw();});
+try{const s=localStorage.getItem('ilmzor_q');if(s)document.getElementById('q').value=s;}catch(e){}
+document.getElementById('q').addEventListener('change',e=>{try{localStorage.setItem('ilmzor_q',e.target.value);}catch(_){}});
+load();
+</script>
+</body>
+</html>

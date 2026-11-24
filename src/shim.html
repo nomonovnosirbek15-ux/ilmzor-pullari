@@ -1,0 +1,78 @@
+<script>
+/* Server adapter: login + data API in place of the artifact runtime */
+(function(){
+  let ME=null,readyRes;const ready=new Promise(r=>readyRes=r);
+  async function api(method,url,body){
+    const r=await fetch(url,{method,headers:body!==undefined?{'content-type':'application/json'}:{},body:body!==undefined?JSON.stringify(body):undefined,credentials:'same-origin'});
+    let j=null;try{j=await r.json();}catch(e){}
+    if(r.status===401&&ME){location.reload();}
+    if(!r.ok){const e=new Error((j&&j.error)||('HTTP '+r.status));e.code=(j&&j.code)||'invalid_argument';e.status=r.status;throw e;}
+    return j;
+  }
+  // ---- db with the same surface the app uses (collection/doc, onSnapshot, add, set, update, delete)
+  const subs={};
+  async function refresh(c){const j=await api('GET','/api/c/'+c);const docs=j.docs.map(d=>({id:d.id,exists:true,data:()=>d.data,metadata:{fromCache:false,hasPendingWrites:false}}));const snap={docs,size:docs.length,empty:!docs.length,metadata:{fromCache:false,hasPendingWrites:false},docChanges:()=>[]};(subs[c]||[]).forEach(f=>f.cb(snap));}
+  let rt=null;function refreshAll(){clearTimeout(rt);rt=setTimeout(()=>Object.keys(subs).forEach(c=>refresh(c).catch(()=>{})),150);}
+  setInterval(()=>{if(!document.hidden)Object.keys(subs).forEach(c=>refresh(c).catch(()=>{}));},20000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshAll();});
+  const db={
+    collection(c){return{
+      onSnapshot(cb,err){(subs[c]=subs[c]||[]).push({cb,err});refresh(c).catch(e=>err&&err(e));return()=>{};},
+      async add(d){const j=await api('POST','/api/c/'+c,d);refreshAll();return {id:j.id};},
+      doc(id){return db.doc(c+'/'+id);}
+    };},
+    doc(p){const [c,id]=p.split('/');return{
+      async set(d){await api('PUT','/api/c/'+c+'/'+id,d);refreshAll();},
+      async update(d){await api('PATCH','/api/c/'+c+'/'+id,d);refreshAll();},
+      async delete(){await api('DELETE','/api/c/'+c+'/'+id);refreshAll();}
+    };}
+  };
+  let usersP=null;const getUsers=()=>usersP||(usersP=api('GET','/api/users').then(j=>j.users).catch(()=>[]));
+  const user={isOwner:async()=>!!ME&&ME.role==='admin',canEdit:async()=>true,can:async()=>true,id:async()=>ME&&ME.id,
+    me:async()=>({id:ME.id,name:ME.name,isOwner:ME.role==='admin',canEdit:true}),
+    profiles:async ids=>{const us=await getUsers();const out={};[].concat(ids).forEach(i=>{const u=us.find(x=>x.id===i);out[i]={id:i,name:u?u.name:''};});return out;}};
+  const downloads={async save({filename,data}){const blob=data instanceof Blob?data:new Blob([data]);const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},3000);return {status:'saved'};}};
+  window.claude={use:async n=>{await ready;return n==='db'?db:n==='user'?user:n==='downloads'?downloads:null;}};
+  window.__api=api;window.__users=()=>{usersP=null;return getUsers();};window.__refreshAll=refreshAll;
+
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function showLogin(){
+    const d=document.createElement('div');d.id='loginBox';
+    d.innerHTML=`<form class="lgbox" autocomplete="on"><img src="brand/logo-belgi.png" alt="" style="height:54px"><h1>Ilmzor · Vazifalar va ballar</h1><p class="muted">Ustozlar va rahbar uchun kirish</p>
+      <label class="f" for="lg_phone">Telefon raqam</label><input class="inp" id="lg_phone" name="username" inputmode="tel" placeholder="+998 90 123 45 67" required autocomplete="username">
+      <label class="f" for="lg_pw">Parol</label><input class="inp" id="lg_pw" name="password" type="password" required autocomplete="current-password">
+      <div id="lg_err" style="color:#c33;font-weight:600;min-height:20px;margin-top:8px"></div>
+      <button class="btn pri" style="width:100%;padding:10px">Kirish</button>
+      <p class="muted" style="font-size:12.5px;margin-top:14px">Parolni unutgan bo‘lsangiz, rahbarga murojaat qiling.<br><a href="/reyting">🏆 O‘quvchilar reytingi →</a></p></form>`;
+    document.body.appendChild(d);
+    d.querySelector('form').addEventListener('submit',async ev=>{ev.preventDefault();const b=d.querySelector('button');b.disabled=true;d.querySelector('#lg_err').textContent='';
+      try{await api('POST','/api/login',{phone:d.querySelector('#lg_phone').value,password:d.querySelector('#lg_pw').value});location.reload();}
+      catch(e){d.querySelector('#lg_err').textContent=e.message;b.disabled=false;}});
+    setTimeout(()=>d.querySelector('#lg_phone').focus(),50);
+  }
+  function userChip(){
+    const h=document.querySelector('header');if(!h)return;
+    const c=document.createElement('div');c.className='uchip';
+    c.innerHTML=`<span>${ME.role==='admin'?'👑':'👩‍🏫'} <b>${esc(ME.name)}</b> <span class="muted">${ME.role==='admin'?'rahbar':'ustoz'}</span></span><button class="btn sm" id="pwBtn" title="Parolni almashtirish">🔑</button><button class="btn sm" id="outBtn">Chiqish</button>`;
+    h.appendChild(c);
+    c.querySelector('#outBtn').onclick=async()=>{await api('POST','/api/logout',{});location.reload();};
+    c.querySelector('#pwBtn').onclick=async()=>{
+      const m=document.getElementById('modal');m.className='open';
+      m.innerHTML=`<div class="mbox" style="max-width:420px"><h2>🔑 Parolni almashtirish</h2><label class="f">Eski parol</label><input class="inp" id="pw_old" type="password"><label class="f">Yangi parol (kamida 6 belgi)</label><input class="inp" id="pw_new" type="text"><div id="pw_msg" style="min-height:20px;margin-top:8px;font-weight:600"></div><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="pw_x">Yopish</button><button class="btn pri" id="pw_ok">Saqlash</button></div></div>`;
+      m.querySelector('#pw_x').onclick=()=>{m.className='';m.innerHTML='';};
+      m.querySelector('#pw_ok').onclick=async()=>{const msg=m.querySelector('#pw_msg');try{await api('POST','/api/password',{old:m.querySelector('#pw_old').value,password:m.querySelector('#pw_new').value});msg.style.color='var(--good)';msg.textContent='Parol almashtirildi ✓';}catch(e){msg.style.color='#c33';msg.textContent=e.message;}};
+    };
+  }
+  async function boot(){
+    try{ME=await api('GET','/api/me');}catch(e){showLogin();return;}
+    window.__ME=ME;userChip();readyRes();document.dispatchEvent(new Event('me-ready'));
+  }
+  document.addEventListener('DOMContentLoaded',boot);
+})();
+</script>
+<style>
+#loginBox{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+.lgbox{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px;max-width:380px;width:100%;box-shadow:var(--shadow);text-align:left}
+.lgbox h1{font-size:20px;margin:10px 0 2px}
+.uchip{display:flex;align-items:center;gap:8px;font-size:13px;flex-wrap:wrap}
+</style>

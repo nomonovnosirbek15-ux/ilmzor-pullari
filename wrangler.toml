@@ -1,0 +1,7 @@
+name = "ilmzor-baho"
+main = "dist/worker.js"
+compatibility_date = "2026-11-07"
+[[d1_databases]]
+binding = "DB"
+database_name = "ilmzor_baho"
+database_id = "00000000-0000-0000-0000-000000000000"
