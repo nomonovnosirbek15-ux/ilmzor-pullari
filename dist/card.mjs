@@ -106,6 +106,54 @@ export function cardSvg(R, logoB64) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${o}</svg>`;
 }
 
+export function oylikSvg(R, logoB64) {
+  const W = 1080, H = 1350; let o = '';
+  o += box(0, 0, W, H, 0, '#f4f6f9');
+  o += box(0, 0, W, 190, 0, NAVY);
+  o += `<circle cx="${W - 60}" cy="40" r="170" fill="${AQUA}" fill-opacity="0.08"/><circle cx="${W - 60}" cy="40" r="100" fill="${AQUA}" fill-opacity="0.07"/>`;
+  if (logoB64) o += `<image href="data:image/png;base64,${logoB64}" x="70" y="40" height="74" width="300" preserveAspectRatio="xMinYMid meet"/>`;
+  o += T(72, 160, 'Oylik test natijasi · ' + R.label, 27, 700, AQUA);
+  o += T(70, 268, ellip(R.name, 52, W - 140, 800), 52, 800, NAVY);
+  o += T(72, 308, [R.group, R.teacher].filter(Boolean).join(' · '), 26, 600, MUTED);
+  // big ring
+  o += box(50, 340, 520, 430, 28, '#fff');
+  const cx = 310, cy = 530, r = 140, C = 2 * Math.PI * r;
+  o += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#e8edf3" stroke-width="34"/>`;
+  if (R.pct != null) { const f = Math.max(0.005, Math.min(1, R.pct / 100)); o += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${pcolor(R.pct)}" stroke-width="34" stroke-linecap="${R.pct >= 95 ? 'butt' : 'round'}" stroke-dasharray="${(C * f).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 ${cx} ${cy})"/>`; }
+  o += T(cx, cy + 24, fmtP(R.pct), 92, 900, NAVY, 'middle');
+  o += T(cx, cy + 66, 'oylik test', 22, 600, MUTED, 'middle');
+  o += T(cx, 740, statusLabel(R.pct), 30, 800, pcolor(R.pct), 'middle');
+  // tiles
+  const d = R.prevPct != null && R.pct != null ? Math.round(R.pct - R.prevPct) : null;
+  const tiles = [
+    ['Guruhdagi o‘rni', R.rank != null ? String(R.rank) : '—', R.n ? `${R.n} kishidan` : '', NAVY],
+    ['Guruh o‘rtachasi', fmtP(R.avg), R.avg != null && R.pct != null ? (R.pct >= R.avg ? 'o‘rtachadan yuqori' : 'o‘rtachadan past') : '', R.avg != null ? pcolor(R.avg) : NAVY],
+    ['O‘tgan oyga nisbatan', d == null ? '—' : (d > 0 ? '+' : d < 0 ? '−' : '') + Math.abs(d) + '%', R.prevLabel || 'birinchi oy', d == null ? NAVY : d > 0 ? '#0b8a0b' : d < 0 ? '#c33' : MUTED],
+  ];
+  tiles.forEach((t, i) => { const y = 340 + i * 146; o += box(600, y, 430, 130, 22, '#fff');
+    o += T(628, y + 42, t[0], 24, 600, MUTED); o += T(628, y + 104, t[1], 52, 900, t[3]); o += T(1006, y + 102, t[2], 21, 600, SOFT, 'end'); });
+  // history chart
+  const y0 = 800, ch = 330; o += box(50, y0, 980, ch + 70, 22, '#fff');
+  o += T(78, y0 + 44, 'Oylar boʻyicha'.replace('ʻ', '‘'), 26, 700, NAVY);
+  const hist = R.history.slice(-9); const n = Math.max(hist.length, 1);
+  const gap = 18, bw = Math.min(120, (920 - gap * (n - 1)) / n), base = y0 + ch + 10, top = y0 + 90, hh = base - top - 40;
+  const x0 = 78 + (920 - (bw * n + gap * (n - 1))) / 2;
+  o += `<line x1="78" y1="${base}" x2="1002" y2="${base}" stroke="#e3e8ef" stroke-width="2"/>`;
+  hist.forEach((m, i) => { const x = x0 + i * (bw + gap), h = Math.max(6, hh * m.pct / 100), last = i === hist.length - 1;
+    o += box(x, base - h, bw, h, 12, pcolor(m.pct)); if (!last) o += `<rect x="${x}" y="${base - h}" width="${bw}" height="${h}" rx="12" fill="#fff" fill-opacity="0.35"/>`;
+    o += T(x + bw / 2, base - h - 12, m.pct + '%', 24, 800, NAVY, 'middle');
+    o += T(x + bw / 2, base + 32, m.short, 20, last ? 800 : 600, last ? NAVY : MUTED, 'middle'); });
+  if (!hist.length) o += T(540, y0 + 200, 'Hali natija yoʻq'.replace('ʻ', '‘'), 24, 500, SOFT, 'middle');
+  o += T(540, H - 118, 'Oylik test vazifa foiziga qoʻshilmaydi — alohida baholanadi'.replace('ʻ', '‘'), 20, 500, SOFT, 'middle');
+  o += box(0, H - 92, W, 92, 0, AQUA);
+  o += T(W / 2, H - 36, 'ILMZOR — ILM BOG‘INGIZ', 32, 800, NAVY, 'middle');
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${o}</svg>`;
+}
+export async function renderSvgPng(svg, opts) {
+  await ready;
+  const r = new Resvg(svg, { font: { fontBuffers: opts.fonts, defaultFontFamily: 'Satoshi', loadSystemFonts: false }, fitTo: { mode: 'original' } });
+  const png = r.render().asPng(); r.free(); return png;
+}
 export async function renderPng(R, opts) {
   await ready;
   const svg = cardSvg(R, opts.logoB64);

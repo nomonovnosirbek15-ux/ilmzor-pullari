@@ -1,7 +1,7 @@
 // Ilmzor — Vazifalar va ballar (server). Cloudflare Worker + D1.
 // Roles: admin (rahbar) sees everything; teacher sees only own students/tasks.
 // Public: /reyting page and /api/public/* (ranking only — no task details).
-import { initCard, renderPng, pcolor as cardColor } from './card.mjs';
+import { initCard, renderPng, renderSvgPng, oylikSvg, pcolor as cardColor } from './card.mjs';
 import RESVG_WASM from './resvg.wasm';
 import { SATOSHI_MEDIUM, SATOSHI_BOLD, SATOSHI_BLACK } from './fonts.mjs';
 /*__ASSETS__*/
@@ -169,8 +169,17 @@ async function cardPng(env, V, p) {
   const R = { period: p, label: rangeLabel(p, from, to), name: V.student.name, group: V.student.group, teacher: V.student.teacher,
     pct: st.pct, prevPct: prev.pct, checked: st.checked, total: st.total, salPct: sal.pct, salN: sal.checked + sal.od, missed: st.zero + st.od, absent: st.abs, owed: st.owed,
     rankGroup: rk ? rk.rankGroup : null, groupSize: rk ? rk.groupSize : null, rankCenter: rk ? rk.rankCenter : null, centerSize: rk ? rk.total : null, weeks, list,
-    oylik: p === 'month' ? (() => { const o = (V.oylik || []).filter(x => x.date >= from && x.date <= to).pop(); return o ? { pct: o.pct, rank: o.rank, n: o.n } : { pct: null } ; })() : undefined };
+  };
   return renderPng(R, { fonts: FONTS, logoB64: ASSETS['/brand/logo-gorizontal.png'].b64 });
+}
+async function oylikPng(env, V) {
+  await initCard(RESVG_WASM);
+  if (!FONTS) FONTS = [b64u8(SATOSHI_MEDIUM), b64u8(SATOSHI_BOLD), b64u8(SATOSHI_BLACK)];
+  const O = V.oylik || []; const last = O[O.length - 1] || null, prev = O[O.length - 2] || null;
+  const R = { name: V.student.name, group: V.student.group, teacher: V.student.teacher, label: last ? last.label : rangeLabel('month', V.from, V.to),
+    pct: last ? last.pct : null, rank: last && last.n > 1 ? last.rank : null, n: last ? last.n : 0, avg: last ? last.avg : null,
+    prevPct: prev ? prev.pct : null, prevLabel: prev ? prev.label : '', history: O.map(x => ({ pct: x.pct, short: x.short })) };
+  return renderSvgPng(oylikSvg(R, ASSETS['/brand/logo-gorizontal.png'].b64), { fonts: FONTS });
 }
 const pub = r => ({ ...r, list: r.list.map(({ sid, ...x }) => x) });
 
@@ -225,7 +234,7 @@ async function studentView(env, s) {
     const mine = pctOf(sid); if (mine == null) continue;
     const others = (t.studentIds || []).map(pctOf).filter(v => v != null);
     const d = new Date(t.date + 'T00:00:00Z');
-    oylik.push({ id: r.id, title: t.title || OYL, date: t.date, label: MONS[d.getUTCMonth()][0].toUpperCase() + MONS[d.getUTCMonth()].slice(1) + ' ' + d.getUTCFullYear(), pct: Math.round(mine), rank: 1 + others.filter(v => v > mine + 1e-9).length, n: others.length });
+    oylik.push({ id: r.id, title: t.title || OYL, date: t.date, label: MONS[d.getUTCMonth()][0].toUpperCase() + MONS[d.getUTCMonth()].slice(1) + ' ' + d.getUTCFullYear(), short: MONS[d.getUTCMonth()].slice(0, 3), pct: Math.round(mine), rank: 1 + others.filter(v => v > mine + 1e-9).length, n: others.length, avg: others.length ? Math.round(others.reduce((a, b) => a + b, 0) / others.length) : null });
   }
   oylik.sort((a, b) => a.date.localeCompare(b.date));
   const pick = r => { const x = r.list.find(y => y.sid === sid); return x ? { pct: x.pct, ball: x.ball, max: x.max, rankGroup: x.rankGroup, groupSize: x.groupSize, rankCenter: x.rankCenter, total: r.total, oylik: x.oylik } : null; };
@@ -277,9 +286,10 @@ export default {
         if (!s) { await new Promise(r => setTimeout(r, 400)); return err('Kod noto‘g‘ri yoki o‘quvchi topilmadi', 404, 'not_found'); }
         if (M === 'GET' && p === '/api/s/me') return json(await studentView(env, s));
         if (M === 'GET' && p === '/api/s/card.png') {
-          const per = url.searchParams.get('p') === 'week' ? 'week' : 'month';
-          const png = await cardPng(env, await studentView(env, s), per);
-          const fn = `ilmzor-${per === 'week' ? 'haftalik' : 'oylik'}-${String(s.data.name).toLowerCase().replace(/[^a-z0-9]+/g, '-')}.png`;
+          const qp = url.searchParams.get('p'); const per = qp === 'week' ? 'week' : qp === 'oylik' ? 'oylik' : 'month';
+          const V = await studentView(env, s);
+          const png = per === 'oylik' ? await oylikPng(env, V) : await cardPng(env, V, per);
+          const fn = `ilmzor-${per === 'week' ? 'haftalik' : per === 'oylik' ? 'oylik-test' : 'oylik'}-${String(s.data.name).toLowerCase().replace(/[^a-z0-9]+/g, '-')}.png`;
           return new Response(png, { headers: { 'content-type': 'image/png', 'cache-control': 'no-store', 'content-disposition': `${url.searchParams.get('dl') ? 'attachment' : 'inline'}; filename="${fn}"` } });
         }
         if (M === 'POST' && (p === '/api/s/submit' || p === '/api/s/unsubmit')) {
