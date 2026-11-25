@@ -5,7 +5,7 @@ async function coinLoad(){S.coin.loading=true;try{S.coin.data=await window.__api
 document.addEventListener('me-ready',()=>{
   const nav=document.getElementById('nav');const a=document.createElement('a');a.href='#coin';a.dataset.v='coin';a.textContent='💰 Ilmzor puli';
   const ref=nav.querySelector('[data-v="oquvchilar"]');ref&&ref.nextSibling?nav.insertBefore(a,ref.nextSibling):nav.appendChild(a);
-  if(isSeller()){[...nav.querySelectorAll('a')].forEach(x=>{if(x.dataset.v!=='coin')x.style.display='none';});a.textContent='🛍 Do‘kon';if(location.hash!=='#coin')location.hash='#coin';}
+  if(isSeller()){[...nav.querySelectorAll('a')].forEach(x=>{if(x.dataset.v!=='coin')x.style.display='none';});a.textContent='💰 Ilmzor puli';if(location.hash!=='#coin')location.hash='#coin';}
 });
 const cfmt=n=>(n>0?'+':'')+n;
 const coinCol=n=>n>0?'var(--good)':n<0?'var(--crit)':'var(--muted)';
@@ -15,7 +15,7 @@ function viewCoins(){
   const D=S.coin.data;
   if(!D){if(!S.coin.loading)coinLoad();return '<div class="empty">Yuklanmoqda…</div>';}
   const seller=isSeller(),admin=isAdmin();
-  const tabs=[...(seller?[]:[['berish','💰 Pul berish']]),['dokon','🛍 Do‘kon'],...(admin?[['qoida','⚙️ Qoidalar']]:[])];
+  const tabs=[...(seller?[]:[['berish','💰 Pul berish']]),['dokon','🛍 Do‘kon'],...(seller?[['balans','🏆 Balanslar']]:[]),...(admin?[['qoida','⚙️ Qoidalar']]:[])];
   if(!S.coin.tab||!tabs.some(t=>t[0]===S.coin.tab))S.coin.tab=tabs[0][0];
   const studs=activeStudents().filter(x=>inGroup(x)).sort((a,b)=>(a.group||'').localeCompare(b.group||'')||a.name.localeCompare(b.name));
   const bal=id=>D.balances[id]||0;
@@ -31,6 +31,7 @@ function viewCoins(){
   <div class="seg" style="margin-bottom:14px">${tabs.map(t=>`<button class="${S.coin.tab===t[0]?'on':''}" data-ca="tab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>`;
   if(S.coin.tab==='berish') h+=coinGiveView(D,studs,bal);
   else if(S.coin.tab==='dokon') h+=coinShopView(D,studs,bal);
+  else if(S.coin.tab==='balans') h+=coinBalanceView(D,studs,bal);
   else h+=coinRulesView(D);
   return h;
 }
@@ -83,6 +84,13 @@ function coinShopView(D,studs,bal){
      </tbody></table></div></div>
     <div class="card" style="margin-top:14px"><h2>🧾 Oxirgi sotuvlar</h2>${sales.length?`<table><tbody>${sales.map(r=>{const st=S.stuById[r.student_id];return `<tr><td><b>${esc(st?st.name:'—')}</b><div class="muted" style="font-size:12px">${esc(r.reason)} · ${coinDate(r.ts)}</div></td><td style="text-align:right;font-weight:800;color:var(--crit)">${r.amount}</td><td style="width:34px">${isAdmin()?`<button class="btn sm" data-ca="undo" data-id="${r.id}" title="Sotuvni bekor qilish">✖</button>`:''}</td></tr>`;}).join('')}</tbody></table>`:'<div class="empty">Hali sotuv yo‘q</div>'}</div></div></div>`;
 }
+function coinBalanceView(D,studs,bal){
+  const q=(S.coin.q||'').toLowerCase().trim();const list=studs.filter(x=>!q||x.name.toLowerCase().includes(q)).sort((a,b)=>bal(b.id)-bal(a.id));
+  return `<div class="card"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><h2 style="margin:0">🏆 O‘quvchilar balansi</h2><input class="inp" id="cb_q" placeholder="🔎 Ism bo‘yicha qidirish" value="${esc(S.coin.q||'')}" style="max-width:260px;margin-left:auto"></div>
+   <div style="overflow-x:auto;margin-top:10px"><table><thead><tr><th>#</th><th>O‘quvchi</th><th>Guruh</th><th>Balans</th></tr></thead><tbody>
+   ${list.map((x,i)=>`<tr class="click" data-ca="hist" data-id="${x.id}"><td class="muted">${i+1}</td><td><b>${esc(x.name)}</b></td><td class="muted">${esc(x.group||'Guruhsiz')}</td><td><b style="font-size:16px">${bal(x.id)}</b> 🪙</td></tr>`).join('')||'<tr><td colspan="4" class="empty">Topilmadi</td></tr>'}
+   </tbody></table></div></div>`;
+}
 function coinRulesView(D){
   const R=D.settings;const n=(id,v)=>`<input class="inp" id="${id}" type="number" value="${v}" style="width:90px">`;
   return `<div class="grid2"><div class="card"><h2>⚙️ Vazifa uchun avtomatik Ilmzor puli</h2>
@@ -111,6 +119,7 @@ async function coinHist(id){
 }
 function findStuByLabel(v){const all=activeStudents();return all.find(x=>`${x.name} · ${x.group||'Guruhsiz'}`===v)||all.filter(x=>x.name.toLowerCase()===String(v).toLowerCase().trim())[0];}
 document.addEventListener('input',ev=>{const t=ev.target;if(t.id==='sh_stu'){const x=findStuByLabel(t.value);const el=document.getElementById('sh_bal');if(el)el.innerHTML=x?`Balans: <b>${S.coin.data.balances[x.id]||0}</b> 🪙`:'';}
+  if(t.id==='cb_q'){S.coin.q=t.value;const pos=t.selectionStart;render();const n=document.getElementById('cb_q');if(n){n.focus();n.setSelectionRange(pos,pos);}return;}
   if(t.id==='cg_amt')S.coin.amount=t.value;if(t.id==='cg_reason')S.coin.reason=t.value;});
 document.addEventListener('change',async ev=>{const t=ev.target;
   if(t.dataset&&t.dataset.ca==='sel'){t.checked?S.coin.sel.add(t.dataset.id):S.coin.sel.delete(t.dataset.id);render();return;}
