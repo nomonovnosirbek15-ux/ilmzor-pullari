@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Aqlzor kitob dökoni</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--ind:#23205E;--ind2:#3a3690;--amb:#F5A524;--bg:#f4f3f8;--card:#fff;--ink:#1b1a33;--ink2:#6b6a83;--line:#e6e4ef;--ok:#14845a;--bad:#c0392b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif}
+button{font:inherit;cursor:pointer}
+header{background:var(--ind);color:#fff;padding:14px 16px 12px;position:sticky;top:0;z-index:5}
+.brand{display:flex;align-items:center;gap:10px}
+.brand b{font-size:19px;letter-spacing:.2px}
+.brand small{display:block;color:#c9c6f2;font-size:12px;margin-top:1px}
+.tabs{display:flex;gap:8px;overflow-x:auto;margin-top:12px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;border:0;border-radius:20px;padding:7px 14px;background:rgba(255,255,255,.12);color:#fff;font-weight:600;font-size:14px;white-space:nowrap}
+.tab.on{background:var(--amb);color:var(--ind)}
+main{padding:14px 12px 110px;max-width:720px;margin:0 auto}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(min-width:560px){.grid{grid-template-columns:repeat(3,1fr)}}
+.bk{background:var(--card);border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(35,32,94,.08);display:flex;flex-direction:column}
+.cov{aspect-ratio:3/4;background:linear-gradient(150deg,var(--ind),var(--ind2));position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.cov img{width:100%;height:100%;object-fit:cover;display:block}
+.cov .ph{color:#fff;text-align:center;padding:12px;font-weight:700;font-size:14px;line-height:1.25}
+.cov .ph i{display:block;width:26px;height:4px;background:var(--amb);border-radius:2px;margin:0 auto 10px}
+.cov .badge{position:absolute;left:8px;top:8px;background:var(--amb);color:var(--ind);font-size:11px;font-weight:800;padding:3px 7px;border-radius:8px}
+.bi{padding:10px 10px 12px;display:flex;flex-direction:column;gap:6px;flex:1}
+.bt{font-weight:700;font-size:14px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pr{font-weight:800;color:var(--ind)}
+.pr.soon{color:var(--ink2);font-weight:600;font-size:13px}
+.sp{flex:1}
+.add{border:0;border-radius:10px;background:var(--ind);color:#fff;font-weight:700;padding:9px 6px;width:100%}
+.add.soft{background:#ecebf6;color:var(--ind)}
+.step{display:flex;align-items:center;justify-content:space-between;background:#ecebf6;border-radius:10px;overflow:hidden}
+.step button{border:0;background:none;width:38px;height:36px;font-size:20px;font-weight:700;color:var(--ind)}
+.step span{font-weight:800}
+.empty{text-align:center;color:var(--ink2);padding:40px 16px}
+.bar{position:fixed;left:0;right:0;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 35%);z-index:6}
+.bar .in{max-width:720px;margin:0 auto;display:flex;gap:8px}
+.big{flex:1;border:0;border-radius:14px;background:var(--amb);color:var(--ind);font-weight:800;font-size:16px;padding:14px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 14px rgba(245,165,36,.35)}
+.big:disabled{opacity:.6}
+.big.ind{background:var(--ind);color:#fff;box-shadow:0 4px 14px rgba(35,32,94,.3)}
+.ghostb{border:0;border-radius:14px;background:#fff;color:var(--ind);font-weight:700;padding:14px 16px;box-shadow:0 1px 4px rgba(35,32,94,.12)}
+.card{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 1px 4px rgba(35,32,94,.08);margin-bottom:12px}
+h2{font-size:18px;margin:2px 0 12px}
+h3{font-size:15px;margin:0 0 8px}
+.ci{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.ci:last-child{border-bottom:0}
+.ci .th{width:46px;height:60px;border-radius:6px;background:linear-gradient(150deg,var(--ind),var(--ind2));flex:none;overflow:hidden}
+.ci .th img{width:100%;height:100%;object-fit:cover}
+.ci .nm{flex:1;min-width:0}
+.ci .nm b{display:block;font-size:14px;line-height:1.25}
+.ci .nm small{color:var(--ink2)}
+.ci .step{width:112px;flex:none}
+.tot{display:flex;justify-content:space-between;font-size:17px;font-weight:800;margin-top:10px}
+.note{color:var(--ink2);font-size:13px;margin-top:8px}
+label{display:block;font-weight:700;font-size:13px;margin:12px 0 5px;color:var(--ind)}
+input,select,textarea{width:100%;font:inherit;border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;background:#fff;color:var(--ink);outline:0}
+input:focus,select:focus,textarea:focus{border-color:var(--ind2)}
+textarea{min-height:70px;resize:vertical}
+.err{color:var(--bad);font-size:13px;margin-top:6px;min-height:1em}
+.seg{display:flex;background:#ecebf6;border-radius:10px;padding:3px;margin-top:4px}
+.seg button{flex:1;border:0;background:none;padding:8px;border-radius:8px;font-weight:700;color:var(--ink2);font-size:13px}
+.seg button.on{background:#fff;color:var(--ind);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.ord{border-left:4px solid var(--amb)}
+.ord .hd{display:flex;justify-content:space-between;font-weight:800}
+.ord .st{display:inline-block;margin:6px 0;font-weight:700;font-size:13px;background:#f4f3f8;padding:4px 8px;border-radius:8px}
+.ord ul{margin:4px 0 0;padding-left:18px;color:var(--ink2);font-size:13px}
+.ok{text-align:center;padding:26px 16px}
+.ok .ic{font-size:56px}
+.sheet{position:fixed;inset:0;background:rgba(20,18,50,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet .in{background:#fff;border-radius:18px 18px 0 0;max-width:720px;width:100%;max-height:92vh;overflow:auto;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+.sheet .cov{aspect-ratio:auto;height:280px;border-radius:12px}
+.sheet .cov img{object-fit:contain;background:#efeef6}
+.x{float:right;border:0;background:#ecebf6;border-radius:50%;width:32px;height:32px;font-size:16px;color:var(--ind)}
+.navb{display:flex;gap:6px;margin-top:10px}
+.navb button{border:0;background:rgba(255,255,255,.12);color:#fff;border-radius:10px;padding:6px 10px;font-weight:600;font-size:13px}
+.navb button.on{background:#fff;color:var(--ind)}
+.load{text-align:center;color:var(--ink2);padding:60px 0}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="10" fill="#fff" fill-opacity=".1"/><path d="M8 32h24l-3-5H11z" fill="#fff"/><path d="M12 25h16l-3-5h-10z" fill="#fff" fill-opacity=".8"/><path d="M16 18h8l-4-7z" fill="#fff" fill-opacity=".6"/><circle cx="20" cy="7" r="2.6" fill="#F5A524"/></svg>
+    <div><b>Aqlzor</b><small>kitob dökoni</small></div>
+  </div>
+  <div class="navb" id="nav"></div>
+  <div class="tabs" id="tabs"></div>
+</header>
+<main id="app"><div class="load">Yuklanmoqda…</div></main>
+<div class="bar" id="bar" hidden></div>
+<script>
+(function(){
+var W=window.Telegram&&Telegram.WebApp, ID=W&&W.initData||'';
+try{W.ready();W.expand();W.setHeaderColor('#23205E');W.setBackgroundColor('#f4f3f8');}catch(e){}
+var AP="['‘’ʻʼ`]";
+function NA(t){return String(t).replace(new RegExp('O'+AP,'g'),'Ö').replace(new RegExp('o'+AP,'g'),'ö').replace(new RegExp('G'+AP,'g'),'Ğ').replace(new RegExp('g'+AP,'g'),'ğ').replace(/SH/g,'Ş').replace(/Sh/g,'Ş').replace(/sh/g,'ş').replace(/CH/g,'Ç').replace(/Ch/g,'Ç').replace(/ch/g,'ç');}
+function conv(root){if(!root)return;var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null),n;while(n=w.nextNode()){if(n.parentNode&&/^(SCRIPT|STYLE|TEXTAREA)$/.test(n.parentNode.nodeName))continue;var v=NA(n.nodeValue);if(v!==n.nodeValue)n.nodeValue=v;}
+  root.querySelectorAll&&root.querySelectorAll('[placeholder]').forEach(function(e){e.placeholder=NA(e.placeholder);});}
+var S={view:'shop',cat:'',D:null,busy:false,form:null,orders:null,done:null};
+var $=function(id){return document.getElementById(id);};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
+var money=function(n){return Number(n).toLocaleString('ru-RU').replace(/ /g,' ')+' so‘m';};
+function hap(t){try{t==='ok'?W.HapticFeedback.notificationOccurred('success'):W.HapticFeedback.impactOccurred('light');}catch(e){}}
+function say(m){m=NA(m);try{W.showAlert(m);}catch(e){alert(m);}}
+function api(p,b){b=b||{};b.initData=ID;return fetch('/app/api/'+p,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||'Xatolik');return j;});});}
+function img(b,cls){return b.photo?'<img loading="lazy" src="/app/img/'+b.id+'?v='+encodeURIComponent(b.photo)+'" alt="">':'<div class="ph"><i></i>'+esc(b.title)+'</div>';}
+function qty(id){var c=(S.D.cart||[]).filter(function(x){return x.id===id;})[0];return c?c.qty:0;}
+function cartSum(){var s=0,n=0;(S.D.cart||[]).forEach(function(c){n+=c.qty;if(c.price>0)s+=c.price*c.qty;});return {s:s,n:n};}
+function stepper(id,q){return '<div class="step"><button data-q="'+id+':'+(q-1)+'">−</button><span>'+q+'</span><button data-q="'+id+':'+(q+1)+'">+</button></div>';}
+function buyBtn(b){var q=qty(b.id);if(q)return stepper(b.id,q);return '<button class="add'+(b.price>0?'':' soft')+'" data-q="'+b.id+':1">'+(b.price>0?'Savatchaga':'🔔 Narxi chiqqanda xabar')+'</button>';}
+
+function nav(){var c=cartSum();var items=[['shop','📚 Kitoblar'],['cart','🛒 Savatcha'+(c.n?' ('+c.n+')':'')],['orders','📦 Buyurtmalarim']];
+  $('nav').innerHTML=items.map(function(x){return '<button data-nav="'+x[0]+'" class="'+(S.view===x[0]||(S.view==='checkout'&&x[0]==='cart')?'on':'')+'">'+x[1]+'</button>';}).join('');
+  $('tabs').innerHTML=S.view==='shop'?S.D.cats.map(function(c){return '<button class="tab'+(S.cat===c.key?' on':'')+'" data-cat="'+esc(c.key)+'">'+esc(c.title)+'</button>';}).join(''):'';
+  $('tabs').style.display=S.view==='shop'?'flex':'none';}
+
+function bar(){var c=cartSum(),b=$('bar');
+  if(S.view==='shop'&&c.n){b.hidden=false;b.innerHTML='<div class="in"><button class="big" data-nav="cart"><span>🛒 Savatcha · '+c.n+' dona</span><span>'+(c.s?money(c.s):'')+'</span></button></div>';return;}
+  if(S.view==='cart'&&c.s){b.hidden=false;b.innerHTML='<div class="in"><button class="big ind" data-nav="checkout"><span>Buyurtma berish</span><span>'+money(c.s)+' →</span></button></div>';return;}
+  if(S.view==='checkout'){b.hidden=false;b.innerHTML='<div class="in"><button class="big" id="send" '+(S.busy?'disabled':'')+'><span>'+(S.busy?'Yuborilmoqda…':'✅ Buyurtmani tasdiqlash')+'</span><span>'+money(c.s)+'</span></button></div>';return;}
+  b.hidden=true;b.innerHTML='';}
+
+function vShop(){var list=S.D.books.filter(function(b){return b.cat===S.cat;});
+  if(!list.length)return '<div class="empty">Bu bo‘limda hozircha kitob yo‘q.</div>';
+  return '<div class="grid">'+list.map(function(b){return '<div class="bk"><div class="cov" data-open="'+b.id+'">'+img(b)+(b.smp?'<span class="badge">📖 Namuna</span>':'')+'</div><div class="bi"><div class="bt" data-open="'+b.id+'">'+esc(b.title)+'</div><div class="pr'+(b.price>0?'':' soon')+'">'+(b.price>0?money(b.price):'⏳ Narxi tez orada')+'</div><div class="sp"></div>'+buyBtn(b)+'</div></div>';}).join('')+'</div>';}
+
+function vCart(){var C=S.D.cart||[];
+  if(!C.length)return '<div class="empty">🛒 Savatchangiz bo‘sh.<br><br><button class="add" style="width:auto;padding:10px 18px" data-nav="shop">Kitob tanlash</button></div>';
+  var c=cartSum(),un=C.some(function(x){return !(x.price>0);});
+  return '<div class="card"><h2>🛒 Savatcha</h2>'+C.map(function(x){var b=S.D.books.filter(function(y){return y.id===x.id;})[0]||{id:x.id,title:x.title};return '<div class="ci"><div class="th">'+(b.photo?'<img src="/app/img/'+b.id+'?v='+encodeURIComponent(b.photo)+'">':'')+'</div><div class="nm"><b>'+esc(x.title)+'</b><small>'+(x.price>0?x.qty+' × '+money(x.price):'⏳ narxi hali e’lon qilinmagan')+'</small></div>'+stepper(x.id,x.qty)+'</div>';}).join('')+
+  '<div class="tot"><span>Jami</span><span>'+money(c.s)+'</span></div>'+
+  (un?'<div class="note">⏳ Narxi e’lon qilinmagan kitoblar hozircha buyurtmaga kirmaydi — narxi chiqqanda xabar beramiz.</div>':'')+
+  '<div class="note">📮 Pochta xizmati haqi narxga kirmaydi — uni kitobni olayotganda pochtada o‘zingiz to‘laysiz.</div></div>';}
+
+function vCheckout(){var F=S.form,R=S.D.regions;
+  var regs=R.map(function(r){return '<option value="'+esc(r[0])+'"'+(F.region===r[0]?' selected':'')+'>'+esc(r[1])+'</option>';}).join('');
+  var cur=R.filter(function(r){return r[0]===F.region;})[0];
+  var dis=cur?cur[2].map(function(d){return '<option value="'+esc(d[0])+'"'+(F.district===d[0]?' selected':'')+'>'+esc(d[1])+'</option>';}).join(''):'';
+  return '<div class="card"><h2>📝 Buyurtma ma’lumotlari</h2>'+
+  '<label for="f_name">Ism va familiya</label><input id="f_name" data-f="name" value="'+esc(F.name)+'" placeholder="Masalan: Aliyev Vali" autocomplete="name">'+
+  '<label for="f_phone">Telefon raqam</label><input id="f_phone" data-f="phone" value="'+esc(F.phone)+'" placeholder="+998 90 123 45 67" inputmode="tel" autocomplete="tel">'+
+  '<label>Manzil</label>'+(F.prev?'<div class="seg"><button data-am="prev" class="'+(F.am==='prev'?'on':'')+'">📌 Oldingi</button><button data-am="list" class="'+(F.am==='list'?'on':'')+'">Ro‘yxatdan</button><button data-am="manual" class="'+(F.am==='manual'?'on':'')+'">O‘zim yozaman</button></div>':'<div class="seg"><button data-am="list" class="'+(F.am==='list'?'on':'')+'">Ro‘yxatdan tanlash</button><button data-am="manual" class="'+(F.am==='manual'?'on':'')+'">O‘zim yozaman</button></div>')+
+  (F.am==='prev'?'<div class="note" style="color:var(--ink);font-weight:600">'+esc(F.prevShow)+'</div>':'')+
+  (F.am==='list'?'<label for="f_region">Viloyat</label><select id="f_region" data-f="region"><option value="">— tanlang —</option>'+regs+'</select>'+
+    (cur?'<label for="f_district">Tuman / shahar</label><select id="f_district" data-f="district"><option value="">— tanlang —</option>'+dis+'<option value="__other"'+(F.district==='__other'?' selected':'')+'>✍️ Ro‘yxatda yo‘q</option></select>'+(F.district==='__other'?'<input style="margin-top:8px" data-f="districtText" value="'+esc(F.districtText)+'" placeholder="Tuman yoki shahar nomi">':''):'')+
+    '<label for="f_street">Mahalla, ko‘cha, uy</label><input id="f_street" data-f="street" value="'+esc(F.street)+'" placeholder="Masalan: Navro‘z mahallasi, Bobur ko‘chasi 12">':'')+
+  (F.am==='manual'?'<textarea data-f="address" placeholder="Viloyat, tuman, mahalla/ko‘cha, uy">'+esc(F.address)+'</textarea>':'')+
+  '<label for="f_post">📮 Yaqin BTS yoki EMU pochta bo‘limi</label><textarea id="f_post" data-f="comment" placeholder="Masalan: BTS, Asaka sh., Navoiy ko‘chasi 25 (bozor yonida)">'+esc(F.comment)+'</textarea>'+
+  '<div class="note">Kitoblar shu pochta bo‘limiga jo‘natiladi, siz u yerdan olasiz. Pochta xizmati haqini o‘zingiz to‘laysiz.</div>'+
+  '<div class="err" id="err">'+esc(F.err||'')+'</div></div>'+
+  '<div class="card"><h3>🧾 Buyurtmangiz</h3>'+S.D.cart.filter(function(x){return x.price>0;}).map(function(x){return '<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0"><span>'+esc(x.title)+' × '+x.qty+'</span><b style="white-space:nowrap">'+money(x.price*x.qty)+'</b></div>';}).join('')+'<div class="tot"><span>Jami</span><span>'+money(cartSum().s)+'</span></div></div>';}
+
+function vOrders(){if(!S.orders)return '<div class="load">Yuklanmoqda…</div>';
+  if(!S.orders.length)return '<div class="empty">📦 Hali buyurtmangiz yo‘q.</div>';
+  return S.orders.map(function(o){return '<div class="card ord"><div class="hd"><span>Buyurtma #'+o.id+'</span><span>'+money(o.total)+'</span></div><div class="st">'+esc(o.status)+'</div><div class="note" style="margin:0">📅 '+esc(o.date)+(o.track?' · 📦 Trek: <b>'+esc(o.track)+'</b>':'')+'</div><ul>'+o.items.map(function(i){return '<li>'+esc(i.title)+' × '+i.qty+'</li>';}).join('')+'</ul>'+(o.pay?'<div class="note">🧾 Chekni yuborish uchun botdagi «Chek yuborish» tugmasini bosing.</div>':'')+'</div>';}).join('')+(S.D.contact?'<div class="card"><h3>☎️ Aloqa</h3><div style="white-space:pre-wrap">'+esc(S.D.contact)+'</div></div>':'');}
+
+function vDone(){var d=S.done;return '<div class="card ok"><div class="ic">🎉</div><h2>Buyurtmangiz qabul qilindi!</h2><p>Buyurtma raqami: <b>#'+d.id+'</b><br>Jami: <b>'+money(d.total)+'</b></p><p class="note">💳 To‘lov ma’lumotlari bot chatiga yuborildi. To‘lovni qilib, <b>chekni botga yuboring</b> — admin tasdiqlagach kitoblaringiz pochtaga topshiriladi.</p><br><button class="big ind" style="width:100%;justify-content:center" id="close">Bot chatiga o‘tish</button></div>';}
+
+function render(){nav();var h='';
+  if(S.view==='shop')h=vShop();else if(S.view==='cart')h=vCart();else if(S.view==='checkout')h=vCheckout();else if(S.view==='orders')h=vOrders();else if(S.view==='done')h=vDone();
+  $('app').innerHTML=h;bar();conv($('app'));conv($('nav'));conv($('tabs'));conv($('bar'));
+  try{if(S.view==='shop'||S.view==='done')W.BackButton.hide();else W.BackButton.show();}catch(e){}}
+
+function go(v){if(v==='checkout'){if(!cartSum().s)return;if(!S.form){var u=S.D.user||{};S.form={name:u.name||'',phone:u.phone||'',prev:u.address||'',prevShow:u.addressShow||'',am:u.address?'prev':'list',region:'',district:'',districtText:'',street:'',address:'',comment:'',err:''};}}
+  if(v==='orders'){S.orders=null;api('orders').then(function(j){S.orders=j.orders;if(S.view==='orders')render();}).catch(function(e){say(e.message);});}
+  S.view=v;window.scrollTo(0,0);render();}
+
+function setQty(id,q){q=Math.max(0,Math.min(20,q));var old=JSON.stringify(S.D.cart);
+  var C=S.D.cart.filter(function(x){return x.id!==id;});var b=S.D.books.filter(function(x){return x.id===id;})[0];
+  if(q>0){var ex=S.D.cart.filter(function(x){return x.id===id;})[0];C.push({id:id,qty:q,title:(ex||b).title,price:(ex||b).price});}
+  S.D.cart=C;hap();render();
+  api('cart',{book_id:id,qty:q}).then(function(j){S.D.cart=j.cart;render();}).catch(function(e){S.D.cart=JSON.parse(old);render();say(e.message);});}
+
+function openBook(id){var b=S.D.books.filter(function(x){return x.id===id;})[0];if(!b)return;
+  var d=document.createElement('div');d.className='sheet';d.id='sheet';
+  d.innerHTML='<div class="in"><button class="x" data-close>✕</button><div class="cov" style="margin-top:40px">'+img(b)+'</div><h2 style="margin-top:14px">'+esc(b.title)+'</h2><div class="pr'+(b.price>0?'':' soon')+'" style="font-size:18px">'+(b.price>0?money(b.price):'⏳ Narxi tez orada e’lon qilinadi')+'</div><p style="white-space:pre-wrap;color:var(--ink2)">'+esc(b.desc||'')+'</p>'+(b.smp?'<button class="add soft" style="margin-bottom:10px" data-smp="'+b.id+'">📖 Namunani ko‘rish (chatga yuboriladi)</button>':'')+'<div id="sbuy">'+buyBtn(b)+'</div></div>';
+  document.body.appendChild(d);conv(d);}
+function closeSheet(){var s=$('sheet');if(s)s.remove();}
+
+function submit(){var F=S.form;F.err='';
+  var body={name:F.name.trim(),phone:F.phone.trim(),comment:F.comment.trim()};
+  if(body.name.length<3)F.err='Ism va familiyangizni to‘liq yozing';
+  else if(body.phone.replace(/\D/g,'').length<9)F.err='Telefon raqam noto‘g‘ri. Masalan: +998 90 123 45 67';
+  else if(F.am==='prev')body.address=F.prev;
+  else if(F.am==='manual'){if(F.address.trim().length<8)F.err='Manzilni batafsilroq yozing (viloyat, tuman, ko‘cha, uy)';else body.address=F.address.trim();}
+  else{var dist=F.district==='__other'?F.districtText.trim():F.district;
+    if(!F.region)F.err='Viloyatni tanlang';else if(!dist)F.err='Tuman yoki shaharni tanlang';else if(F.street.trim().length<3)F.err='Mahalla, ko‘cha va uy raqamini yozing';
+    else{body.region=F.region;body.district=dist;body.street=F.street.trim();}}
+  if(!F.err&&body.comment.length<5)F.err='Yaqin BTS yoki EMU pochta bo‘limi manzilini yozing';
+  if(F.err){render();var e=$('err');if(e)e.scrollIntoView({block:'center'});try{W.HapticFeedback.notificationOccurred('error');}catch(_){}return;}
+  S.busy=true;render();
+  api('order',body).then(function(j){S.busy=false;S.done=j;S.form=null;S.D.cart=j.cart||[];hap('ok');go('done');})
+  .catch(function(e){S.busy=false;F.err=e.message;render();});}
+
+document.addEventListener('click',function(e){var t=e.target.closest('[data-q],[data-nav],[data-cat],[data-open],[data-close],[data-smp],[data-am],#send,#close');
+  if(!t){if(e.target.classList&&e.target.classList.contains('sheet'))closeSheet();return;}
+  if(t.dataset.q){var p=t.dataset.q.split(':');setQty(+p[0],+p[1]);var sb=$('sbuy');if(sb){var b=S.D.books.filter(function(x){return x.id===+p[0];})[0];sb.innerHTML=buyBtn(b);conv(sb);}return;}
+  if(t.dataset.nav){closeSheet();go(t.dataset.nav);return;}
+  if(t.dataset.cat){S.cat=t.dataset.cat;render();return;}
+  if(t.dataset.open){openBook(+t.dataset.open);return;}
+  if(t.dataset.close!=null){closeSheet();return;}
+  if(t.dataset.smp){t.disabled=true;api('sample',{book_id:+t.dataset.smp}).then(function(){hap('ok');say('📖 Namuna bot chatiga yuborildi');}).catch(function(e){say(e.message);}).then(function(){t.disabled=false;});return;}
+  if(t.dataset.am){S.form.am=t.dataset.am;S.form.err='';render();return;}
+  if(t.id==='send'){if(!S.busy)submit();return;}
+  if(t.id==='close'){try{W.close();}catch(_){}return;}
+});
+document.addEventListener('input',function(e){var f=e.target.dataset&&e.target.dataset.f;if(!f||!S.form)return;S.form[f]=e.target.value;
+  if(f==='region'){S.form.district='';render();}else if(f==='district'){render();}});
+try{W.BackButton.onClick(function(){if($('sheet'))return closeSheet();go(S.view==='checkout'?'cart':'shop');});}catch(e){}
+
+if(!ID){$('app').innerHTML=NA('<div class="empty">Bu do‘kon Telegram ichida ochiladi.<br><br><a href="https://t.me/Aqlzor_bot">@Aqlzor_bot</a> ga o‘ting va «🛍 Do‘kon» tugmasini bosing.</div>');return;}
+api('catalog').then(function(j){S.D=j;S.cat=(j.cats[0]||{}).key||'';var h=location.hash.slice(1);if(h==='cart'||h==='orders')go(h);else render();})
+.catch(function(e){$('app').innerHTML='<div class="empty">⚠️ '+esc(e.message)+'<br><br><button class="add" style="width:auto;padding:10px 18px" onclick="location.reload()">Qayta urinish</button></div>';});
+})();
+</script>
+</body>
+</html>
