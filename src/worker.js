@@ -39,7 +39,10 @@ async function ensureSchema(env) {
     env.DB.prepare('CREATE TABLE IF NOT EXISTS attempts(k TEXT PRIMARY KEY, n INTEGER, first INTEGER, until INTEGER)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS claims(student_id TEXT PRIMARY KEY, tg TEXT, ts INTEGER)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS subs(task_id TEXT, student_id TEXT, ts INTEGER, PRIMARY KEY(task_id, student_id))'),
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS orders(id TEXT PRIMARY KEY, student_id TEXT, item_id TEXT, name TEXT, qty INTEGER, cost INTEGER, coin_id TEXT, status TEXT, ts INTEGER, done_ts INTEGER, by_user TEXT)'),
+    env.DB.prepare('CREATE INDEX IF NOT EXISTS orders_s ON orders(status, ts)'),
   ]);
+  for (const q of ['ALTER TABLE shop ADD COLUMN photo TEXT', 'ALTER TABLE shop ADD COLUMN pv INTEGER DEFAULT 0']) { try { await env.DB.prepare(q).run(); } catch (e) { /* bor */ } }
 }
 /* ---------- brute-force himoyasi ---------- */
 // limit: shu oynada nechta xato urinishga ruxsat; keyin `lockMin` daqiqa bloklanadi
@@ -139,6 +142,30 @@ async function budgets(env) {
   for (const r of g) { (out[r.by_user] = out[r.by_user] || { allocated: 0, spent: 0 }).spent = r.s || 0; }
   for (const k in out) out[k].left = out[k].allocated - out[k].spent; return out;
 }
+const PUBLIC_BASE = 'https://ilmzor-baho.nomonovnosirbek15.workers.dev';
+const SHOP_COLS = 'SELECT id,name,category,price,stock,active,created,COALESCE(pv,0) pv FROM shop';
+const okPhoto = d => typeof d === 'string' && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(d) && d.length < 700000;
+async function orderCancel(env, o, by) {
+  await env.DB.batch([
+    env.DB.prepare("UPDATE orders SET status='bekor',done_ts=?,by_user=? WHERE id=? AND status='kutilmoqda'").bind(Date.now(), by, o.id),
+    env.DB.prepare('DELETE FROM coins WHERE id=?').bind(o.coin_id),
+    env.DB.prepare('UPDATE shop SET stock=stock+? WHERE id=?').bind(o.qty, o.item_id),
+  ]);
+}
+// bot uchun voqealar: yangi mahsulot, buyurtma holati, pul o'zgarishi (xabarnoma yuborish uchun)
+async function botEvents(env, since) {
+  const now = Date.now(); if (!since) return { now, items: [], orders: [], coins: [], shop: [] };
+  const { results: items } = await env.DB.prepare('SELECT id,name,category,price,stock,COALESCE(pv,0) pv FROM shop WHERE active=1 AND created>? AND created<=?').bind(since, now).all();
+  const { results: orders } = await env.DB.prepare('SELECT o.id,o.name,o.cost,o.status,o.ts,o.done_ts,o.by_user,c.code FROM orders o LEFT JOIN codes c ON c.student_id=o.student_id WHERE (o.ts>? AND o.ts<=?) OR (o.done_ts>? AND o.done_ts<=?)').bind(since, now, since, now).all();
+  const { results: ch } = await env.DB.prepare('SELECT student_id, SUM(amount) d FROM coins WHERE ts>? AND ts<=? GROUP BY student_id').bind(since, now).all();
+  let coins = [];
+  if (ch.length) {
+    const bal = await balances(env, ch.map(r => r.student_id)); const { results: cs } = await env.DB.prepare('SELECT student_id, code FROM codes').all(); const cm = Object.fromEntries(cs.map(r => [r.student_id, r.code]));
+    coins = ch.filter(r => cm[r.student_id]).map(r => ({ code: cm[r.student_id], delta: r.d, balance: bal[r.student_id] || 0 }));
+  }
+  const { results: shop } = await env.DB.prepare('SELECT id,name,price FROM shop WHERE active=1 AND stock>0').all();
+  return { now, items, orders, coins, shop, base: PUBLIC_BASE };
+}
 // zaxira nusxa: barcha jadvallar (sessiya, urinishlar va parol xeshlari bundan mustasno)
 async function dbDump(env) {
   const { results: tb } = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE '\\_cf%' ESCAPE '\\' AND name NOT LIKE 'sqlite%' AND name NOT IN ('sessions','attempts')").all();
@@ -158,8 +185,9 @@ async function studentCoins(env, s) {
   const { results: rec } = await env.DB.prepare('SELECT amount,kind,reason,ts FROM coins WHERE student_id=? ORDER BY ts DESC LIMIT 12').bind(s.id).all();
   const ms = periodRange('month', tashkentToday())[0];
   const mm = await env.DB.prepare('SELECT SUM(amount) m FROM coins WHERE student_id=? AND amount>0 AND ts>=?').bind(s.id, Date.parse(ms + 'T00:00:00Z') - 5 * 3600e3).first();
-  const { results: shop } = await env.DB.prepare('SELECT id,name,category,price,stock FROM shop WHERE active=1 AND stock>0 ORDER BY price').all();
-  return { balance: mine, month: (mm && mm.m) || 0, rank: 1 + Object.values(bal).filter(v => v > mine).length, groupSize: Object.keys(bal).length, recent: rec, shop };
+  const { results: shop } = await env.DB.prepare('SELECT id,name,category,price,stock,pv FROM shop WHERE active=1 AND stock>0 ORDER BY price').all();
+  const { results: orders } = await env.DB.prepare("SELECT id,name,qty,cost,status,ts FROM orders WHERE student_id=? ORDER BY ts DESC LIMIT 15").bind(s.id).all();
+  return { orders, balance: mine, month: (mm && mm.m) || 0, rank: 1 + Object.values(bal).filter(v => v > mine).length, groupSize: Object.keys(bal).length, recent: rec, shop };
 }
 
 /* ---------- ranking (same rules as the app) ---------- */
@@ -343,11 +371,19 @@ export default {
         const r = await ranking(env, url.searchParams.get('p') === 'week' ? 'week' : url.searchParams.get('p') === 'all' ? 'all' : 'month', url.searchParams.get('d'));
         return json(pub(r), 200, { 'access-control-allow-origin': '*' });
       }
+      let pm;
+      if (M === 'GET' && (pm = p.match(/^\/p\/shop\/([\w]+)\.jpg$/))) {
+        const r = await env.DB.prepare('SELECT photo FROM shop WHERE id=?').bind(pm[1]).first();
+        if (!r || !r.photo) return new Response('Topilmadi', { status: 404 });
+        const bin = Uint8Array.from(atob(String(r.photo).replace(/^data:image\/\w+;base64,/, '')), c => c.charCodeAt(0));
+        return new Response(bin, { headers: { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=86400' } });
+      }
       // bot-only: do'kon katalogi (tugaganlari ham) va kunlik zaxira nusxa
       if (url.hostname === 'baho' && M === 'GET' && p === '/api/bot/shop') {
-        const { results } = await env.DB.prepare('SELECT name,category,price,stock FROM shop WHERE active=1 ORDER BY category, price').all();
-        return json({ items: results });
+        const { results } = await env.DB.prepare('SELECT id,name,category,price,stock,pv FROM shop WHERE active=1 ORDER BY category, price').all();
+        return json({ items: results, base: PUBLIC_BASE });
       }
+      if (url.hostname === 'baho' && M === 'GET' && p === '/api/bot/events') return json(await botEvents(env, Number(url.searchParams.get('since')) || 0));
       if (url.hostname === 'baho' && M === 'GET' && p === '/api/bot/backup') return json(await dbDump(env));
       // bot-only (reachable just through the service binding, host "baho"): student gets own code by name
       if (p === '/api/bot/claim' && M === 'POST') {
@@ -384,6 +420,28 @@ export default {
           const png = per === 'oylik' ? await oylikPng(env, V) : await cardPng(env, V, per);
           const fn = `ilmzor-${per === 'week' ? 'haftalik' : per === 'oylik' ? 'oylik-test' : 'oylik'}-${String(s.data.name).toLowerCase().replace(/[^a-z0-9]+/g, '-')}.png`;
           return new Response(png, { headers: { 'content-type': 'image/png', 'cache-control': 'no-store', 'content-disposition': `${url.searchParams.get('dl') ? 'attachment' : 'inline'}; filename="${fn}"` } });
+        }
+        if (M === 'POST' && p === '/api/s/order') { // bot orqali buyurtma: pul darhol band qilinadi
+          const b = await req.json().catch(() => ({})); const qty = Math.max(1, Math.min(5, Math.round(Number(b.qty) || 1)));
+          const pend = await env.DB.prepare("SELECT COUNT(*) n FROM orders WHERE student_id=? AND status='kutilmoqda'").bind(s.id).first();
+          if (pend.n >= 3) return err('Sizda 3 ta olinmagan buyurtma bor. Avval ularni sotuvchidan olib keting.');
+          const it = await env.DB.prepare('SELECT id,name,price,stock FROM shop WHERE id=? AND active=1').bind(String(b.itemId || '')).first(); if (!it) return err('Mahsulot topilmadi', 404, 'not_found');
+          if (it.stock < qty) return err(it.stock ? `Omborda faqat ${it.stock} ta qolgan` : 'Bu mahsulot tugagan');
+          const bal = (await balances(env, [s.id]))[s.id] || 0; const cost = it.price * qty;
+          if (bal < cost) return err(`Ilmzor puli yetmaydi: balansingiz ${bal}, kerak ${cost}`);
+          const oid = 'o' + rid(11), cid = 'm:' + rid(14), now = Date.now(), nm = `${it.name}${qty > 1 ? ' × ' + qty : ''}`;
+          const res = await env.DB.batch([
+            env.DB.prepare('UPDATE shop SET stock=stock-? WHERE id=? AND stock>=?').bind(qty, it.id, qty),
+            env.DB.prepare("INSERT INTO coins(id,student_id,amount,kind,reason,task_id,by_user,ts) SELECT ?,?,?,'sotuv',?,?,'',? WHERE changes()>0").bind(cid, s.id, -cost, nm + ' (buyurtma)', it.id, now),
+            env.DB.prepare("INSERT INTO orders(id,student_id,item_id,name,qty,cost,coin_id,status,ts) SELECT ?,?,?,?,?,?,?,'kutilmoqda',? WHERE changes()>0").bind(oid, s.id, it.id, nm, qty, cost, cid, now),
+          ]);
+          if (!res[2].meta.changes) return err('Mahsulot hozirgina tugadi');
+          return json({ ok: true, id: oid, name: nm, cost, balance: bal - cost });
+        }
+        if (M === 'POST' && p === '/api/s/order/cancel') {
+          const b = await req.json().catch(() => ({})); const o = await env.DB.prepare("SELECT * FROM orders WHERE id=? AND student_id=?").bind(String(b.id || ''), s.id).first();
+          if (!o) return err('Buyurtma topilmadi', 404, 'not_found'); if (o.status !== 'kutilmoqda') return err('Bu buyurtma allaqachon ' + (o.status === 'berildi' ? 'berilgan' : 'bekor qilingan'));
+          await orderCancel(env, o, 'student'); return json({ ok: true });
         }
         if (M === 'POST' && (p === '/api/s/submit' || p === '/api/s/unsubmit')) {
           const b = await req.json().catch(() => ({})); const t = await getDoc(env, 'tasks', String(b.taskId || ''));
@@ -517,7 +575,7 @@ export default {
         const ms = periodRange('month', tashkentToday())[0]; const since = Date.parse(ms + 'T00:00:00Z') - 5 * 3600e3;
         const { results: rows } = await env.DB.prepare('SELECT id,student_id,amount,kind,reason,by_user,ts FROM coins WHERE ts>=? ORDER BY ts DESC').bind(since - 31 * 86400e3).all();
         const mine = rows.filter(r => ids.has(r.student_id));
-        const { results: shop } = await env.DB.prepare('SELECT * FROM shop WHERE active>=0 ORDER BY active DESC, price').all();
+        const { results: shop } = await env.DB.prepare(SHOP_COLS + ' WHERE active>=0 ORDER BY active DESC, price').all();
         const { results: us } = await env.DB.prepare('SELECT id,name,role FROM users').all(); const who = {}; for (const u of us) who[u.id] = { name: u.name, role: u.role };
         return json({ balances: bal, rows: mine.slice(0, 600), monthStart: since, settings: await coinSettings(env), shop, who });
       }
@@ -552,8 +610,8 @@ export default {
         if (r.kind === 'sotuv' && user.role === 'teacher') return err('Ruxsat yo‘q', 403, 'permission_denied');
         if (user.role === 'seller' && r.kind !== 'sotuv') return err('Ruxsat yo‘q', 403, 'permission_denied');
         if (user.role !== 'admin' && (r.by_user !== user.id || Date.now() - r.ts > 2 * 86400e3)) return err('Faqat o‘zingiz bergan pulni 2 kun ichida bekor qilasiz', 403, 'permission_denied');
-        if (r.kind === 'sotuv' && r.task_id) { const qm = String(r.reason || '').match(/× (\d+)$/); await env.DB.prepare('UPDATE shop SET stock=stock+? WHERE id=?').bind(qm ? Number(qm[1]) : 1, r.task_id).run(); }
-        await env.DB.prepare('DELETE FROM coins WHERE id=?').bind(cmm[1]).run(); return json({ ok: true });
+        if (r.kind === 'sotuv' && r.task_id) { const qm = String(r.reason || '').match(/× (\d+)/); await env.DB.prepare('UPDATE shop SET stock=stock+? WHERE id=?').bind(qm ? Number(qm[1]) : 1, r.task_id).run(); }
+        await env.DB.batch([env.DB.prepare('DELETE FROM coins WHERE id=?').bind(cmm[1]), env.DB.prepare("UPDATE orders SET status='bekor',done_ts=?,by_user=? WHERE coin_id=?").bind(Date.now(), user.id, cmm[1])]); return json({ ok: true });
       }
       if (p === '/api/budgets' && M === 'GET') {
         const B = await budgets(env);
@@ -592,15 +650,30 @@ export default {
         return json({ ok: true, tasks: n });
       }
       // 🛍 do'kon
+      if (p === '/api/orders' && M === 'GET') {
+        if (user.role === 'teacher') return err('Ruxsat yo‘q', 403, 'permission_denied');
+        const { results } = await env.DB.prepare("SELECT o.*, d.data sdata FROM orders o LEFT JOIN docs d ON d.coll='students' AND d.id=o.student_id WHERE o.status='kutilmoqda' OR o.ts>? ORDER BY CASE o.status WHEN 'kutilmoqda' THEN 0 ELSE 1 END, o.ts DESC LIMIT 60").bind(Date.now() - 14 * 86400e3).all();
+        return json({ orders: results.map(({ sdata, ...o }) => { const d = sdata ? JSON.parse(sdata) : {}; return { ...o, student: d.name || '—', group: d.group || '' }; }) });
+      }
+      if ((cmm = p.match(/^\/api\/orders\/([\w]+)$/)) && M === 'POST') {
+        if (user.role === 'teacher') return err('Ruxsat yo‘q', 403, 'permission_denied');
+        const b = await req.json(); const o = await env.DB.prepare('SELECT * FROM orders WHERE id=?').bind(cmm[1]).first(); if (!o) return err('Topilmadi', 404, 'not_found');
+        if (o.status !== 'kutilmoqda') return err('Bu buyurtma allaqachon yopilgan');
+        if (b.action === 'give') { const now = Date.now(); await env.DB.batch([env.DB.prepare("UPDATE orders SET status='berildi',done_ts=?,by_user=? WHERE id=?").bind(now, user.id, o.id), env.DB.prepare("UPDATE coins SET by_user=?, reason=? WHERE id=?").bind(user.id, o.name + ' (bot orqali)', o.coin_id)]); return json({ ok: true }); }
+        if (b.action === 'cancel') { await orderCancel(env, o, user.id); return json({ ok: true }); }
+        return err('Noto‘g‘ri amal');
+      }
       if (p === '/api/shop' && M === 'POST') {
         if (user.role === 'teacher') return err('Ruxsat yo‘q', 403, 'permission_denied');
         const b = await req.json(); const price = Math.round(Number(b.price)); if (!b.name || !(price > 0)) return err('Nomi va narxini yozing');
         const id = rid(12); await env.DB.prepare('INSERT INTO shop(id,name,category,price,stock,active,created) VALUES(?,?,?,?,?,1,?)').bind(id, String(b.name).slice(0, 60), String(b.category || 'Boshqa').slice(0, 30), price, Math.max(0, Math.round(Number(b.stock) || 0)), Date.now()).run();
+        if (b.photo) { if (!okPhoto(b.photo)) return err('Rasm juda katta yoki noto‘g‘ri'); await env.DB.prepare('UPDATE shop SET photo=?, pv=? WHERE id=?').bind(b.photo, Date.now(), id).run(); }
         return json({ ok: true, id });
       }
       if ((cmm = p.match(/^\/api\/shop\/([\w]+)$/)) && M === 'PATCH') {
         if (user.role === 'teacher') return err('Ruxsat yo‘q', 403, 'permission_denied');
-        const b = await req.json(); const cur = await env.DB.prepare('SELECT * FROM shop WHERE id=?').bind(cmm[1]).first(); if (!cur) return err('Topilmadi', 404, 'not_found');
+        const b = await req.json(); const cur = await env.DB.prepare(SHOP_COLS + ' WHERE id=?').bind(cmm[1]).first(); if (!cur) return err('Topilmadi', 404, 'not_found');
+        if (b.photo !== undefined) { if (b.photo && !okPhoto(b.photo)) return err('Rasm juda katta yoki noto‘g‘ri'); await env.DB.prepare('UPDATE shop SET photo=?, pv=? WHERE id=?').bind(b.photo || null, b.photo ? Date.now() : 0, cmm[1]).run(); if (Object.keys(b).length === 1) return json({ ok: true }); }
         await env.DB.prepare('UPDATE shop SET name=?,category=?,price=?,stock=?,active=? WHERE id=?').bind(String(b.name ?? cur.name).slice(0, 60), String(b.category ?? cur.category).slice(0, 30), Math.max(1, Math.round(Number(b.price ?? cur.price))), Math.max(0, Math.round(Number(b.stock ?? cur.stock))), b.active === undefined ? cur.active : (b.active ? 1 : 0), cmm[1]).run();
         return json({ ok: true });
       }
