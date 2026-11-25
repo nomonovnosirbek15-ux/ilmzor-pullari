@@ -118,6 +118,7 @@ function coinRulesView(D){
     <h2 style="margin-top:16px">🗓 Oylik test (guruhdagi o‘rin)</h2>
     <table><tbody><tr><td>🥇 1-o‘rin</td><td>${n('cr_o1',R.oylik[0]||0)}</td></tr><tr><td>🥈 2-o‘rin</td><td>${n('cr_o2',R.oylik[1]||0)}</td></tr><tr><td>🥉 3-o‘rin</td><td>${n('cr_o3',R.oylik[2]||0)}</td></tr></tbody></table>
     <label class="f">Ustoz bir martada ko‘pi bilan beradigan pul</label>${n('cr_max',R.maxGive)}
+    <label class="f">Vazifa uchun avtomatik pul shu sanadan boshlab beriladi</label><input class="inp" id="cr_start" type="date" value="${esc(R.start||'')}" style="width:170px"><div class="muted" style="font-size:12px;margin-top:4px">Bu sanadan oldingi vazifalarga pul yozilmaydi (sinov davri).</div>
    </div>
    <div class="card"><h2>🎁 Qo‘shimcha pul sabablari</h2><p class="muted" style="font-size:12.5px;margin-top:-4px">Ustoz «Pul berish»da shu tugmalarni ko‘radi. Minus — jarima.</p>
     <div id="cr_reasons">${R.reasons.map((x,i)=>`<div class="row" style="margin-bottom:6px"><input class="inp" data-rn="${i}" value="${esc(x.name)}"><input class="inp" data-ra="${i}" type="number" value="${x.amount}" style="max-width:90px"></div>`).join('')}
@@ -168,6 +169,6 @@ document.addEventListener('click',async ev=>{
     el.disabled=true;try{const j=await window.__api('POST','/api/shop/sell',{studentId:x.id,itemId:it,qty:q});toast(`Sotildi ✓ Qolgan balans: ${j.balance}`);await coinLoad();}catch(e){toast(e.message);el.disabled=false;}return;}
   if(a==='saveRules'){const g=id=>Number(document.getElementById(id).value);const reasons=[];
     document.querySelectorAll('[data-rn]').forEach(i=>{const k=i.dataset.rn;const am=document.querySelector(`[data-ra="${k}"]`);if(i.value.trim()&&Number(am.value))reasons.push({name:i.value.trim(),amount:Number(am.value)});});
-    try{await window.__api('PUT','/api/coin-settings',{full:g('cr_full'),alo:g('cr_alo'),orta:g('cr_orta'),past:g('cr_past'),lateHalf:document.getElementById('cr_late').checked,oylik:[g('cr_o1'),g('cr_o2'),g('cr_o3')],maxGive:g('cr_max'),reasons});toast('Qoidalar saqlandi ✓');coinLoad();}catch(e){toast(e.message);}return;}
+    try{await window.__api('PUT','/api/coin-settings',{full:g('cr_full'),alo:g('cr_alo'),orta:g('cr_orta'),past:g('cr_past'),lateHalf:document.getElementById('cr_late').checked,oylik:[g('cr_o1'),g('cr_o2'),g('cr_o3')],maxGive:g('cr_max'),start:document.getElementById('cr_start').value,reasons});toast('Qoidalar saqlandi ✓');coinLoad();}catch(e){toast(e.message);}return;}
   if(a==='recalc'){if(!confirm('Shu oyda qo‘yilgan barcha baholar uchun Ilmzor puli hisoblansinmi?'))return;const d=new Date();try{const j=await window.__api('POST','/api/coins/recalc',{from:`${d.getFullYear()}-${pad(d.getMonth()+1)}-01`});toast(`${j.tasks} ta vazifa uchun Ilmzor puli hisoblandi ✓`);coinLoad();}catch(e){toast(e.message);}return;}
 });

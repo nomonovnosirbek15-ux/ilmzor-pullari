@@ -102,7 +102,7 @@ async function putDoc(env, coll, id, data, user, merge) {
 }
 
 /* ---------- 💰 Coin tizimi ---------- */
-const COIN_DEFAULTS = { full: 5, alo: 3, orta: 1, past: 0, lateHalf: true, oylik: [30, 20, 10], maxGive: 50,
+const COIN_DEFAULTS = { start: '2026-12-01', full: 5, alo: 3, orta: 1, past: 0, lateHalf: true, oylik: [30, 20, 10], maxGive: 50,
   reasons: [{ name: 'Xulq', amount: 2 }, { name: 'Davomat', amount: 1 }, { name: 'Lug‘at yodlash', amount: 2 }, { name: 'Qo‘shimcha vazifa', amount: 3 }, { name: 'Faollik', amount: 2 }, { name: 'Jarima', amount: -2 }] };
 async function coinSettings(env) { const r = await env.DB.prepare("SELECT v FROM settings WHERE k='coins'").first(); return { ...COIN_DEFAULTS, ...(r ? JSON.parse(r.v) : {}) }; }
 const tashDate = ts => new Date(ts + 5 * 3600e3).toISOString().slice(0, 10);
@@ -110,8 +110,8 @@ const tashDate = ts => new Date(ts + 5 * 3600e3).toISOString().slice(0, 10);
 async function syncTaskCoins(env, taskId) {
   const t = await getDoc(env, 'tasks', taskId);
   const { results: old } = await env.DB.prepare("SELECT id,amount FROM coins WHERE task_id=? AND kind='auto'").bind(taskId).all();
-  const want = {};
-  if (t) {
+  const want = {}; const R0 = await coinSettings(env);
+  if (t && String(t.data.date || '') >= String(R0.start || '')) {
     const d = t.data, R = await coinSettings(env), max = Number(d.max) || 0, sc = d.scores || {}, ab = d.absent || {};
     const { results: subs } = await env.DB.prepare('SELECT student_id,ts FROM subs WHERE task_id=?').bind(taskId).all(); const sub = Object.fromEntries(subs.map(x => [x.student_id, x.ts]));
     const graded = (d.studentIds || []).filter(id => !ab[id] && sc[id] !== undefined && sc[id] !== null && sc[id] !== '').map(id => ({ id, p: max ? Math.min(100, Number(sc[id]) / max * 100) : 0 }));
@@ -138,6 +138,13 @@ async function budgets(env) {
   const out = {}; for (const r of a) out[r.teacher_id] = { allocated: r.s || 0, spent: 0 };
   for (const r of g) { (out[r.by_user] = out[r.by_user] || { allocated: 0, spent: 0 }).spent = r.s || 0; }
   for (const k in out) out[k].left = out[k].allocated - out[k].spent; return out;
+}
+// zaxira nusxa: barcha jadvallar (sessiya, urinishlar va parol xeshlari bundan mustasno)
+async function dbDump(env) {
+  const { results: tb } = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE '\\_cf%' ESCAPE '\\' AND name NOT LIKE 'sqlite%' AND name NOT IN ('sessions','attempts')").all();
+  const tables = {};
+  for (const t of tb) { const { results } = await env.DB.prepare(`SELECT * FROM "${t.name}"`).all(); tables[t.name] = t.name === 'users' ? results.map(({ salt, hash, ...u }) => u) : results; }
+  return { app: 'ilmzor-baho', at: new Date().toISOString(), tables };
 }
 async function balances(env, ids) {
   const { results } = await env.DB.prepare('SELECT student_id, SUM(amount) b FROM coins GROUP BY student_id').all();
@@ -336,6 +343,12 @@ export default {
         const r = await ranking(env, url.searchParams.get('p') === 'week' ? 'week' : url.searchParams.get('p') === 'all' ? 'all' : 'month', url.searchParams.get('d'));
         return json(pub(r), 200, { 'access-control-allow-origin': '*' });
       }
+      // bot-only: do'kon katalogi (tugaganlari ham) va kunlik zaxira nusxa
+      if (url.hostname === 'baho' && M === 'GET' && p === '/api/bot/shop') {
+        const { results } = await env.DB.prepare('SELECT name,category,price,stock FROM shop WHERE active=1 ORDER BY category, price').all();
+        return json({ items: results });
+      }
+      if (url.hostname === 'baho' && M === 'GET' && p === '/api/bot/backup') return json(await dbDump(env));
       // bot-only (reachable just through the service binding, host "baho"): student gets own code by name
       if (p === '/api/bot/claim' && M === 'POST') {
         if (url.hostname !== 'baho') return err('Topilmadi', 404, 'not_found');
@@ -422,6 +435,10 @@ export default {
         return json({ ok: true });
       }
 
+      if (p === '/api/backup' && M === 'GET') {
+        if (user.role !== 'admin') return err('Ruxsat yo‘q', 403, 'permission_denied');
+        return new Response(JSON.stringify(await dbDump(env)), { headers: { 'content-type': 'application/json; charset=utf-8', 'content-disposition': `attachment; filename="ilmzor-baho-zaxira-${tashkentToday()}.json"`, 'cache-control': 'no-store' } });
+      }
       // users
       if (p === '/api/users' && M === 'GET') {
         const { results } = await env.DB.prepare('SELECT id,name,phone,role,active,created FROM users ORDER BY created').all();
@@ -564,7 +581,7 @@ export default {
         for (const k of ['full', 'alo', 'orta', 'past', 'maxGive']) R[k] = Math.max(0, Math.min(1000, Math.round(Number(R[k]) || 0)));
         R.oylik = (R.oylik || []).slice(0, 5).map(x => Math.max(0, Math.round(Number(x) || 0)));
         R.reasons = (R.reasons || []).slice(0, 20).map(x => ({ name: String(x.name || '').slice(0, 40), amount: Math.round(Number(x.amount) || 0) })).filter(x => x.name && x.amount);
-        R.lateHalf = !!R.lateHalf;
+        R.lateHalf = !!R.lateHalf; if (!/^\d{4}-\d{2}-\d{2}$/.test(String(R.start || ''))) R.start = COIN_DEFAULTS.start;
         await env.DB.prepare("INSERT INTO settings(k,v) VALUES('coins',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(R)).run(); return json({ ok: true, settings: R });
       }
       if (p === '/api/coins/recalc' && M === 'POST') {
