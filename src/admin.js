@@ -15,7 +15,7 @@ function viewAdmin(){
   // groups by (teacher, name)
   const gmap={};S.students.forEach(x=>{if(x.archived)return;const k=(x.teacherId||'')+'|'+(x.group||'Guruhsiz');(gmap[k]=gmap[k]||{t:x.teacherId,g:x.group||'Guruhsiz',n:0}).n++;});
   const glist=Object.values(gmap).sort((a,b)=>tName(a.t).localeCompare(tName(b.t))||a.g.localeCompare(b.g));
-  const opts=sel=>S.users.filter(u=>u.active).map(u=>`<option value="${u.id}" ${u.id===sel?'selected':''}>${esc(u.name)}${u.role==='admin'?' (rahbar)':''}</option>`).join('');
+  const opts=sel=>S.users.filter(u=>u.active&&u.role!=='seller').map(u=>`<option value="${u.id}" ${u.id===sel?'selected':''}>${esc(u.name)}${u.role==='admin'?' (rahbar)':''}</option>`).join('');
   // per-teacher result this month
   const [ms,me]=range(today(),'month');const rows=rowsIn(ms,me,{group:'all'});
   const tstat=id=>stats(rows.filter(r=>r.st.teacherId===id));
@@ -25,11 +25,12 @@ function viewAdmin(){
    <div class="grid2"><div class="card"><h2>➕ Ustoz qo‘shish</h2>
      <label class="f" for="t_name">Ism familiya</label><input class="inp" id="t_name" data-tf="name" value="${esc(S.tform?.name||'')}">
      <label class="f" for="t_phone">Telefon raqam</label><input class="inp" id="t_phone" data-tf="phone" inputmode="tel" placeholder="+998 90 123 45 67" value="${esc(S.tform?.phone||'')}">
+     <label class="f">Lavozimi</label><select class="inp" id="t_role" style="width:100%"><option value="teacher">👩‍🏫 Ustoz</option><option value="seller">🛍 Do‘kon sotuvchisi (faqat coin do‘koni)</option></select>
      <div style="margin-top:10px"><button class="btn pri" style="width:100%" data-act="addTeacher">Qo‘shish va parol yaratish</button></div>
      <p class="muted" style="font-size:12.5px;margin-top:10px">Ustoz shu telefon raqam va parol bilan kiradi, faqat o‘z guruhlarini ko‘radi: guruh yaratadi, o‘quvchi qo‘shadi, vazifa beradi va baholaydi.</p></div>
    <div class="card"><h2>👩‍🏫 Ustozlar — ${teachers.length} nafar</h2>
      ${S.users.length?`<div style="overflow-x:auto"><table><thead><tr><th>Ism</th><th>Telefon</th><th>Bu oy natija</th><th></th></tr></thead><tbody>
-     ${S.users.map(u=>{const st=tstat(u.id);return `<tr style="${u.active?'':'opacity:.5'}"><td><b>${esc(u.name)}</b> <span class="muted" style="font-size:12px">${u.role==='admin'?'rahbar':'ustoz'}${u.active?'':' · o‘chirilgan'}</span></td><td>${esc(fmtPhone(u.phone))}</td>
+     ${S.users.map(u=>{const st=tstat(u.id);return `<tr style="${u.active?'':'opacity:.5'}"><td><b>${esc(u.name)}</b> <span class="muted" style="font-size:12px">${u.role==='admin'?'rahbar':u.role==='seller'?'sotuvchi':'ustoz'}${u.active?'':' · o‘chirilgan'}</span></td><td>${esc(fmtPhone(u.phone))}</td>
        <td>${st.total?`<span class="pcell" style="background:${st.pct==null?'transparent':pcolor(st.pct)};color:${st.pct==null?'var(--muted)':'#fff'}">${fmtP(st.pct)}</span> <span class="muted" style="font-size:12px">${st.tasks} vazifa</span>`:'<span class="muted">—</span>'}</td>
        <td style="white-space:nowrap;text-align:right">${u.id===window.__ME.id?'<span class="muted" style="font-size:12px">siz</span>':`<button class="btn sm pri" data-act="viewAs" data-id="${u.id}" title="Ustozga qanday ko‘rinsa, shunday ochish">👁 Ko‘rish</button> <button class="btn sm" data-act="resetPw" data-id="${u.id}">🔑 Yangi parol</button> <button class="btn sm ${u.active?'danger':''}" data-act="toggleUser" data-id="${u.id}" data-on="${u.active?0:1}">${u.active?'O‘chirish':'Faollashtirish'}</button>`}</td></tr>`;}).join('')}
      </tbody></table></div>`:'<div class="empty">Yuklanmoqda…</div>'}</div></div>
@@ -39,7 +40,7 @@ function viewAdmin(){
 }
 async function adminAction(a,el){
   if(a==='addTeacher'){const f=S.tform||{};if(!(f.name||'').trim()||String(f.phone||'').replace(/\D/g,'').length<9){toast('Ism va to‘liq telefon raqamni yozing');return;}
-    el.disabled=true;try{const j=await window.__api('POST','/api/users',{name:f.name.trim(),phone:f.phone,role:'teacher'});S.newPw={name:f.name.trim(),text:credText(f.name.trim(),fmtPhone(String(f.phone).replace(/\D/g,'').slice(-9)),j.password)};S.tform={};await loadUsers();}catch(e){toast(e.message);}el.disabled=false;return;}
+    el.disabled=true;try{const j=await window.__api('POST','/api/users',{name:f.name.trim(),phone:f.phone,role:(document.getElementById('t_role')||{}).value||'teacher'});S.newPw={name:f.name.trim(),text:credText(f.name.trim(),fmtPhone(String(f.phone).replace(/\D/g,'').slice(-9)),j.password)};S.tform={};await loadUsers();}catch(e){toast(e.message);}el.disabled=false;return;}
   if(a==='resetPw'){const u=S.users.find(x=>x.id===el.dataset.id);if(!u)return;el.disabled=true;try{const j=await window.__api('POST','/api/users/'+u.id+'/reset',{});S.newPw={name:u.name,text:credText(u.name,fmtPhone(u.phone),j.password)};render();window.scrollTo(0,0);}catch(e){toast(e.message);}el.disabled=false;return;}
   if(a==='toggleUser'){try{await window.__api('PATCH','/api/users/'+el.dataset.id,{active:el.dataset.on==='1'});await loadUsers();}catch(e){toast(e.message);}return;}
   if(a==='viewAs'){const u=S.users.find(x=>x.id===el.dataset.id);if(!u)return;try{sessionStorage.setItem('viewAs',u.id);sessionStorage.setItem('viewAsName',u.name);}catch(e){}location.hash='#bugun';location.reload();return;}
@@ -55,7 +56,7 @@ function teacherBoard(){
   const W=rowsIn(ws,we,{group:'all'}),M=rowsIn(ms,me,{group:'all'}),P=rowsIn(ps,pe,{group:'all'}),O=rowsIn(ms,me,{group:'all',oyl:true});
   const pend=pendingTasks('all'),att=attention('all');
   const wr=weekRanges(6,parse(t)).map(([s,f])=>({s,f,rows:rowsIn(s,f,{group:'all'})}));
-  const list=(S.users||[]).filter(u=>u.active).map(u=>{
+  const list=(S.users||[]).filter(u=>u.active&&u.role!=='seller').map(u=>{
     const mine=r=>r.st.teacherId===u.id;
     const studs=S.students.filter(x=>isActive(x)&&x.teacherId===u.id);
     const grs=new Set(studs.map(x=>x.group||'Guruhsiz'));

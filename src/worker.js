@@ -30,6 +30,11 @@ async function ensureSchema(env) {
     env.DB.prepare('CREATE TABLE IF NOT EXISTS docs(coll TEXT, id TEXT, teacher_id TEXT, data TEXT, updated INTEGER, PRIMARY KEY(coll,id))'),
     env.DB.prepare('CREATE INDEX IF NOT EXISTS docs_t ON docs(coll, teacher_id)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS codes(code TEXT PRIMARY KEY, student_id TEXT UNIQUE, created INTEGER)'),
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS coins(id TEXT PRIMARY KEY, student_id TEXT, amount INTEGER, kind TEXT, reason TEXT, task_id TEXT, by_user TEXT, ts INTEGER)'),
+    env.DB.prepare('CREATE INDEX IF NOT EXISTS coins_s ON coins(student_id, ts)'),
+    env.DB.prepare('CREATE INDEX IF NOT EXISTS coins_t ON coins(task_id)'),
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS shop(id TEXT PRIMARY KEY, name TEXT, category TEXT, price INTEGER, stock INTEGER, active INTEGER, created INTEGER)'),
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS settings(k TEXT PRIMARY KEY, v TEXT)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS attempts(k TEXT PRIMARY KEY, n INTEGER, first INTEGER, until INTEGER)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS claims(student_id TEXT PRIMARY KEY, tg TEXT, ts INTEGER)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS subs(task_id TEXT, student_id TEXT, ts INTEGER, PRIMARY KEY(task_id, student_id))'),
@@ -58,7 +63,8 @@ async function me(req, env) {
 /* ---------- docs (students / tasks) ---------- */
 const COLLS = ['students', 'tasks'];
 async function listDocs(env, coll, user) {
-  const q = user.role === 'admin'
+  if (user.role === 'seller' && coll !== 'students') return [];
+  const q = (user.role === 'admin' || user.role === 'seller')
     ? env.DB.prepare('SELECT id,data,teacher_id FROM docs WHERE coll=?').bind(coll)
     : env.DB.prepare('SELECT id,data,teacher_id FROM docs WHERE coll=? AND teacher_id=?').bind(coll, user.id);
   const { results } = await q.all();
@@ -92,6 +98,52 @@ async function putDoc(env, coll, id, data, user, merge) {
   if (coll === 'students') data.teacherId = owner;
   await env.DB.prepare('INSERT INTO docs(coll,id,teacher_id,data,updated) VALUES(?,?,?,?,?) ON CONFLICT(coll,id) DO UPDATE SET teacher_id=excluded.teacher_id,data=excluded.data,updated=excluded.updated')
     .bind(coll, id, owner, JSON.stringify(data), Date.now()).run();
+}
+
+/* ---------- 💰 Coin tizimi ---------- */
+const COIN_DEFAULTS = { full: 5, alo: 3, orta: 1, past: 0, lateHalf: true, oylik: [30, 20, 10], maxGive: 50,
+  reasons: [{ name: 'Xulq', amount: 2 }, { name: 'Davomat', amount: 1 }, { name: 'Lug‘at yodlash', amount: 2 }, { name: 'Qo‘shimcha vazifa', amount: 3 }, { name: 'Faollik', amount: 2 }, { name: 'Jarima', amount: -2 }] };
+async function coinSettings(env) { const r = await env.DB.prepare("SELECT v FROM settings WHERE k='coins'").first(); return { ...COIN_DEFAULTS, ...(r ? JSON.parse(r.v) : {}) }; }
+const tashDate = ts => new Date(ts + 5 * 3600e3).toISOString().slice(0, 10);
+// baho o'zgarganda shu vazifa uchun avtomatik coinlarni qayta hisoblash
+async function syncTaskCoins(env, taskId) {
+  const t = await getDoc(env, 'tasks', taskId);
+  const { results: old } = await env.DB.prepare("SELECT id,amount FROM coins WHERE task_id=? AND kind='auto'").bind(taskId).all();
+  const want = {};
+  if (t) {
+    const d = t.data, R = await coinSettings(env), max = Number(d.max) || 0, sc = d.scores || {}, ab = d.absent || {};
+    const { results: subs } = await env.DB.prepare('SELECT student_id,ts FROM subs WHERE task_id=?').bind(taskId).all(); const sub = Object.fromEntries(subs.map(x => [x.student_id, x.ts]));
+    const graded = (d.studentIds || []).filter(id => !ab[id] && sc[id] !== undefined && sc[id] !== null && sc[id] !== '').map(id => ({ id, p: max ? Math.min(100, Number(sc[id]) / max * 100) : 0 }));
+    if (d.type === OYL) {
+      for (const g of graded) { const rank = 1 + graded.filter(o => o.p > g.p + 1e-9).length; const c = Number((R.oylik || [])[rank - 1]) || 0; if (c > 0 && g.p > 0) want[g.id] = { c, why: `${d.title || OYL}: guruhda ${rank}-o‘rin` }; }
+    } else {
+      const dl = addDays(d.date, DEADLINE_DAYS);
+      for (const g of graded) {
+        let c = g.p >= 99.95 ? R.full : g.p >= 80 ? R.alo : g.p >= 50 ? R.orta : R.past; c = Number(c) || 0;
+        const late = sub[g.id] && tashDate(sub[g.id]) > dl; if (late && R.lateHalf) c = Math.ceil(c / 2);
+        if (c > 0) want[g.id] = { c, why: `${d.title || 'Vazifa'} — ${Math.round(g.p)}%${late ? ' (kech)' : ''}` };
+      }
+    }
+  }
+  const st = [], now = Date.now(); const oldMap = Object.fromEntries(old.map(r => [r.id, r.amount]));
+  for (const r of old) { const sid = r.id.split(':')[2]; if (!want[sid] || want[sid].c !== r.amount) st.push(env.DB.prepare('DELETE FROM coins WHERE id=?').bind(r.id)); }
+  for (const [sid, w] of Object.entries(want)) { const id = 'a:' + taskId + ':' + sid; if (oldMap[id] !== w.c) st.push(env.DB.prepare('INSERT OR REPLACE INTO coins(id,student_id,amount,kind,reason,task_id,by_user,ts) VALUES(?,?,?,?,?,?,?,?)').bind(id, sid, w.c, 'auto', w.why, taskId, (t && t.data.gradedBy) || '', now)); }
+  for (let i = 0; i < st.length; i += 50) await env.DB.batch(st.slice(i, i + 50));
+}
+async function balances(env, ids) {
+  const { results } = await env.DB.prepare('SELECT student_id, SUM(amount) b FROM coins GROUP BY student_id').all();
+  const all = Object.fromEntries(results.map(r => [r.student_id, r.b])); if (!ids) return all;
+  return Object.fromEntries([...ids].map(id => [id, all[id] || 0]));
+}
+async function studentCoins(env, s) {
+  const { results: sts } = await env.DB.prepare("SELECT id,data FROM docs WHERE coll='students' AND teacher_id=?").bind(s.teacher_id).all();
+  const mates = sts.filter(r => { const d = JSON.parse(r.data); return !d.archived && (d.group || 'Guruhsiz') === (s.data.group || 'Guruhsiz'); }).map(r => r.id);
+  const bal = await balances(env, mates.includes(s.id) ? mates : [...mates, s.id]); const mine = bal[s.id] || 0;
+  const { results: rec } = await env.DB.prepare('SELECT amount,kind,reason,ts FROM coins WHERE student_id=? ORDER BY ts DESC LIMIT 12').bind(s.id).all();
+  const ms = periodRange('month', tashkentToday())[0];
+  const mm = await env.DB.prepare('SELECT SUM(amount) m FROM coins WHERE student_id=? AND amount>0 AND ts>=?').bind(s.id, Date.parse(ms + 'T00:00:00Z') - 5 * 3600e3).first();
+  const { results: shop } = await env.DB.prepare('SELECT id,name,category,price,stock FROM shop WHERE active=1 AND stock>0 ORDER BY price').all();
+  return { balance: mine, month: (mm && mm.m) || 0, rank: 1 + Object.values(bal).filter(v => v > mine).length, groupSize: Object.keys(bal).length, recent: rec, shop };
 }
 
 /* ---------- ranking (same rules as the app) ---------- */
@@ -253,7 +305,7 @@ async function studentView(env, s) {
   }
   oylik.sort((a, b) => a.date.localeCompare(b.date));
   const pick = r => { const x = r.list.find(y => y.sid === sid); return x ? { pct: x.pct, ball: x.ball, max: x.max, rankGroup: x.rankGroup, groupSize: x.groupSize, rankCenter: x.rankCenter, total: r.total, oylik: x.oylik } : null; };
-  return { student: { name: s.data.name, group: s.data.group || 'Guruhsiz', teacher: tu ? tu.name : '' }, today, month: pick(rm), week: pick(rw), from: rm.from, to: rm.to, tasks, oylik };
+  return { student: { name: s.data.name, group: s.data.group || 'Guruhsiz', teacher: tu ? tu.name : '' }, today, month: pick(rm), week: pick(rw), from: rm.from, to: rm.to, tasks, oylik, coins: await studentCoins(env, s) };
 }
 const norm = s => String(s || '').toLowerCase().replace(/[‘’ʻʼ`']/g, '').replace(/\s+/g, ' ').trim();
 
@@ -371,7 +423,7 @@ export default {
           const b = await req.json(); const ph = normPhone(b.phone); if (!b.name || !ph || ph.length < 9) return err('Ism va to‘liq telefon raqam kerak');
           const ex = await env.DB.prepare('SELECT id FROM users WHERE phone=?').bind(ph).first(); if (ex) return err('Bu raqam allaqachon bor');
           const pw = genPassword(); const salt = rid(16); const id = 'u_' + rid(12);
-          await env.DB.prepare('INSERT INTO users(id,name,phone,role,salt,hash,active,created) VALUES(?,?,?,?,?,?,1,?)').bind(id, String(b.name).trim(), ph, b.role === 'admin' ? 'admin' : 'teacher', salt, await hashPw(pw, salt), Date.now()).run();
+          await env.DB.prepare('INSERT INTO users(id,name,phone,role,salt,hash,active,created) VALUES(?,?,?,?,?,?,1,?)').bind(id, String(b.name).trim(), ph, b.role === 'admin' ? 'admin' : b.role === 'seller' ? 'seller' : 'teacher', salt, await hashPw(pw, salt), Date.now()).run();
           return json({ ok: true, id, password: pw });
         }
         let m;
@@ -431,17 +483,101 @@ export default {
         await env.DB.prepare('DELETE FROM subs WHERE task_id=? AND student_id=?').bind(b.taskId, b.studentId).run(); return json({ ok: true });
       }
 
+      // 💰 coins
+      if (p === '/api/coins' && M === 'GET') {
+        const sts = await listDocs(env, 'students', user); const ids = new Set(sts.map(d => d.id));
+        const bal = await balances(env, ids);
+        const ms = periodRange('month', tashkentToday())[0]; const since = Date.parse(ms + 'T00:00:00Z') - 5 * 3600e3;
+        const { results: rows } = await env.DB.prepare('SELECT id,student_id,amount,kind,reason,by_user,ts FROM coins WHERE ts>=? ORDER BY ts DESC').bind(since - 31 * 86400e3).all();
+        const mine = rows.filter(r => ids.has(r.student_id));
+        const { results: shop } = await env.DB.prepare('SELECT * FROM shop ORDER BY active DESC, price').all();
+        return json({ balances: bal, rows: mine.slice(0, 600), monthStart: since, settings: await coinSettings(env), shop });
+      }
+      let cmm;
+      if ((cmm = p.match(/^\/api\/coins\/student\/([\w-]+)$/)) && M === 'GET') {
+        const d = await getDoc(env, 'students', cmm[1]); if (!d || (user.role === 'teacher' && d.teacher_id !== user.id)) return err('Ruxsat yo‘q', 403, 'permission_denied');
+        const { results } = await env.DB.prepare('SELECT id,amount,kind,reason,by_user,ts FROM coins WHERE student_id=? ORDER BY ts DESC LIMIT 300').bind(cmm[1]).all();
+        return json({ rows: results });
+      }
+      if (p === '/api/coins' && M === 'POST') {
+        if (user.role === 'seller') return err('Ruxsat yo‘q', 403, 'permission_denied');
+        const b = await req.json(); const R = await coinSettings(env);
+        const amount = Math.round(Number(b.amount)); const ids = [...new Set(b.studentIds || [])];
+        if (!amount || !ids.length) return err('O‘quvchi va coin miqdorini tanlang');
+        if (user.role !== 'admin' && Math.abs(amount) > R.maxGive) return err(`Bir martada ko‘pi bilan ${R.maxGive} coin`);
+        const mineIds = user.role === 'admin' ? null : await myStudentIds(env, user.id);
+        if (mineIds && ids.some(id => !mineIds.has(id))) return err('Bu sizning guruhingiz emas', 403, 'permission_denied');
+        const bal = await balances(env, ids);
+        if (amount < 0) { const low = ids.filter(id => (bal[id] || 0) + amount < 0); if (low.length && !b.force) return err('Balans manfiy bo‘lib qoladi: ' + low.length + ' ta o‘quvchida coin yetmaydi'); }
+        const kind = b.kind === 'start' && user.role === 'admin' ? 'tuzatish' : amount < 0 ? 'jarima' : 'bonus';
+        const reason = String(b.reason || (amount < 0 ? 'Jarima' : 'Rag‘bat')).slice(0, 80); const now = Date.now();
+        const st = ids.map(id => env.DB.prepare('INSERT INTO coins(id,student_id,amount,kind,reason,task_id,by_user,ts) VALUES(?,?,?,?,?,NULL,?,?)').bind('m:' + rid(14), id, amount, kind, reason, user.id, now));
+        for (let i = 0; i < st.length; i += 50) await env.DB.batch(st.slice(i, i + 50));
+        return json({ ok: true, n: ids.length });
+      }
+      if ((cmm = p.match(/^\/api\/coins\/(m:[\w]+)$/)) && M === 'DELETE') {
+        const r = await env.DB.prepare('SELECT * FROM coins WHERE id=?').bind(cmm[1]).first(); if (!r) return json({ ok: true });
+        if (r.kind === 'sotuv' && user.role === 'teacher') return err('Ruxsat yo‘q', 403, 'permission_denied');
+        if (user.role !== 'admin' && (r.by_user !== user.id || Date.now() - r.ts > 2 * 86400e3)) return err('Faqat o‘zingiz bergan coinni 2 kun ichida bekor qilasiz', 403, 'permission_denied');
+        if (r.kind === 'sotuv') { const it = r.task_id; if (it) await env.DB.prepare('UPDATE shop SET stock=stock+? WHERE id=?').bind(Math.max(1, Math.round(-r.amount / Math.max(1, (await env.DB.prepare('SELECT price FROM shop WHERE id=?').bind(it).first() || { price: -r.amount }).price))), it).run(); }
+        await env.DB.prepare('DELETE FROM coins WHERE id=?').bind(cmm[1]).run(); return json({ ok: true });
+      }
+      if (p === '/api/coin-settings' && M === 'PUT') {
+        if (user.role !== 'admin') return err('Ruxsat yo‘q', 403, 'permission_denied');
+        const b = await req.json(); const R = { ...COIN_DEFAULTS, ...b };
+        for (const k of ['full', 'alo', 'orta', 'past', 'maxGive']) R[k] = Math.max(0, Math.min(1000, Math.round(Number(R[k]) || 0)));
+        R.oylik = (R.oylik || []).slice(0, 5).map(x => Math.max(0, Math.round(Number(x) || 0)));
+        R.reasons = (R.reasons || []).slice(0, 20).map(x => ({ name: String(x.name || '').slice(0, 40), amount: Math.round(Number(x.amount) || 0) })).filter(x => x.name && x.amount);
+        R.lateHalf = !!R.lateHalf;
+        await env.DB.prepare("INSERT INTO settings(k,v) VALUES('coins',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(R)).run(); return json({ ok: true, settings: R });
+      }
+      if (p === '/api/coins/recalc' && M === 'POST') {
+        if (user.role !== 'admin') return err('Ruxsat yo‘q', 403, 'permission_denied');
+        const b = await req.json().catch(() => ({})); const from = String(b.from || '0000');
+        const { results } = await env.DB.prepare("SELECT id,data FROM docs WHERE coll='tasks'").all(); let n = 0;
+        for (const r of results) { const d = JSON.parse(r.data); if ((d.date || '') >= from) { await syncTaskCoins(env, r.id); n++; } }
+        return json({ ok: true, tasks: n });
+      }
+      // 🛍 do'kon
+      if (p === '/api/shop' && M === 'POST') {
+        if (user.role === 'teacher') return err('Ruxsat yo‘q', 403, 'permission_denied');
+        const b = await req.json(); const price = Math.round(Number(b.price)); if (!b.name || !(price > 0)) return err('Nomi va narxini yozing');
+        const id = rid(12); await env.DB.prepare('INSERT INTO shop(id,name,category,price,stock,active,created) VALUES(?,?,?,?,?,1,?)').bind(id, String(b.name).slice(0, 60), String(b.category || 'Boshqa').slice(0, 30), price, Math.max(0, Math.round(Number(b.stock) || 0)), Date.now()).run();
+        return json({ ok: true, id });
+      }
+      if ((cmm = p.match(/^\/api\/shop\/([\w]+)$/)) && M === 'PATCH') {
+        if (user.role === 'teacher') return err('Ruxsat yo‘q', 403, 'permission_denied');
+        const b = await req.json(); const cur = await env.DB.prepare('SELECT * FROM shop WHERE id=?').bind(cmm[1]).first(); if (!cur) return err('Topilmadi', 404, 'not_found');
+        await env.DB.prepare('UPDATE shop SET name=?,category=?,price=?,stock=?,active=? WHERE id=?').bind(String(b.name ?? cur.name).slice(0, 60), String(b.category ?? cur.category).slice(0, 30), Math.max(1, Math.round(Number(b.price ?? cur.price))), Math.max(0, Math.round(Number(b.stock ?? cur.stock))), b.active === undefined ? cur.active : (b.active ? 1 : 0), cmm[1]).run();
+        return json({ ok: true });
+      }
+      if (p === '/api/shop/sell' && M === 'POST') {
+        if (user.role === 'teacher') return err('Faqat sotuvchi yoki rahbar sotadi', 403, 'permission_denied');
+        const b = await req.json(); const qty = Math.max(1, Math.round(Number(b.qty) || 1));
+        const it = await env.DB.prepare('SELECT * FROM shop WHERE id=? AND active=1').bind(String(b.itemId || '')).first(); if (!it) return err('Mahsulot topilmadi', 404, 'not_found');
+        if (it.stock < qty) return err(`Omborda faqat ${it.stock} ta qolgan`);
+        const sd = await getDoc(env, 'students', String(b.studentId || '')); if (!sd || sd.data.archived) return err('O‘quvchi topilmadi', 404, 'not_found');
+        const bal = (await balances(env, [b.studentId]))[b.studentId] || 0; const cost = it.price * qty;
+        if (bal < cost) return err(`Coin yetmaydi: balans ${bal}, kerak ${cost}`);
+        await env.DB.batch([
+          env.DB.prepare('UPDATE shop SET stock=stock-? WHERE id=? AND stock>=?').bind(qty, it.id, qty),
+          env.DB.prepare('INSERT INTO coins(id,student_id,amount,kind,reason,task_id,by_user,ts) VALUES(?,?,?,?,?,?,?,?)').bind('m:' + rid(14), b.studentId, -cost, 'sotuv', `${it.name}${qty > 1 ? ' × ' + qty : ''}`, it.id, user.id, Date.now()),
+        ]);
+        return json({ ok: true, balance: bal - cost });
+      }
+
       // collections
       const cm = p.match(/^\/api\/c\/(students|tasks)(?:\/([\w.\-:@+~]+))?$/);
       if (cm) {
         const [, coll, id] = cm;
         if (M === 'GET' && !id) return json({ docs: await listDocs(env, coll, user) });
-        if (M === 'POST' && !id) { const data = await req.json(); const nid = rid(20); await putDoc(env, coll, nid, data, user, false); return json({ id: nid }); }
-        if (id && (M === 'PUT' || M === 'PATCH')) { const data = await req.json(); await putDoc(env, coll, id, data, user, M === 'PATCH'); return json({ ok: true }); }
+        if (user.role === 'seller') return err('Ruxsat yo‘q', 403, 'permission_denied');
+        if (M === 'POST' && !id) { const data = await req.json(); const nid = rid(20); await putDoc(env, coll, nid, data, user, false); if (coll === 'tasks') await syncTaskCoins(env, nid); return json({ id: nid }); }
+        if (id && (M === 'PUT' || M === 'PATCH')) { const data = await req.json(); await putDoc(env, coll, id, data, user, M === 'PATCH'); if (coll === 'tasks') await syncTaskCoins(env, id); return json({ ok: true }); }
         if (id && M === 'DELETE') {
           const ex = await getDoc(env, coll, id); if (!ex) return json({ ok: true });
           if (user.role !== 'admin' && ex.teacher_id !== user.id) return err('Ruxsat yo‘q', 403);
-          await env.DB.prepare('DELETE FROM docs WHERE coll=? AND id=?').bind(coll, id).run(); return json({ ok: true });
+          await env.DB.prepare('DELETE FROM docs WHERE coll=? AND id=?').bind(coll, id).run(); if (coll === 'tasks') await syncTaskCoins(env, id); return json({ ok: true });
         }
       }
       return err('Topilmadi', 404);

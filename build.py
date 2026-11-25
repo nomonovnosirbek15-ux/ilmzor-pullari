@@ -1,7 +1,7 @@
 import json,base64,re
 src=open('/home/claude/vazifalar/index.html').read()
 shim=open('/home/claude/baho/src/shim.html').read()
-admin=open('/home/claude/baho/src/admin.js').read()
+admin=open('/home/claude/baho/src/admin.js').read()+'\n'+open('/home/claude/baho/src/coins.js').read()
 s=src
 def rep(a,b,cnt=1):
     global s
@@ -9,9 +9,9 @@ def rep(a,b,cnt=1):
 rep('family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">','family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">\n'+shim)
 rep("/* ---------- render ---------- */",admin+"\n/* ---------- render ---------- */")
 rep("""    (S.view==='bugun'?viewToday():S.view==='vazifalar'?viewTasks():S.view==='oquvchilar'?viewStudents():viewPanel());""",
-    """    (S.view==='bugun'?viewToday():S.view==='ustozlar'?viewAdmin():S.view==='vazifalar'?viewTasks():S.view==='oquvchilar'?viewStudents():viewPanel());""")
-rep("S.view=['bugun','panel','vazifalar','oquvchilar'].includes(h)?h:'bugun';","S.view=['bugun','panel','vazifalar','oquvchilar','ustozlar'].includes(h)?h:'bugun';")
-rep("const showPeriod=S.view!=='oquvchilar'&&S.view!=='bugun';","const showPeriod=S.view!=='oquvchilar'&&S.view!=='bugun'&&S.view!=='ustozlar';")
+    """    (S.view==='bugun'?viewToday():S.view==='ustozlar'?viewAdmin():S.view==='coin'?viewCoins():S.view==='vazifalar'?viewTasks():S.view==='oquvchilar'?viewStudents():viewPanel());""")
+rep("S.view=['bugun','panel','vazifalar','oquvchilar'].includes(h)?h:'bugun';","S.view=['bugun','panel','vazifalar','oquvchilar','ustozlar','coin'].includes(h)?h:'bugun';if(window.__ME&&window.__ME.role==='seller')S.view='coin';if(S.view==='coin'&&typeof coinLoad==='function')coinLoad();")
+rep("const showPeriod=S.view!=='oquvchilar'&&S.view!=='bugun';","const showPeriod=S.view!=='oquvchilar'&&S.view!=='bugun'&&S.view!=='ustozlar'&&S.view!=='coin';")
 rep("""  let pos=0;
   html+=`<div class="card"><h2>O‘quvchilar reytingi""","""  if(isAdmin()&&S.group==='all'&&!window.__REAL) html+=teacherBoard();
   html+=oylikBoard();
