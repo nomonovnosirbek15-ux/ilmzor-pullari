@@ -41,6 +41,11 @@ async function ensureSchema(env) {
     env.DB.prepare('CREATE TABLE IF NOT EXISTS subs(task_id TEXT, student_id TEXT, ts INTEGER, PRIMARY KEY(task_id, student_id))'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS orders(id TEXT PRIMARY KEY, student_id TEXT, item_id TEXT, name TEXT, qty INTEGER, cost INTEGER, coin_id TEXT, status TEXT, ts INTEGER, done_ts INTEGER, by_user TEXT)'),
     env.DB.prepare('CREATE INDEX IF NOT EXISTS orders_s ON orders(status, ts)'),
+    env.DB.prepare('CREATE INDEX IF NOT EXISTS orders_st ON orders(student_id, ts)'),
+    env.DB.prepare('CREATE INDEX IF NOT EXISTS orders_d ON orders(done_ts)'),
+    env.DB.prepare('CREATE INDEX IF NOT EXISTS coins_ts ON coins(ts)'),
+    env.DB.prepare("CREATE INDEX IF NOT EXISTS docs_date ON docs(coll, json_extract(data,'$.date'))"),
+    env.DB.prepare("CREATE INDEX IF NOT EXISTS docs_type ON docs(coll, json_extract(data,'$.type'))"),
   ]);
   for (const q of ['ALTER TABLE shop ADD COLUMN photo TEXT', 'ALTER TABLE shop ADD COLUMN pv INTEGER DEFAULT 0']) { try { await env.DB.prepare(q).run(); } catch (e) { /* bor */ } }
 }
@@ -66,8 +71,16 @@ async function me(req, env) {
 
 /* ---------- docs (students / tasks) ---------- */
 const COLLS = ['students', 'tasks'];
+// ilovaga oxirgi ~13 oy vazifalari yuklanadi (yillar o'tib ham tez ochilishi uchun); eskilari bazada va zaxirada qoladi
+const TASK_WINDOW_DAYS = 400;
 async function listDocs(env, coll, user) {
   if (user.role === 'seller' && coll !== 'students') return [];
+  if (coll === 'tasks') {
+    const from = addDays(tashkentToday(), -TASK_WINDOW_DAYS); const all = user.role === 'admin';
+    const q = all ? env.DB.prepare("SELECT id,data,teacher_id FROM docs WHERE coll='tasks' AND json_extract(data,'$.date')>=?").bind(from)
+      : env.DB.prepare("SELECT id,data,teacher_id FROM docs WHERE coll='tasks' AND json_extract(data,'$.date')>=? AND teacher_id=?").bind(from, user.id);
+    const { results } = await q.all(); return results.map(r => ({ id: r.id, data: JSON.parse(r.data) }));
+  }
   const q = (user.role === 'admin' || user.role === 'seller')
     ? env.DB.prepare('SELECT id,data,teacher_id FROM docs WHERE coll=?').bind(coll)
     : env.DB.prepare('SELECT id,data,teacher_id FROM docs WHERE coll=? AND teacher_id=?').bind(coll, user.id);
@@ -154,7 +167,9 @@ async function orderCancel(env, o, by) {
 }
 // bot uchun voqealar: yangi mahsulot, buyurtma holati, pul o'zgarishi (xabarnoma yuborish uchun)
 async function botEvents(env, since) {
-  const now = Date.now(); if (!since) return { now, items: [], orders: [], coins: [], shop: [] };
+  const now = Date.now();
+  if (now % 3600e3 < 60e3) await env.DB.batch([env.DB.prepare('DELETE FROM sessions WHERE expires<?').bind(now), env.DB.prepare('DELETE FROM attempts WHERE COALESCE(until,0)<? AND first<?').bind(now, now - 86400e3)]); // soatiga bir marta tozalash
+  if (!since) return { now, items: [], orders: [], coins: [], shop: [] };
   const { results: items } = await env.DB.prepare('SELECT id,name,category,price,stock,COALESCE(pv,0) pv FROM shop WHERE active=1 AND created>? AND created<=?').bind(since, now).all();
   const { results: orders } = await env.DB.prepare('SELECT o.id,o.name,o.cost,o.status,o.ts,o.done_ts,o.by_user,c.code FROM orders o LEFT JOIN codes c ON c.student_id=o.student_id WHERE (o.ts>? AND o.ts<=?) OR (o.done_ts>? AND o.done_ts<=?)').bind(since, now, since, now).all();
   const { results: ch } = await env.DB.prepare('SELECT student_id, SUM(amount) d FROM coins WHERE ts>? AND ts<=? GROUP BY student_id').bind(since, now).all();
@@ -174,9 +189,10 @@ async function dbDump(env) {
   return { app: 'ilmzor-baho', at: new Date().toISOString(), tables };
 }
 async function balances(env, ids) {
-  const { results } = await env.DB.prepare('SELECT student_id, SUM(amount) b FROM coins GROUP BY student_id').all();
-  const all = Object.fromEntries(results.map(r => [r.student_id, r.b])); if (!ids) return all;
-  return Object.fromEntries([...ids].map(id => [id, all[id] || 0]));
+  if (!ids) { const { results } = await env.DB.prepare('SELECT student_id, SUM(amount) b FROM coins GROUP BY student_id').all(); return Object.fromEntries(results.map(r => [r.student_id, r.b])); }
+  const arr = [...ids]; const out = Object.fromEntries(arr.map(id => [id, 0]));
+  for (let i = 0; i < arr.length; i += 90) { const ch = arr.slice(i, i + 90); const { results } = await env.DB.prepare(`SELECT student_id, SUM(amount) b FROM coins WHERE student_id IN (${ch.map(() => '?').join(',')}) GROUP BY student_id`).bind(...ch).all(); for (const r of results) out[r.student_id] = r.b || 0; }
+  return out;
 }
 async function studentCoins(env, s) {
   const { results: sts } = await env.DB.prepare("SELECT id,data FROM docs WHERE coll='students' AND teacher_id=?").bind(s.teacher_id).all();
@@ -201,12 +217,17 @@ function periodRange(p, anchor) {
   const s = new Date(Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), 1)); const e = new Date(Date.UTC(a.getUTCFullYear(), a.getUTCMonth() + 1, 0));
   return [ymd(s), ymd(e)];
 }
+const RCACHE = new Map(); // reyting 30 soniya keshlanadi (bir vaqtda ko'p o'quvchi kirsa ham baza yuklanmaydi)
 async function ranking(env, period, anchor) {
+  const k = period + '|' + (anchor || ''); const c = RCACHE.get(k); if (c && Date.now() - c.t < 30e3) return c.v;
+  const v = await rankingRaw(env, period, anchor); RCACHE.set(k, { t: Date.now(), v }); if (RCACHE.size > 40) RCACHE.delete(RCACHE.keys().next().value); return v;
+}
+async function rankingRaw(env, period, anchor) {
   const today = tashkentToday(); anchor = anchor || today;
   const [from, to] = periodRange(period, anchor);
   const [{ results: S }, { results: T }, { results: U }] = await Promise.all([
     env.DB.prepare("SELECT id,data,teacher_id FROM docs WHERE coll='students'").all(),
-    env.DB.prepare("SELECT data FROM docs WHERE coll='tasks'").all(),
+    env.DB.prepare("SELECT data FROM docs WHERE coll='tasks' AND json_extract(data,'$.date') BETWEEN ? AND ?").bind(from, to < today ? to : today).all(),
     env.DB.prepare('SELECT id,name FROM users').all(),
   ]);
   const tname = Object.fromEntries(U.map(u => [u.id, u.name]));
@@ -315,7 +336,7 @@ async function studentByCode(env, code) {
 async function studentView(env, s) {
   const today = tashkentToday(); const sid = s.id;
   const [{ results: T }, { results: SB }, tu, rm, rw] = await Promise.all([
-    env.DB.prepare("SELECT id,data FROM docs WHERE coll='tasks' AND data LIKE ?").bind('%"' + sid + '"%').all(),
+    env.DB.prepare("SELECT id,data FROM docs WHERE coll='tasks' AND (json_extract(data,'$.date')>=? OR json_extract(data,'$.type')=?) AND data LIKE ?").bind(addDays(today, -TASK_WINDOW_DAYS), OYL, '%"' + sid + '"%').all(),
     env.DB.prepare('SELECT task_id,ts FROM subs WHERE student_id=?').bind(sid).all(),
     env.DB.prepare('SELECT name FROM users WHERE id=?').bind(s.teacher_id).first(),
     ranking(env, 'month'), ranking(env, 'week'),
