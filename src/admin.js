@@ -3,7 +3,7 @@
 const isAdmin=()=>!!(window.__ME&&window.__ME.role==='admin');
 S.users=[];S.newPw=null;
 async function loadUsers(){try{S.users=await window.__users();}catch(e){S.users=[];}render();}
-document.addEventListener('me-ready',()=>{if(isAdmin()){const nav=document.getElementById('nav');const a=document.createElement('a');a.href='#ustozlar';a.dataset.v='ustozlar';a.textContent='👩‍🏫 Ustozlar';nav.appendChild(a);loadUsers();}
+document.addEventListener('me-ready',()=>{if(isAdmin()){const nav=document.getElementById('nav');const a=document.createElement('a');a.href='#ustozlar';a.dataset.v='ustozlar';a.textContent='👥 Ustozlar va xodimlar';nav.appendChild(a);loadUsers();}
   const r=document.createElement('a');r.href='/reyting';r.target='_blank';r.textContent='🏆 Reyting';document.getElementById('nav').appendChild(r);
   if(!isAdmin())loadUsers();route();});
 const tName=id=>{const u=(S.users||[]).find(x=>x.id===id);return u?u.name:'';};
@@ -22,18 +22,22 @@ function viewAdmin(){
   return `${S.newPw?`<div class="notice" style="border:2px solid var(--good)"><b>✅ ${esc(S.newPw.name)} uchun kirish ma’lumotlari</b> — nusxalab ustozga yuboring (parol faqat hozir ko‘rinadi):
      <pre style="white-space:pre-wrap;background:var(--card);padding:10px;border-radius:8px;margin:8px 0">${esc(S.newPw.text)}</pre><button class="btn pri sm" data-act="copyPw">📋 Nusxalash</button> <button class="btn sm" data-act="closePw">Yopish</button></div>`:''}
    ${teacherBoard()}
-   <div class="grid2"><div class="card"><h2>➕ Ustoz qo‘shish</h2>
+   <div class="grid2"><div class="card"><h2>➕ Ustoz yoki xodim qo‘shish</h2>
      <label class="f" for="t_name">Ism familiya</label><input class="inp" id="t_name" data-tf="name" value="${esc(S.tform?.name||'')}">
      <label class="f" for="t_phone">Telefon raqam</label><input class="inp" id="t_phone" data-tf="phone" inputmode="tel" placeholder="+998 90 123 45 67" value="${esc(S.tform?.phone||'')}">
-     <label class="f">Lavozimi</label><select class="inp" id="t_role" style="width:100%"><option value="teacher">👩‍🏫 Ustoz</option><option value="seller">🛍 Do‘kon sotuvchisi (faqat coin do‘koni)</option></select>
+     <label class="f">Lavozimi</label><select class="inp" id="t_role" style="width:100%"><option value="teacher">👩‍🏫 Ustoz</option><option value="seller">🧑‍💼 Xodim — Ilmzor puli sotuvchisi</option></select>
      <div style="margin-top:10px"><button class="btn pri" style="width:100%" data-act="addTeacher">Qo‘shish va parol yaratish</button></div>
-     <p class="muted" style="font-size:12.5px;margin-top:10px">Ustoz shu telefon raqam va parol bilan kiradi, faqat o‘z guruhlarini ko‘radi: guruh yaratadi, o‘quvchi qo‘shadi, vazifa beradi va baholaydi.</p></div>
-   <div class="card"><h2>👩‍🏫 Ustozlar — ${teachers.length} nafar</h2>
+     <p class="muted" style="font-size:12.5px;margin-top:10px"><b>Ustoz</b> faqat o‘z guruhlarini ko‘radi: guruh yaratadi, o‘quvchi qo‘shadi, vazifa beradi va baholaydi.<br><b>Xodim (sotuvchi)</b> faqat Ilmzor pulini boshqaradi: do‘kon, ustozlarga limit, sotish.</p></div>
+   <div><div class="card"><h2>👩‍🏫 Ustozlar — ${teachers.length} nafar</h2>
      ${S.users.length?`<div style="overflow-x:auto"><table><thead><tr><th>Ism</th><th>Telefon</th><th>Bu oy natija</th><th></th></tr></thead><tbody>
-     ${S.users.map(u=>{const st=tstat(u.id);return `<tr style="${u.active?'':'opacity:.5'}"><td><b>${esc(u.name)}</b> <span class="muted" style="font-size:12px">${u.role==='admin'?'rahbar':`<select class="inp" data-role="${u.id}" style="padding:2px 6px;font-size:12px"><option value="teacher" ${u.role==='teacher'?'selected':''}>ustoz</option><option value="seller" ${u.role==='seller'?'selected':''}>sotuvchi</option></select>`}${u.active?'':' · o‘chirilgan'}</span></td><td>${esc(fmtPhone(u.phone))}</td>
+     ${S.users.filter(u=>u.role!=='seller').map(u=>{const st=tstat(u.id);return `<tr style="${u.active?'':'opacity:.5'}"><td><b>${esc(u.name)}</b> <span class="muted" style="font-size:12px">${u.role==='admin'?'rahbar':`<select class="inp" data-role="${u.id}" style="padding:2px 6px;font-size:12px"><option value="teacher" ${u.role==='teacher'?'selected':''}>ustoz</option><option value="seller" ${u.role==='seller'?'selected':''}>sotuvchi</option></select>`}${u.active?'':' · o‘chirilgan'}</span></td><td>${esc(fmtPhone(u.phone))}</td>
        <td>${st.total?`<span class="pcell" style="background:${st.pct==null?'transparent':pcolor(st.pct)};color:${st.pct==null?'var(--muted)':'#fff'}">${fmtP(st.pct)}</span> <span class="muted" style="font-size:12px">${st.tasks} vazifa</span>`:'<span class="muted">—</span>'}</td>
        <td style="white-space:nowrap;text-align:right">${u.id===window.__ME.id?'<span class="muted" style="font-size:12px">siz</span>':`<button class="btn sm pri" data-act="viewAs" data-id="${u.id}" title="Ustozga qanday ko‘rinsa, shunday ochish">👁 Ko‘rish</button> <button class="btn sm" data-act="resetPw" data-id="${u.id}">🔑 Yangi parol</button> <button class="btn sm ${u.active?'danger':''}" data-act="toggleUser" data-id="${u.id}" data-on="${u.active?0:1}">${u.active?'O‘chirish':'Faollashtirish'}</button>`}</td></tr>`;}).join('')}
-     </tbody></table></div>`:'<div class="empty">Yuklanmoqda…</div>'}</div></div>
+     </tbody></table></div>`:'<div class="empty">Yuklanmoqda…</div>'}</div>
+   <div class="card" style="margin-top:14px"><h2>🧑‍💼 Xodimlar — Ilmzor puli sotuvchilari (${S.users.filter(u=>u.role==='seller').length})</h2>
+     <p class="muted" style="font-size:12.5px;margin-top:-4px">Faqat 💰 Ilmzor puli bo‘limini ko‘radi: do‘kon, ustozlarga limit, o‘quvchilarga sotish. Baholar va vazifalar ularga ko‘rinmaydi.</p>
+     ${S.users.some(u=>u.role==='seller')?`<table><tbody>${S.users.filter(u=>u.role==='seller').map(u=>`<tr style="${u.active?'':'opacity:.5'}"><td><b>${esc(u.name)}</b> <span class="muted" style="font-size:12px"><select class="inp" data-role="${u.id}" style="padding:2px 6px;font-size:12px"><option value="seller" selected>xodim</option><option value="teacher">ustoz</option></select>${u.active?'':' · o‘chirilgan'}</span></td><td>${esc(fmtPhone(u.phone))}</td>
+       <td style="white-space:nowrap;text-align:right"><button class="btn sm pri" data-act="viewAs" data-id="${u.id}" title="Xodimga qanday ko‘rinsa, shunday ochish">👁 Ko‘rish</button> <button class="btn sm" data-act="resetPw" data-id="${u.id}">🔑 Yangi parol</button> <button class="btn sm ${u.active?'danger':''}" data-act="toggleUser" data-id="${u.id}" data-on="${u.active?0:1}">${u.active?'O‘chirish':'Faollashtirish'}</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Hali xodim yo‘q — chapdagi formada «Lavozimi: Xodim» ni tanlang</div>'}</div></div></div>
    <div class="card" style="margin-top:14px"><h2>🏫 Guruhlar va ustozlar</h2><p class="muted" style="font-size:12.5px;margin-top:-4px">Guruhni boshqa ustozga o‘tkazsangiz, uning o‘quvchilari va vazifalari ham o‘tadi. Har xil ustozlar guruhlariga har xil nom bering (masalan «3-sinf Se-Pa 15:00»).</p>
      ${glist.length?`<table><thead><tr><th>Guruh</th><th>O‘quvchilar</th><th>Ustoz</th></tr></thead><tbody>${glist.map(g=>`<tr><td><b>${esc(g.g)}</b></td><td>${g.n}</td><td><select class="inp" data-assign="${esc(g.g)}" data-from="${g.t||''}">${opts(g.t)}</select></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Guruh yo‘q</div>'}
      <p style="margin-top:12px">🏆 O‘quvchilar reytingi sahifasi (hammaga ochiq): <a href="/reyting" target="_blank">${location.origin}/reyting</a> <button class="btn sm" data-act="copyRank">📋</button></p></div>`;
