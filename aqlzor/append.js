@@ -59,7 +59,7 @@ async function appImage(env, id, ctx, request) {
   if (!f.ok || !f.result?.file_path) return new Response("not found", { status: 404 });
   const r = await fetch(`https://api.telegram.org/file/bot${env.BOT_TOKEN}/${f.result.file_path}`);
   if (!r.ok) return new Response("not found", { status: 404 });
-  const res = new Response(r.body, { headers: { "content-type": r.headers.get("content-type") || "image/jpeg", "cache-control": "public, max-age=604800" } });
+  const res = new Response(r.body, { headers: { "content-type": /^image\//.test(r.headers.get("content-type") || "") ? r.headers.get("content-type") : "image/jpeg", "cache-control": "public, max-age=604800" } });
   ctx.waitUntil(cache.put(key, res.clone()));
   return res;
 }
