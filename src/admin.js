@@ -30,7 +30,7 @@ function viewAdmin(){
      <p class="muted" style="font-size:12.5px;margin-top:10px">Ustoz shu telefon raqam va parol bilan kiradi, faqat o‘z guruhlarini ko‘radi: guruh yaratadi, o‘quvchi qo‘shadi, vazifa beradi va baholaydi.</p></div>
    <div class="card"><h2>👩‍🏫 Ustozlar — ${teachers.length} nafar</h2>
      ${S.users.length?`<div style="overflow-x:auto"><table><thead><tr><th>Ism</th><th>Telefon</th><th>Bu oy natija</th><th></th></tr></thead><tbody>
-     ${S.users.map(u=>{const st=tstat(u.id);return `<tr style="${u.active?'':'opacity:.5'}"><td><b>${esc(u.name)}</b> <span class="muted" style="font-size:12px">${u.role==='admin'?'rahbar':u.role==='seller'?'sotuvchi':'ustoz'}${u.active?'':' · o‘chirilgan'}</span></td><td>${esc(fmtPhone(u.phone))}</td>
+     ${S.users.map(u=>{const st=tstat(u.id);return `<tr style="${u.active?'':'opacity:.5'}"><td><b>${esc(u.name)}</b> <span class="muted" style="font-size:12px">${u.role==='admin'?'rahbar':`<select class="inp" data-role="${u.id}" style="padding:2px 6px;font-size:12px"><option value="teacher" ${u.role==='teacher'?'selected':''}>ustoz</option><option value="seller" ${u.role==='seller'?'selected':''}>sotuvchi</option></select>`}${u.active?'':' · o‘chirilgan'}</span></td><td>${esc(fmtPhone(u.phone))}</td>
        <td>${st.total?`<span class="pcell" style="background:${st.pct==null?'transparent':pcolor(st.pct)};color:${st.pct==null?'var(--muted)':'#fff'}">${fmtP(st.pct)}</span> <span class="muted" style="font-size:12px">${st.tasks} vazifa</span>`:'<span class="muted">—</span>'}</td>
        <td style="white-space:nowrap;text-align:right">${u.id===window.__ME.id?'<span class="muted" style="font-size:12px">siz</span>':`<button class="btn sm pri" data-act="viewAs" data-id="${u.id}" title="Ustozga qanday ko‘rinsa, shunday ochish">👁 Ko‘rish</button> <button class="btn sm" data-act="resetPw" data-id="${u.id}">🔑 Yangi parol</button> <button class="btn sm ${u.active?'danger':''}" data-act="toggleUser" data-id="${u.id}" data-on="${u.active?0:1}">${u.active?'O‘chirish':'Faollashtirish'}</button>`}</td></tr>`;}).join('')}
      </tbody></table></div>`:'<div class="empty">Yuklanmoqda…</div>'}</div></div>
@@ -164,3 +164,7 @@ function oylikBoard(){
    <tr style="background:var(--bg)"><td></td><td><b>Guruh o‘rtachasi</b></td>${avg.map(a=>`<td style="text-align:center">${cell(a)}</td>`).join('')}<td>${ap!=null&&ag!=null?dch(ag-ap):''}</td></tr>
    </tbody></table></div></div>`;
 }
+
+document.addEventListener('change',async ev=>{const t=ev.target;if(!t.dataset||!t.dataset.role)return;const u=S.users.find(x=>x.id===t.dataset.role);
+  if(!confirm(`${u?u.name:''} lavozimi «${t.value==='seller'?'sotuvchi':'ustoz'}» qilinsinmi? U qayta kirishi kerak bo‘ladi.`)){t.value=u.role;return;}
+  try{await window.__api('PATCH','/api/users/'+t.dataset.role,{role:t.value});toast('Lavozim o‘zgardi ✓');loadUsers();}catch(e){toast(e.message);t.value=u.role;}});

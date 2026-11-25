@@ -446,6 +446,7 @@ export default {
           const b = await req.json(); if (m[1] === user.id && b.active === false) return err('O‘zingizni o‘chirib bo‘lmaydi');
           if (b.name) await env.DB.prepare('UPDATE users SET name=? WHERE id=?').bind(String(b.name).trim(), m[1]).run();
           if (b.phone) await env.DB.prepare('UPDATE users SET phone=? WHERE id=?').bind(normPhone(b.phone), m[1]).run();
+          if (b.role === 'teacher' || b.role === 'seller') { if (m[1] === user.id) return err('O‘z lavozimingizni o‘zgartirib bo‘lmaydi'); await env.DB.prepare("UPDATE users SET role=? WHERE id=? AND role<>'admin'").bind(b.role, m[1]).run(); await env.DB.prepare('DELETE FROM sessions WHERE user_id=?').bind(m[1]).run(); }
           if (typeof b.active === 'boolean') { await env.DB.prepare('UPDATE users SET active=? WHERE id=?').bind(b.active ? 1 : 0, m[1]).run(); if (!b.active) await env.DB.prepare('DELETE FROM sessions WHERE user_id=?').bind(m[1]).run(); }
           return json({ ok: true });
         }
