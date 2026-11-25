@@ -59,7 +59,7 @@ async function appImage(env, id, ctx, request) {
   if (!f.ok || !f.result?.file_path) return new Response("not found", { status: 404 });
   const r = await fetch(`https://api.telegram.org/file/bot${env.BOT_TOKEN}/${f.result.file_path}`);
   if (!r.ok) return new Response("not found", { status: 404 });
-  const res = new Response(r.body, { headers: { "content-type": /^image\//.test(r.headers.get("content-type") || "") ? r.headers.get("content-type") : "image/jpeg", "cache-control": "public, max-age=604800" } });
+  const res = new Response(r.body, { headers: { "content-type": r.headers.get("content-type") || "image/jpeg", "cache-control": "public, max-age=604800" } });
   ctx.waitUntil(cache.put(key, res.clone()));
   return res;
 }
@@ -122,7 +122,14 @@ async function appRoute(request, url, env, ctx) {
   const u = await appUser(env, b.initData);
   if (!u) return appErr("Do'konni botdan qayta oching", 403);
   const op = p.slice("/app/api/".length);
-  if (op === "catalog") return appJ(await appCatalog(env, u));
+  if (op === "catalog") return appJ({ ...(await appCatalog(env, u)), admin: isAdmin(env, u.id) });
+  if (op === "keys") return appJ({ keys: await keysList(env) });
+  if (op === "kadd" || op === "kdel") {
+    if (!isAdmin(env, u.id)) return appErr("Faqat adminlar uchun", 403);
+    if (op === "kadd") return keysAdd(env, b);
+    await keysDb(env); await env.DB.prepare("DELETE FROM tkeys WHERE id=?").bind(Number(b.id)).run();
+    return appJ({ ok: true, keys: await keysList(env) });
+  }
   if (op === "cart") {
     const id = Number(b.book_id), q = Math.max(0, Math.min(20, Math.round(Number(b.qty) || 0)));
     const book = await env.DB.prepare("SELECT id FROM books WHERE id=? AND active=1").bind(id).first();
@@ -147,4 +154,58 @@ async function appMenu(env) {
   if (await getSetting(env, "app_menu", "") === APP_MENU_V) return;
   const t = await tg(env, "setChatMenuButton", { menu_button: { type: "web_app", text: "\u{1F6CD} Do'kon", web_app: { url: APP_ORIGIN + "/app" } } });
   if (t && t.ok) await setSetting(env, "app_menu", APP_MENU_V);
+}
+
+// ---- ✅ Javoblar: kitoblardagi testlar kaliti (hammaga ochiq) ----
+var keysReady = false;
+async function keysDb(env) {
+  if (keysReady) return;
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS tkeys (id INTEGER PRIMARY KEY AUTOINCREMENT, book_id INTEGER, title TEXT, sort INTEGER DEFAULT 0, answers TEXT, created INTEGER)").run();
+  keysReady = true;
+}
+var CYR = { "А": "A", "Б": "B", "В": "C", "Г": "D", "Д": "E" };
+function parseKey(s) {
+  s = String(s || "").toUpperCase().replace(/[А-Д]/g, (c) => CYR[c]);
+  const out = [];
+  const re = /(\d{1,3})\s*[-).:=]?\s*([A-E])(?![A-Z])/g;
+  let m, numbered = false;
+  while (m = re.exec(s)) {
+    numbered = true;
+    const i = Number(m[1]);
+    if (i >= 1 && i <= 300) out[i - 1] = m[2];
+  }
+  if (numbered) return out.length && !out.includes(void 0) && out.every(Boolean) ? out : null;
+  const letters = s.replace(/[^A-E]/g, "");
+  return letters.length ? letters.split("") : null;
+}
+async function keysList(env) {
+  await keysDb(env);
+  const { results } = await env.DB.prepare("SELECT k.id, k.book_id, k.title, k.answers, b.title AS btitle, b.sort AS bsort FROM tkeys k JOIN books b ON b.id=k.book_id ORDER BY b.sort, b.id, k.sort, k.id").all();
+  const books = [];
+  for (const r of results || []) {
+    let b = books[books.length - 1];
+    if (!b || b.id !== r.book_id) books.push(b = { id: r.book_id, title: toNewAlphabet(r.btitle), tests: [] });
+    b.tests.push({ id: r.id, title: toNewAlphabet(r.title), key: JSON.parse(r.answers || "[]") });
+  }
+  return books;
+}
+async function keysAdd(env, b) {
+  await keysDb(env);
+  const book = await env.DB.prepare("SELECT id FROM books WHERE id=?").bind(Number(b.book_id)).first();
+  if (!book) return appErr("Kitobni tanlang");
+  const lines = String(b.text || "").split(/\n+/).map((l) => l.trim()).filter(Boolean);
+  if (!lines.length) return appErr("Kalitlarni yozing");
+  const mx = await env.DB.prepare("SELECT COALESCE(MAX(sort),0) AS m FROM tkeys WHERE book_id=?").bind(book.id).first();
+  let sort = mx.m, added = [];
+  const bad = [];
+  for (const line of lines) {
+    const ix = line.indexOf(":");
+    if (ix < 1) { bad.push(line); continue; }
+    const title = toOldAlphabet(line.slice(0, ix).trim()).slice(0, 80), ans = parseKey(line.slice(ix + 1));
+    if (!title || !ans) { bad.push(line); continue; }
+    added.push(env.DB.prepare("INSERT INTO tkeys (book_id, title, sort, answers, created) VALUES (?, ?, ?, ?, ?)").bind(book.id, title, ++sort, JSON.stringify(ans), Date.now()));
+  }
+  if (bad.length) return appErr("Bu qatorlarni tushunmadim:\n" + bad.slice(0, 3).join("\n") + "\n\nNamuna: 1-dars 1-test: 1A 2C 3B 4D");
+  await env.DB.batch(added);
+  return appJ({ ok: true, added: added.length, keys: await keysList(env) });
 }
