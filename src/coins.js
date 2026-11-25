@@ -1,7 +1,7 @@
 /* ================= 💰 Ilmzor puli ================= */
 const isSeller=()=>!!(window.__ME&&window.__ME.role==='seller');
 S.coin={data:null,loading:false,tab:null,sel:new Set(),reason:'',amount:'',hist:null,q:''};
-async function coinLoad(){S.coin.loading=true;try{S.coin.data=await window.__api('GET','/api/coins');}catch(e){toast(e.message);}S.coin.loading=false;if(S.view==='coin')render();}
+async function coinLoad(){S.coin.loading=true;try{const [d,b]=await Promise.all([window.__api('GET','/api/coins'),window.__api('GET','/api/budgets').catch(()=>null)]);S.coin.data=d;S.coin.budg=b;}catch(e){toast(e.message);}S.coin.loading=false;if(S.view==='coin')render();}
 document.addEventListener('me-ready',()=>{
   const nav=document.getElementById('nav');const a=document.createElement('a');a.href='#coin';a.dataset.v='coin';a.textContent='💰 Ilmzor puli';
   const ref=nav.querySelector('[data-v="oquvchilar"]');ref&&ref.nextSibling?nav.insertBefore(a,ref.nextSibling):nav.appendChild(a);
@@ -15,7 +15,7 @@ function viewCoins(){
   const D=S.coin.data;
   if(!D){if(!S.coin.loading)coinLoad();return '<div class="empty">Yuklanmoqda…</div>';}
   const seller=isSeller(),admin=isAdmin();
-  const tabs=[...(seller?[]:[['berish','💰 Pul berish']]),['dokon','🛍 Do‘kon'],...(seller?[['balans','🏆 Balanslar']]:[]),...(admin?[['qoida','⚙️ Qoidalar']]:[])];
+  const tabs=[...(seller?[]:[['berish','💰 Pul berish']]),['dokon','🛍 Do‘kon'],...((seller||admin)?[['limit','👩‍🏫 Ustozlarga limit']]:[]),...(seller?[['balans','🏆 Balanslar']]:[]),...(admin?[['qoida','⚙️ Qoidalar']]:[])];
   if(!S.coin.tab||!tabs.some(t=>t[0]===S.coin.tab))S.coin.tab=tabs[0][0];
   const studs=activeStudents().filter(x=>inGroup(x)).sort((a,b)=>(a.group||'').localeCompare(b.group||'')||a.name.localeCompare(b.name));
   const bal=id=>D.balances[id]||0;
@@ -32,6 +32,7 @@ function viewCoins(){
   if(S.coin.tab==='berish') h+=coinGiveView(D,studs,bal);
   else if(S.coin.tab==='dokon') h+=coinShopView(D,studs,bal);
   else if(S.coin.tab==='balans') h+=coinBalanceView(D,studs,bal);
+  else if(S.coin.tab==='limit') h+=coinLimitView();
   else h+=coinRulesView(D);
   return h;
 }
@@ -44,12 +45,14 @@ function coinGiveView(D,studs,bal){
   return `<div class="grid2">
    <div class="card"><h2>🎁 Ilmzor puli berish</h2>
     <p class="muted" style="font-size:12.5px;margin-top:-4px">Vazifa uchun Ilmzor puli <b>o‘zi tushadi</b> (baho qo‘yilganda). Bu yerda xulq, davomat, faollik kabi qo‘shimcha pul beriladi.</p>
+    ${(()=>{const m=S.coin.budg&&S.coin.budg.mine;if(!m)return isAdmin()?'<div class="notice" style="font-size:13px">👑 Rahbar sifatida limitsiz berasiz.</div>':'';const p=m.allocated?Math.round(m.left/m.allocated*100):0;
+      return `<div style="background:${m.left>0?'#e6f7ee':'#fde8e8'};border-radius:10px;padding:10px 12px;margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-weight:700"><span>💼 Sizning limitingiz</span><span>${m.left} / ${m.allocated}</span></div><div class="pbar" style="margin-top:6px"><i style="width:${Math.max(0,p)}%;background:${m.left>0?'var(--good)':'var(--crit)'}"></i></div><div class="muted" style="font-size:12px;margin-top:4px">${m.left>0?`Yana ${m.left} Ilmzor puli bera olasiz. Berilgani: ${m.spent}.`:'Limit tugagan. Sotuvchidan qo‘shimcha limit so‘rang.'}</div></div>`;})()}
     <label class="f">Sabab</label><div class="chips">${R.reasons.map((x,i)=>`<span class="chip ${S.coin.reason===x.name?'on':''}" data-ca="reason" data-i="${i}">${esc(x.name)} ${x.amount>0?'+':''}${x.amount}</span>`).join('')}</div>
     <div class="row"><div><label class="f">Miqdori (minus — jarima)</label><input class="inp" id="cg_amt" type="number" value="${esc(S.coin.amount)}" placeholder="masalan 2"></div><div><label class="f">Izoh</label><input class="inp" id="cg_reason" value="${esc(S.coin.reason)}" placeholder="Xulq"></div></div>
     <label class="f">O‘quvchilar <span class="muted">(${sel.size} ta tanlandi)</span> <a href="#" data-ca="selAll">hammasi</a> · <a href="#" data-ca="selNone">hech kim</a></label>
     <div class="stlist">${Object.entries(byG).map(([g,l])=>`<div class="gh">${esc(g)} <a href="#" data-ca="selG" data-g="${esc(g)}" style="text-transform:none">tanlash</a></div>${l.map(x=>`<label><input type="checkbox" data-ca="sel" data-id="${x.id}" ${sel.has(x.id)?'checked':''}> ${esc(x.name)} <span class="muted" style="margin-left:auto">${bal(x.id)} 🪙</span></label>`).join('')}`).join('')||'<div class="muted">O‘quvchi yo‘q</div>'}</div>
     <button class="btn pri" style="width:100%;margin-top:10px;padding:10px" data-ca="give">💰 Berish</button>
-    <p class="muted" style="font-size:12px">Ustoz bir martada ko‘pi bilan ${R.maxGive} pul beradi. O‘zingiz bergan pulni 2 kun ichida bekor qila olasiz.</p>
+    <p class="muted" style="font-size:12px">Ustoz o‘z limitidan ortiq bera olmaydi, bir martada ko‘pi bilan ${R.maxGive}. O‘zingiz bergan pulni 2 kun ichida bekor qilsangiz, limitga qaytadi. Vazifa uchun avtomatik tushadigan pul limitdan yechilmaydi.</p>
    </div>
    <div>
     <div class="card"><h2>🏆 Ilmzor puli reytingi</h2><div style="overflow-x:auto"><table><thead><tr><th>#</th><th>O‘quvchi</th><th>Balans</th><th>Bu oy</th></tr></thead><tbody>
@@ -80,9 +83,22 @@ function coinShopView(D,studs,bal){
      ${items.map(i=>`<tr style="${i.active?'':'opacity:.5'}"><td><b>${esc(i.name)}</b><div class="muted" style="font-size:12px">${esc(i.category||'')}</div></td>
       <td>${canSell?`<input class="inp" style="width:80px" type="number" data-ca-edit="price" data-id="${i.id}" value="${i.price}">`:`<b>${i.price}</b> 🪙`}</td>
       <td>${canSell?`<input class="inp" style="width:70px" type="number" data-ca-edit="stock" data-id="${i.id}" value="${i.stock}">`:i.stock}</td>
-      ${canSell?`<td><button class="btn sm" data-ca="toggleItem" data-id="${i.id}" data-on="${i.active?1:0}">${i.active?'Yashirish':'Qaytarish'}</button></td>`:''}</tr>`).join('')||`<tr><td colspan="4" class="empty">Hali mahsulot qo‘shilmagan</td></tr>`}
+      ${canSell?`<td style="white-space:nowrap"><button class="btn sm" data-ca="toggleItem" data-id="${i.id}" data-on="${i.active?1:0}">${i.active?'Yashirish':'Qaytarish'}</button> <button class="btn sm danger" data-ca="delItem" data-id="${i.id}" title="O‘chirish">🗑</button></td>`:''}</tr>`).join('')||`<tr><td colspan="4" class="empty">Hali mahsulot qo‘shilmagan</td></tr>`}
      </tbody></table></div></div>
-    <div class="card" style="margin-top:14px"><h2>🧾 Oxirgi sotuvlar</h2>${sales.length?`<table><tbody>${sales.map(r=>{const st=S.stuById[r.student_id];return `<tr><td><b>${esc(st?st.name:'—')}</b><div class="muted" style="font-size:12px">${esc(r.reason)} · ${coinDate(r.ts)}</div></td><td style="text-align:right;font-weight:800;color:var(--crit)">${r.amount}</td><td style="width:34px">${isAdmin()?`<button class="btn sm" data-ca="undo" data-id="${r.id}" title="Sotuvni bekor qilish">✖</button>`:''}</td></tr>`;}).join('')}</tbody></table>`:'<div class="empty">Hali sotuv yo‘q</div>'}</div></div></div>`;
+    <div class="card" style="margin-top:14px"><h2>🧾 Oxirgi sotuvlar</h2>${sales.length?`<table><tbody>${sales.map(r=>{const st=S.stuById[r.student_id];return `<tr><td><b>${esc(st?st.name:'—')}</b><div class="muted" style="font-size:12px">${esc(r.reason)} · ${coinDate(r.ts)}</div></td><td style="text-align:right;font-weight:800;color:var(--crit)">${r.amount}</td><td style="width:34px">${isAdmin()||(isSeller()&&r.by_user===window.__ME.id&&Date.now()-r.ts<2*86400e3)?`<button class="btn sm" data-ca="undo" data-id="${r.id}" title="Sotuvni bekor qilish">✖</button>`:''}</td></tr>`;}).join('')}</tbody></table>`:'<div class="empty">Hali sotuv yo‘q</div>'}</div></div></div>`;
+}
+function coinLimitView(){
+  const B=S.coin.budg;if(!B||!B.teachers)return '<div class="empty">Yuklanmoqda…</div>';
+  const T=B.teachers.filter(t=>t.active&&t.role!=='admin').sort((a,b)=>a.name.localeCompare(b.name));const nm=id=>{const u=B.teachers.find(t=>t.id===id)||(S.users||[]).find(u=>u.id===id);return u?u.name:'—';};
+  const tot=T.reduce((a,t)=>a+t.allocated,0),sp=T.reduce((a,t)=>a+t.spent,0);
+  return `<div class="card"><h2>👩‍🏫 Ustozlarga Ilmzor puli limiti <span class="muted" style="font-weight:500">— jami ajratilgan ${tot}, berilgan ${sp}</span></h2>
+   <p class="muted" style="font-size:12.5px;margin-top:-4px">Ustoz o‘quvchilarga xulq, davomat, faollik uchun faqat shu limit ichida pul beradi. Vazifa uchun avtomatik tushadigan pul limitdan yechilmaydi. Minus yozsangiz — limit kamayadi.</p>
+   <div style="overflow-x:auto"><table><thead><tr><th>Ustoz</th><th>Ajratilgan</th><th>Berdi</th><th>Qoldi</th><th style="width:34%">Limit qo‘shish</th></tr></thead><tbody>
+   ${T.map(t=>{const p=t.allocated?Math.round(t.left/t.allocated*100):0;return `<tr><td><b>${esc(t.name)}</b>${t.role==='admin'?' <span class="muted" style="font-size:12px">rahbar · limitsiz</span>':''}</td><td>${t.allocated}</td><td>${t.spent}</td>
+     <td><b style="color:${t.left>0?'var(--good)':'var(--crit)'}">${t.left}</b><div class="pbar" style="max-width:90px"><i style="width:${Math.max(0,p)}%;background:${t.left>0?'var(--good)':'var(--crit)'}"></i></div></td>
+     <td><div style="display:flex;gap:6px"><input class="inp" type="number" id="bd_${t.id}" placeholder="masalan 100" style="max-width:120px"><button class="btn sm pri" data-ca="budget" data-id="${t.id}">Berish</button></div></td></tr>`;}).join('')}
+   </tbody></table></div></div>
+   <div class="card" style="margin-top:14px"><h2>🕘 Limit tarixi</h2>${B.rows.length?`<table><tbody>${B.rows.slice(0,40).map(r=>`<tr><td><b>${esc(nm(r.teacher_id))}</b><div class="muted" style="font-size:12px">${coinDate(r.ts)} · ${esc(nm(r.by_user))}${r.note?' · '+esc(r.note):''}</div></td><td style="text-align:right;font-weight:800;color:${coinCol(r.amount)}">${cfmt(r.amount)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Hali limit ajratilmagan</div>'}</div>`;
 }
 function coinBalanceView(D,studs,bal){
   const q=(S.coin.q||'').toLowerCase().trim();const list=studs.filter(x=>!q||x.name.toLowerCase().includes(q)).sort((a,b)=>bal(b.id)-bal(a.id));
@@ -140,6 +156,9 @@ document.addEventListener('click',async ev=>{
   if(a==='undo'){if(!confirm('Bekor qilinsinmi?'))return;try{await window.__api('DELETE','/api/coins/'+el.dataset.id);toast('Bekor qilindi');coinLoad();}catch(e){toast(e.message);}return;}
   if(a==='addItem'){const b={name:document.getElementById('si_name').value.trim(),price:Number(document.getElementById('si_price').value),stock:Number(document.getElementById('si_stock').value),category:document.getElementById('si_cat').value.trim()||'Boshqa'};
     try{await window.__api('POST','/api/shop',b);toast('Qo‘shildi ✓');coinLoad();}catch(e){toast(e.message);}return;}
+  if(a==='budget'){const inp=document.getElementById('bd_'+el.dataset.id);const v=Math.round(Number(inp.value));if(!v)return toast('Miqdorni yozing');
+    el.disabled=true;try{const j=await window.__api('POST','/api/budgets',{teacherId:el.dataset.id,amount:v});toast(`Limit ${cfmt(v)} ✓ Qoldi: ${j.budget.left}`);await coinLoad();}catch(e){toast(e.message);el.disabled=false;}return;}
+  if(a==='delItem'){if(!confirm('Mahsulot o‘chirilsinmi? (Sotuvlar tarixi saqlanadi)'))return;try{await window.__api('DELETE','/api/shop/'+el.dataset.id);toast('O‘chirildi');coinLoad();}catch(e){toast(e.message);}return;}
   if(a==='toggleItem'){try{await window.__api('PATCH','/api/shop/'+el.dataset.id,{active:el.dataset.on!=='1'});coinLoad();}catch(e){toast(e.message);}return;}
   if(a==='sell'){const x=findStuByLabel(document.getElementById('sh_stu').value);const it=document.getElementById('sh_item').value;const q=Number(document.getElementById('sh_qty').value)||1;
     if(!x)return toast('O‘quvchini ro‘yxatdan tanlang');if(!it)return toast('Mahsulot tanlang');
