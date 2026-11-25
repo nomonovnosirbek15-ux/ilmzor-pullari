@@ -503,12 +503,12 @@ export default {
         if (user.role === 'seller') return err('Ruxsat yo‘q', 403, 'permission_denied');
         const b = await req.json(); const R = await coinSettings(env);
         const amount = Math.round(Number(b.amount)); const ids = [...new Set(b.studentIds || [])];
-        if (!amount || !ids.length) return err('O‘quvchi va coin miqdorini tanlang');
-        if (user.role !== 'admin' && Math.abs(amount) > R.maxGive) return err(`Bir martada ko‘pi bilan ${R.maxGive} coin`);
+        if (!amount || !ids.length) return err('O‘quvchi va miqdorni tanlang');
+        if (user.role !== 'admin' && Math.abs(amount) > R.maxGive) return err(`Bir martada ko‘pi bilan ${R.maxGive} Ilmzor puli`);
         const mineIds = user.role === 'admin' ? null : await myStudentIds(env, user.id);
         if (mineIds && ids.some(id => !mineIds.has(id))) return err('Bu sizning guruhingiz emas', 403, 'permission_denied');
         const bal = await balances(env, ids);
-        if (amount < 0) { const low = ids.filter(id => (bal[id] || 0) + amount < 0); if (low.length && !b.force) return err('Balans manfiy bo‘lib qoladi: ' + low.length + ' ta o‘quvchida coin yetmaydi'); }
+        if (amount < 0) { const low = ids.filter(id => (bal[id] || 0) + amount < 0); if (low.length && !b.force) return err('Balans manfiy bo‘lib qoladi: ' + low.length + ' ta o‘quvchida Ilmzor puli yetmaydi'); }
         const kind = b.kind === 'start' && user.role === 'admin' ? 'tuzatish' : amount < 0 ? 'jarima' : 'bonus';
         const reason = String(b.reason || (amount < 0 ? 'Jarima' : 'Rag‘bat')).slice(0, 80); const now = Date.now();
         const st = ids.map(id => env.DB.prepare('INSERT INTO coins(id,student_id,amount,kind,reason,task_id,by_user,ts) VALUES(?,?,?,?,?,NULL,?,?)').bind('m:' + rid(14), id, amount, kind, reason, user.id, now));
@@ -518,7 +518,7 @@ export default {
       if ((cmm = p.match(/^\/api\/coins\/(m:[\w]+)$/)) && M === 'DELETE') {
         const r = await env.DB.prepare('SELECT * FROM coins WHERE id=?').bind(cmm[1]).first(); if (!r) return json({ ok: true });
         if (r.kind === 'sotuv' && user.role === 'teacher') return err('Ruxsat yo‘q', 403, 'permission_denied');
-        if (user.role !== 'admin' && (r.by_user !== user.id || Date.now() - r.ts > 2 * 86400e3)) return err('Faqat o‘zingiz bergan coinni 2 kun ichida bekor qilasiz', 403, 'permission_denied');
+        if (user.role !== 'admin' && (r.by_user !== user.id || Date.now() - r.ts > 2 * 86400e3)) return err('Faqat o‘zingiz bergan pulni 2 kun ichida bekor qilasiz', 403, 'permission_denied');
         if (r.kind === 'sotuv') { const it = r.task_id; if (it) await env.DB.prepare('UPDATE shop SET stock=stock+? WHERE id=?').bind(Math.max(1, Math.round(-r.amount / Math.max(1, (await env.DB.prepare('SELECT price FROM shop WHERE id=?').bind(it).first() || { price: -r.amount }).price))), it).run(); }
         await env.DB.prepare('DELETE FROM coins WHERE id=?').bind(cmm[1]).run(); return json({ ok: true });
       }
@@ -558,7 +558,7 @@ export default {
         if (it.stock < qty) return err(`Omborda faqat ${it.stock} ta qolgan`);
         const sd = await getDoc(env, 'students', String(b.studentId || '')); if (!sd || sd.data.archived) return err('O‘quvchi topilmadi', 404, 'not_found');
         const bal = (await balances(env, [b.studentId]))[b.studentId] || 0; const cost = it.price * qty;
-        if (bal < cost) return err(`Coin yetmaydi: balans ${bal}, kerak ${cost}`);
+        if (bal < cost) return err(`Ilmzor puli yetmaydi: balans ${bal}, kerak ${cost}`);
         await env.DB.batch([
           env.DB.prepare('UPDATE shop SET stock=stock-? WHERE id=? AND stock>=?').bind(qty, it.id, qty),
           env.DB.prepare('INSERT INTO coins(id,student_id,amount,kind,reason,task_id,by_user,ts) VALUES(?,?,?,?,?,?,?,?)').bind('m:' + rid(14), b.studentId, -cost, 'sotuv', `${it.name}${qty > 1 ? ' × ' + qty : ''}`, it.id, user.id, Date.now()),
