@@ -535,7 +535,7 @@ export default {
         if (r.kind === 'sotuv' && user.role === 'teacher') return err('Ruxsat yo‘q', 403, 'permission_denied');
         if (user.role === 'seller' && r.kind !== 'sotuv') return err('Ruxsat yo‘q', 403, 'permission_denied');
         if (user.role !== 'admin' && (r.by_user !== user.id || Date.now() - r.ts > 2 * 86400e3)) return err('Faqat o‘zingiz bergan pulni 2 kun ichida bekor qilasiz', 403, 'permission_denied');
-        if (r.kind === 'sotuv') { const it = r.task_id; if (it) await env.DB.prepare('UPDATE shop SET stock=stock+? WHERE id=?').bind(Math.max(1, Math.round(-r.amount / Math.max(1, (await env.DB.prepare('SELECT price FROM shop WHERE id=?').bind(it).first() || { price: -r.amount }).price))), it).run(); }
+        if (r.kind === 'sotuv' && r.task_id) { const qm = String(r.reason || '').match(/× (\d+)$/); await env.DB.prepare('UPDATE shop SET stock=stock+? WHERE id=?').bind(qm ? Number(qm[1]) : 1, r.task_id).run(); }
         await env.DB.prepare('DELETE FROM coins WHERE id=?').bind(cmm[1]).run(); return json({ ok: true });
       }
       if (p === '/api/budgets' && M === 'GET') {
