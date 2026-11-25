@@ -25,3 +25,8 @@ Bot sirlari (BOT_TOKEN va b.) Cloudflare'da Secret sifatida turadi — kodda yo'
 * Ilovaga oxirgi ~13 oy vazifalari yuklanadi; eskilari bazada va zaxirada qoladi.
 * Reyting va hisobotlar sana bo'yicha indeks bilan o'qiladi, 30 soniya keshlanadi.
 * Ilmzor puli: avtomatik pul `Qoidalar → boshlanish sanasi` dan keyingi vazifalarga.
+
+## Telegram Mini App (25.11.2026)
+* `ilmzor-test-bot` worker'ida `/app` — o'quvchi sahifasi (`/men`) Telegram ichida. Kirish Telegram `initData` imzosi bilan (BOT_TOKEN), kod `baho_link` jadvalidan olinadi.
+* Botdagi pastki chap «📱 Ilova» tugmasi (setChatMenuButton, `appcfg.menu=v1`) va «📝 Vazifalarim» xabaridagi «📱 Ilovada ochish».
+* Kod: `bot/miniapp.js` (bot worker oxiriga qo'shilgan qism).
