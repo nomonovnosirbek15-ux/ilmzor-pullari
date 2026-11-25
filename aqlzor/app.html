@@ -14,9 +14,9 @@ header{background:var(--ind);color:#fff;padding:14px 16px 12px;position:sticky;t
 .brand{display:flex;align-items:center;gap:10px}
 .brand b{font-size:19px;letter-spacing:.2px}
 .brand small{display:block;color:#c9c6f2;font-size:12px;margin-top:1px}
-.tabs{display:flex;gap:8px;overflow-x:auto;margin-top:12px;scrollbar-width:none}
+.tabs{display:flex;flex-wrap:wrap;gap:6px 8px;margin-top:10px}
 .tabs::-webkit-scrollbar{display:none}
-.tab{flex:none;border:0;border-radius:20px;padding:7px 14px;background:rgba(255,255,255,.12);color:#fff;font-weight:600;font-size:14px;white-space:nowrap}
+.tab{flex:none;border:0;border-radius:20px;padding:7px 12px;background:rgba(255,255,255,.12);color:#fff;font-weight:600;font-size:14px;white-space:nowrap}
 .tab.on{background:var(--amb);color:var(--ind)}
 main{padding:14px 12px 110px;max-width:720px;margin:0 auto}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
@@ -96,7 +96,7 @@ textarea{min-height:70px;resize:vertical}
 <script>
 (function(){
 var W=window.Telegram&&Telegram.WebApp, ID=W&&W.initData||'';
-try{W.ready();W.expand();W.setHeaderColor('#23205E');W.setBackgroundColor('#f4f3f8');}catch(e){}
+try{W.ready();W.expand();W.disableVerticalSwipes&&W.disableVerticalSwipes();W.setHeaderColor('#23205E');W.setBackgroundColor('#f4f3f8');}catch(e){}
 var AP="['‘’ʻʼ`]";
 function NA(t){return String(t).replace(new RegExp('O'+AP,'g'),'Ö').replace(new RegExp('o'+AP,'g'),'ö').replace(new RegExp('G'+AP,'g'),'Ğ').replace(new RegExp('g'+AP,'g'),'ğ').replace(/SH/g,'Ş').replace(/Sh/g,'Ş').replace(/sh/g,'ş').replace(/CH/g,'Ç').replace(/Ch/g,'Ç').replace(/ch/g,'ç');}
 function conv(root){if(!root)return;var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null),n;while(n=w.nextNode()){if(n.parentNode&&/^(SCRIPT|STYLE|TEXTAREA)$/.test(n.parentNode.nodeName))continue;var v=NA(n.nodeValue);if(v!==n.nodeValue)n.nodeValue=v;}
@@ -201,7 +201,7 @@ document.addEventListener('click',function(e){var t=e.target.closest('[data-q],[
   if(!t){if(e.target.classList&&e.target.classList.contains('sheet'))closeSheet();return;}
   if(t.dataset.q){var p=t.dataset.q.split(':');setQty(+p[0],+p[1]);var sb=$('sbuy');if(sb){var b=S.D.books.filter(function(x){return x.id===+p[0];})[0];sb.innerHTML=buyBtn(b);conv(sb);}return;}
   if(t.dataset.nav){closeSheet();go(t.dataset.nav);return;}
-  if(t.dataset.cat){S.cat=t.dataset.cat;render();return;}
+  if(t.dataset.cat){S.cat=t.dataset.cat;hap();render();window.scrollTo(0,0);return;}
   if(t.dataset.open){openBook(+t.dataset.open);return;}
   if(t.dataset.close!=null){closeSheet();return;}
   if(t.dataset.smp){t.disabled=true;api('sample',{book_id:+t.dataset.smp}).then(function(){hap('ok');say('📖 Namuna bot chatiga yuborildi');}).catch(function(e){say(e.message);}).then(function(){t.disabled=false;});return;}
