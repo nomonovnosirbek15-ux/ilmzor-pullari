@@ -14,6 +14,7 @@
   const VA=()=>{try{const v=sessionStorage.getItem('viewAs');if(v)return v;if(window.__REALID&&localStorage.getItem('selfTeach')==='1')return window.__REALID;}catch(e){}return '';};
   const setMode=m=>{try{sessionStorage.removeItem('viewAs');sessionStorage.removeItem('viewAsName');m==='t'?localStorage.setItem('selfTeach','1'):localStorage.removeItem('selfTeach');}catch(e){}location.hash='#bugun';location.reload();};
   async function viewFilter(c,docs){const va=VA();if(!va||!window.__REAL)return docs;
+    if(window.__ME&&window.__ME.role==='seller')return c==='students'?docs:[];
     if(c==='students')return docs.filter(d=>(d.data||{}).teacherId===va);
     if(c==='tasks'){const st=await api('GET','/api/c/students');const ids=new Set(st.docs.filter(d=>(d.data||{}).teacherId===va).map(d=>d.id));return docs.filter(d=>((d.data||{}).studentIds||[]).some(x=>ids.has(x)));}
     return docs;}
@@ -61,7 +62,7 @@
   function userChip(){
     const h=document.querySelector('header');if(!h)return;
     const c=document.createElement('div');c.className='uchip';
-    if(window.__REAL&&!window.__SELF){const b=document.createElement('div');b.id='vaBar';b.innerHTML=`👁 Siz <b>${esc(ME.name)}</b> ustoz ko‘zi bilan ko‘ryapsiz — u aynan shuni ko‘radi. <button class="btn sm" id="vaBack">↩ Rahbar ko‘rinishiga qaytish</button>`;document.body.prepend(b);b.querySelector('#vaBack').onclick=()=>{try{sessionStorage.removeItem('viewAs');sessionStorage.removeItem('viewAsName');}catch(e){}location.hash='#ustozlar';location.reload();};}
+    if(window.__REAL&&!window.__SELF){const b=document.createElement('div');b.id='vaBar';b.innerHTML=`👁 Siz <b>${esc(ME.name)}</b> ${ME.role==='seller'?'sotuvchi':'ustoz'} ko‘zi bilan ko‘ryapsiz — u aynan shuni ko‘radi. <button class="btn sm" id="vaBack">↩ Rahbar ko‘rinishiga qaytish</button>`;document.body.prepend(b);b.querySelector('#vaBack').onclick=()=>{try{sessionStorage.removeItem('viewAs');sessionStorage.removeItem('viewAsName');sessionStorage.removeItem('viewAsRole');}catch(e){}location.hash='#ustozlar';location.reload();};}
     const adm=window.__REALID;const self=!!window.__SELF;
     c.innerHTML=(adm&&(self||!window.__REAL)?`<span class="seg modeSeg" title="Rahbar — butun markaz; Ustoz — faqat o‘z guruhlaringiz"><button class="${self?'':'on'}" id="mRah">👑 Rahbar</button><button class="${self?'on':''}" id="mUst">👩‍🏫 Ustoz</button></span>`:'')+`<span>${window.__REAL&&!self?'👁':ME.role==='admin'?'👑':ME.role==='seller'?'🛍':'👩‍🏫'} <b>${esc(ME.name)}</b> <span class="muted">${self?'ustoz rejimi':ME.role==='admin'?'rahbar':ME.role==='seller'?'sotuvchi (Ilmzor puli)':'ustoz'}</span></span><button class="btn sm" id="pwBtn" title="Parolni almashtirish">🔑</button><button class="btn sm" id="outBtn">Chiqish</button>`;
     h.appendChild(c);
@@ -76,7 +77,7 @@
   }
   async function boot(){
     try{ME=await api('GET','/api/me');}catch(e){showLogin();return;}
-    if(ME.role==='admin'){window.__REALID=ME.id;if(VA()){window.__REAL=ME;window.__SELF=VA()===ME.id;let nm='';try{nm=sessionStorage.getItem('viewAsName')||'';}catch(e){}ME={id:VA(),name:window.__SELF?ME.name:(nm||'Ustoz'),role:'teacher'};}}
+    if(ME.role==='admin'){window.__REALID=ME.id;if(VA()){window.__REAL=ME;window.__SELF=VA()===ME.id;let nm='';try{nm=sessionStorage.getItem('viewAsName')||'';}catch(e){}let vr='teacher';try{vr=sessionStorage.getItem('viewAsRole')||'teacher';}catch(e){}ME={id:VA(),name:window.__SELF?ME.name:(nm||'Ustoz'),role:window.__SELF?'teacher':vr};}}
     window.__ME=ME;userChip();readyRes();document.dispatchEvent(new Event('me-ready'));
   }
   document.addEventListener('DOMContentLoaded',boot);
