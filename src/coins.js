@@ -9,6 +9,8 @@ document.addEventListener('me-ready',()=>{
 });
 const cfmt=n=>(n>0?'+':'')+n;
 const coinCol=n=>n>0?'var(--good)':n<0?'var(--crit)':'var(--muted)';
+const WHO=id=>{const w=S.coin&&S.coin.data&&S.coin.data.who&&S.coin.data.who[id];return w?w.name:'';};
+const BYL=r=>{if(r.kind==='auto')return '';const n=WHO(r.by_user);return n?` · ${r.kind==='sotuv'?'🛍 sotdi':'👤'}: <b>${esc(n)}</b>`:'';};
 const KIND={auto:'⚙️',bonus:'🎁',jarima:'⚠️',sotuv:'🛍',tuzatish:'✏️'};
 function coinDate(ts){const d=new Date(ts);return `${d.getDate()}-${MONTHS[d.getMonth()].slice(0,3)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;}
 function viewCoins(){
@@ -59,7 +61,7 @@ function coinGiveView(D,studs,bal){
      ${ranked.map((x,i)=>`<tr class="click" data-ca="hist" data-id="${x.id}"><td class="muted">${bal(x.id)>0?i+1:'—'}</td><td><b>${esc(x.name)}</b><div class="muted" style="font-size:12px">${esc(x.group||'Guruhsiz')}</div></td><td><b style="font-size:16px">${bal(x.id)}</b> 🪙</td><td style="color:var(--good);font-weight:700">${monthOf(x.id)?'+'+monthOf(x.id):'<span class="muted">—</span>'}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">O‘quvchi yo‘q</td></tr>'}
      </tbody></table></div></div>
     <div class="card" style="margin-top:14px"><h2>🕘 Oxirgi harakatlar</h2>${recent.length?`<table><tbody>${recent.map(r=>{const st=S.stuById[r.student_id];const own=r.id.startsWith('m:')&&r.kind!=='sotuv'&&(isAdmin()||(r.by_user===window.__ME.id&&Date.now()-r.ts<2*86400e3));
-      return `<tr><td style="width:24px">${KIND[r.kind]||''}</td><td><b>${esc(st?st.name:'—')}</b><div class="muted" style="font-size:12px">${esc(r.reason||'')} · ${coinDate(r.ts)}</div></td><td style="text-align:right;font-weight:800;color:${coinCol(r.amount)}">${cfmt(r.amount)}</td><td style="width:34px">${own?`<button class="btn sm" data-ca="undo" data-id="${r.id}" title="Bekor qilish">✖</button>`:''}</td></tr>`;}).join('')}</tbody></table>`:'<div class="empty">Hali harakat yo‘q</div>'}</div>
+      return `<tr><td style="width:24px">${KIND[r.kind]||''}</td><td><b>${esc(st?st.name:'—')}</b><div class="muted" style="font-size:12px">${esc(r.reason||'')} · ${coinDate(r.ts)}${BYL(r)}</div></td><td style="text-align:right;font-weight:800;color:${coinCol(r.amount)}">${cfmt(r.amount)}</td><td style="width:34px">${own?`<button class="btn sm" data-ca="undo" data-id="${r.id}" title="Bekor qilish">✖</button>`:''}</td></tr>`;}).join('')}</tbody></table>`:'<div class="empty">Hali harakat yo‘q</div>'}</div>
    </div></div>`;
 }
 function coinShopView(D,studs,bal){
@@ -85,7 +87,7 @@ function coinShopView(D,studs,bal){
       <td>${canSell?`<input class="inp" style="width:70px" type="number" data-ca-edit="stock" data-id="${i.id}" value="${i.stock}">`:i.stock}</td>
       ${canSell?`<td style="white-space:nowrap"><button class="btn sm" data-ca="toggleItem" data-id="${i.id}" data-on="${i.active?1:0}">${i.active?'Yashirish':'Qaytarish'}</button> <button class="btn sm danger" data-ca="delItem" data-id="${i.id}" title="O‘chirish">🗑</button></td>`:''}</tr>`).join('')||`<tr><td colspan="4" class="empty">Hali mahsulot qo‘shilmagan</td></tr>`}
      </tbody></table></div></div>
-    <div class="card" style="margin-top:14px"><h2>🧾 Oxirgi sotuvlar</h2>${sales.length?`<table><tbody>${sales.map(r=>{const st=S.stuById[r.student_id];return `<tr><td><b>${esc(st?st.name:'—')}</b><div class="muted" style="font-size:12px">${esc(r.reason)} · ${coinDate(r.ts)}</div></td><td style="text-align:right;font-weight:800;color:var(--crit)">${r.amount}</td><td style="width:34px">${isAdmin()||(isSeller()&&r.by_user===window.__ME.id&&Date.now()-r.ts<2*86400e3)?`<button class="btn sm" data-ca="undo" data-id="${r.id}" title="Sotuvni bekor qilish">✖</button>`:''}</td></tr>`;}).join('')}</tbody></table>`:'<div class="empty">Hali sotuv yo‘q</div>'}</div></div></div>`;
+    <div class="card" style="margin-top:14px"><h2>🧾 Oxirgi sotuvlar</h2>${(()=>{const ms=D.monthStart||0;const by={};D.rows.filter(r=>r.kind==='sotuv'&&r.ts>=ms).forEach(r=>{const k=r.by_user||'?';(by[k]=by[k]||{n:0,s:0}).n++;by[k].s+=-r.amount;});const ks=Object.keys(by);return ks.length?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin:-2px 0 10px">${ks.map(k=>`<span class="tag" style="font-size:12.5px">🛍 ${esc(WHO(k)||'—')}: <b>${by[k].n}</b> ta · ${by[k].s} 🪙 <span class="muted">(bu oy)</span></span>`).join('')}</div>`:'';})()}${sales.length?`<table><tbody>${sales.map(r=>{const st=S.stuById[r.student_id];return `<tr><td><b>${esc(st?st.name:'—')}</b><div class="muted" style="font-size:12px">${esc(r.reason)} · ${coinDate(r.ts)}${BYL(r)}</div></td><td style="text-align:right;font-weight:800;color:var(--crit)">${r.amount}</td><td style="width:34px">${isAdmin()||(isSeller()&&r.by_user===window.__ME.id&&Date.now()-r.ts<2*86400e3)?`<button class="btn sm" data-ca="undo" data-id="${r.id}" title="Sotuvni bekor qilish">✖</button>`:''}</td></tr>`;}).join('')}</tbody></table>`:'<div class="empty">Hali sotuv yo‘q</div>'}</div></div></div>`;
 }
 function coinLimitView(){
   const B=S.coin.budg;if(!B||!B.teachers)return '<div class="empty">Yuklanmoqda…</div>';
@@ -130,7 +132,7 @@ function coinRulesView(D){
 async function coinHist(id){
   const st=S.stuById[id];const m=document.getElementById('modal');m.className='open';m.innerHTML='<div class="mbox"><div class="empty">Yuklanmoqda…</div></div>';
   try{const j=await window.__api('GET','/api/coins/student/'+id);const b=(S.coin.data.balances[id]||0);
-    m.innerHTML=`<div class="mbox"><h2>💰 ${esc(st.name)} — <span style="color:var(--good)">${b} Ilmzor puli</span></h2><div style="max-height:60vh;overflow:auto"><table><tbody>${j.rows.map(r=>`<tr><td style="width:24px">${KIND[r.kind]||''}</td><td>${esc(r.reason||'')}<div class="muted" style="font-size:12px">${coinDate(r.ts)}</div></td><td style="text-align:right;font-weight:800;color:${coinCol(r.amount)}">${cfmt(r.amount)}</td></tr>`).join('')||'<tr><td class="empty">Hali Ilmzor puli yo‘q</td></tr>'}</tbody></table></div><div style="text-align:right;margin-top:10px"><button class="btn" data-ca="closeM">Yopish</button></div></div>`;
+    m.innerHTML=`<div class="mbox"><h2>💰 ${esc(st.name)} — <span style="color:var(--good)">${b} Ilmzor puli</span></h2><div style="max-height:60vh;overflow:auto"><table><tbody>${j.rows.map(r=>`<tr><td style="width:24px">${KIND[r.kind]||''}</td><td>${esc(r.reason||'')}<div class="muted" style="font-size:12px">${coinDate(r.ts)}${BYL(r)}</div></td><td style="text-align:right;font-weight:800;color:${coinCol(r.amount)}">${cfmt(r.amount)}</td></tr>`).join('')||'<tr><td class="empty">Hali Ilmzor puli yo‘q</td></tr>'}</tbody></table></div><div style="text-align:right;margin-top:10px"><button class="btn" data-ca="closeM">Yopish</button></div></div>`;
   }catch(e){m.innerHTML=`<div class="mbox"><div class="empty">${esc(e.message)}</div><button class="btn" data-ca="closeM">Yopish</button></div>`;}
 }
 function findStuByLabel(v){const all=activeStudents();return all.find(x=>`${x.name} · ${x.group||'Guruhsiz'}`===v)||all.filter(x=>x.name.toLowerCase()===String(v).toLowerCase().trim())[0];}

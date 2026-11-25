@@ -501,7 +501,8 @@ export default {
         const { results: rows } = await env.DB.prepare('SELECT id,student_id,amount,kind,reason,by_user,ts FROM coins WHERE ts>=? ORDER BY ts DESC').bind(since - 31 * 86400e3).all();
         const mine = rows.filter(r => ids.has(r.student_id));
         const { results: shop } = await env.DB.prepare('SELECT * FROM shop WHERE active>=0 ORDER BY active DESC, price').all();
-        return json({ balances: bal, rows: mine.slice(0, 600), monthStart: since, settings: await coinSettings(env), shop });
+        const { results: us } = await env.DB.prepare('SELECT id,name,role FROM users').all(); const who = {}; for (const u of us) who[u.id] = { name: u.name, role: u.role };
+        return json({ balances: bal, rows: mine.slice(0, 600), monthStart: since, settings: await coinSettings(env), shop, who });
       }
       let cmm;
       if ((cmm = p.match(/^\/api\/coins\/student\/([\w-]+)$/)) && M === 'GET') {
