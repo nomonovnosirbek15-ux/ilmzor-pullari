@@ -196,3 +196,29 @@ async function appAdminPdf(env, u, form) {
   return appAdminBooks(env);
 }
 var shopKb = (hash) => ik([[{ text: "\u{1F6CD} Do'konni ochish", web_app: { url: APP_ORIGIN + "/app" + (hash ? "#" + hash : "") } }]]);
+
+// ---- 📖 Namuna va PDF kitobni ilova ichida ochish ----
+async function appTgFile(env, fileId, type) {
+  const f = await tg(env, "getFile", { file_id: fileId });
+  if (!f || !f.ok) return null;
+  const r = await fetch(`https://api.telegram.org/file/bot${env.BOT_TOKEN}/${f.result.file_path}`);
+  if (!r.ok) return null;
+  return new Response(r.body, { headers: { "content-type": type || r.headers.get("content-type") || "application/octet-stream", "cache-control": "private, max-age=3600" } });
+}
+async function appSampleFile(env, id) {
+  const s = await env.DB.prepare("SELECT file_id, kind FROM samples WHERE id=?").bind(id).first();
+  if (!s) return new Response("not found", { status: 404 });
+  const type = s.kind === "photo" ? "image/jpeg" : s.kind === "video" ? "video/mp4" : s.kind === "document" ? "application/pdf" : undefined;
+  return (await appTgFile(env, s.file_id, type)) || new Response("not found", { status: 404 });
+}
+async function appMyPdf(env, u, bookId) {
+  const book = await env.DB.prepare("SELECT title, pdf, pdf_name FROM books WHERE id=?").bind(bookId).first();
+  if (!book || !book.pdf) return appErr("Bu kitobning PDF fayli yo'q", 404);
+  const { results } = await env.DB.prepare("SELECT items FROM orders WHERE user_id=? AND status IN ('confirmed','sent','done')").bind(u.id).all();
+  const owns = (results || []).some((o) => JSON.parse(o.items || "[]").some((i) => (i.id ?? i.book_id) === bookId));
+  if (!owns && !isAdmin(env, u.id)) return appErr("Bu kitob sizning to'langan buyurtmalaringizda yo'q", 403);
+  const r = await appTgFile(env, book.pdf, "application/pdf");
+  if (r) return r;
+  await tg(env, "sendDocument", { chat_id: u.id, document: book.pdf, caption: toNewAlphabet("\u{1F4C4} " + book.title), protect_content: true });
+  return appErr("Fayl katta — u bot chatiga yuborildi", 413);
+}

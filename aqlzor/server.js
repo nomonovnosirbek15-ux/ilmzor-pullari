@@ -122,6 +122,8 @@ async function appRoute(request, url, env, ctx) {
   if (request.method === "GET" && (p === "/app" || p === "/app/")) return new Response(APP_HTML, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
   const im = p.match(/^\/app\/img\/(\d+)$/);
   if (request.method === "GET" && im) return appImage(env, Number(im[1]), ctx, request);
+  const smf = p.match(/^\/app\/smp\/(\d+)$/);
+  if (request.method === "GET" && smf) return appSampleFile(env, Number(smf[1]));
   if (request.method !== "POST" || !p.startsWith("/app/api/")) return new Response("not found", { status: 404 });
   const multipart = /multipart\/form-data/i.test(request.headers.get("content-type") || "");
   const form = multipart ? await request.formData().catch(() => null) : null;
@@ -164,8 +166,16 @@ async function appRoute(request, url, env, ctx) {
   if (op === "order") return appOrder(env, u, b);
   if (op === "orders") {
     const { results } = await env.DB.prepare("SELECT id, created_at, status, total, items, track FROM orders WHERE user_id=? ORDER BY id DESC LIMIT 20").bind(u.id).all();
-    return appJ({ payInfo: toNewAlphabet(await getSetting(env, "payment_info", "")), orders: (results || []).map((o) => ({ id: o.id, date: o.created_at, status: toNewAlphabet(STATUS[o.status] || o.status), st: o.status, pay: o.status === "new", total: o.total, track: o.track || "", items: JSON.parse(o.items || "[]").map((i) => ({ title: toNewAlphabet(i.title), qty: i.qty })) })) });
+    const { results: pb } = await env.DB.prepare("SELECT id FROM books WHERE pdf IS NOT NULL AND pdf<>''").all();
+    const pdfIds = new Set((pb || []).map((x) => x.id));
+    const paid = (st) => st === "confirmed" || st === "sent" || st === "done";
+    return appJ({ payInfo: toNewAlphabet(await getSetting(env, "payment_info", "")), orders: (results || []).map((o) => ({ id: o.id, date: o.created_at, status: toNewAlphabet(STATUS[o.status] || o.status), st: o.status, pay: o.status === "new", total: o.total, track: o.track || "", items: JSON.parse(o.items || "[]").map((i) => { const bid = i.id ?? i.book_id; return { id: bid, title: toNewAlphabet(i.title), qty: i.qty, pdf: paid(o.status) && pdfIds.has(bid) }; }) })) });
   }
+  if (op === "samples") {
+    const { results } = await env.DB.prepare("SELECT id, kind FROM samples WHERE book_id=? ORDER BY id").bind(Number(b.book_id)).all();
+    return appJ({ samples: results || [] });
+  }
+  if (op === "mypdf") return appMyPdf(env, u, Number(b.book_id));
   if (op === "sample") {
     if (!await sampleCount(env, Number(b.book_id))) return appErr("Bu kitob uchun namuna hali qo'shilmagan");
     await sendSamples(env, u.id, Number(b.book_id));
