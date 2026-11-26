@@ -131,6 +131,7 @@ async function appRoute(request, url, env, ctx) {
   const u = await appUser(env, b.initData);
   if (!u) return appErr("Do'konni botdan qayta oching", 403);
   await app2Db(env);
+  ctx && ctx.waitUntil ? ctx.waitUntil(appSeen(env, u.id)) : await appSeen(env, u.id);
   const op = p.slice("/app/api/".length);
   if (op === "receipt" && form) return appReceipt(env, u, form);
   if (op === "receipt_force") return appReceiptForce(env, u, b);
@@ -144,6 +145,9 @@ async function appRoute(request, url, env, ctx) {
     if (op === "a_book") return appAdminBookSave(env, u, b);
     if (op === "a_new") return appAdminBookNew(env, u, b);
     if (op === "a_pdf" && form) return appAdminPdf(env, u, form);
+    if (op === "a_stats") return appAdminStats(env);
+    if (op === "a_bcs") return appAdminBcList(env);
+    if (op === "a_bc") return appAdminBc(env, u, form, b);
     return appErr("Noma'lum so'rov", 404);
   }
   if (op === "catalog") return appJ({ ...(await appCatalog(env, u)), admin: isAdmin(env, u.id) });

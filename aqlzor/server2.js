@@ -8,6 +8,10 @@ async function app2Db(env) {
   for (const q of ["ALTER TABLE books ADD COLUMN pdf TEXT", "ALTER TABLE books ADD COLUMN pdf_name TEXT", "ALTER TABLE orders ADD COLUMN pdf_sent INTEGER DEFAULT 0"]) {
     try { await env.DB.prepare(q).run(); } catch (e) {}
   }
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS seen (uid INTEGER, day TEXT, PRIMARY KEY (uid, day))").run();
+  for (const q of ["ALTER TABLE broadcast ADD COLUMN btn INTEGER DEFAULT 0", "ALTER TABLE broadcast ADD COLUMN aud TEXT DEFAULT 'all'", "ALTER TABLE broadcast ADD COLUMN created TEXT", "ALTER TABLE broadcast ADD COLUMN preview TEXT"]) {
+    try { await env.DB.prepare(q).run(); } catch (e) {}
+  }
   app2Ready = true;
 }
 var isDigitalOrder = async (env, items) => {
@@ -221,4 +225,77 @@ async function appMyPdf(env, u, bookId) {
   if (r) return r;
   await tg(env, "sendDocument", { chat_id: u.id, document: book.pdf, caption: toNewAlphabet("\u{1F4C4} " + book.title), protect_content: true });
   return appErr("Fayl katta — u bot chatiga yuborildi", 413);
+}
+
+// ---- 📊 Statistika va 📢 xabar yuborish (admin) ----
+var tzDay = (offsetDays = 0) => new Date(Date.now() + 5 * 3600 * 1e3 - offsetDays * 864e5).toISOString().slice(0, 10);
+async function appSeen(env, uid) {
+  try { await env.DB.prepare("INSERT OR IGNORE INTO seen (uid, day) VALUES (?, ?)").bind(uid, tzDay()).run(); } catch (e) {}
+}
+var PAID_ST = "('confirmed','sent','done')";
+async function appAdminStats(env) {
+  const one = async (q, ...a) => (await env.DB.prepare(q).bind(...a).first()) || {};
+  const d0 = tzDay(), d7 = tzDay(6), d30 = tzDay(29), m0 = d0.slice(0, 7);
+  const users = await one("SELECT COUNT(*) AS all_n, SUM(CASE WHEN blocked=1 THEN 1 ELSE 0 END) AS blocked, SUM(CASE WHEN substr(created_at,1,10)=? THEN 1 ELSE 0 END) AS new1, SUM(CASE WHEN substr(created_at,1,10)>=? THEN 1 ELSE 0 END) AS new7, SUM(CASE WHEN substr(created_at,1,10)>=? THEN 1 ELSE 0 END) AS new30 FROM users", d0, d7, d30);
+  const act = await one("SELECT COUNT(DISTINCT CASE WHEN day=? THEN uid END) AS a1, COUNT(DISTINCT CASE WHEN day>=? THEN uid END) AS a7, COUNT(DISTINCT uid) AS a30 FROM seen WHERE day>=?", d0, d7, d30);
+  const reg = await one("SELECT COUNT(*) AS n FROM (SELECT uid FROM seen WHERE day>=? GROUP BY uid HAVING COUNT(*)>=3)", d30);
+  const firstSeen = await one("SELECT MIN(day) AS d FROM seen");
+  const ord = await one(`SELECT COUNT(*) AS n, COUNT(DISTINCT user_id) AS buyers, COALESCE(SUM(total),0) AS sum, SUM(CASE WHEN substr(created_at,1,7)=? THEN 1 ELSE 0 END) AS mn, COALESCE(SUM(CASE WHEN substr(created_at,1,7)=? THEN total ELSE 0 END),0) AS msum FROM orders WHERE status IN ${PAID_ST}`, m0, m0);
+  const pend = await one("SELECT COUNT(*) AS n FROM orders WHERE status IN ('new','check')");
+  const rep = await one("SELECT COUNT(*) AS n FROM (SELECT user_id FROM orders WHERE status IN " + PAID_ST + " GROUP BY user_id HAVING COUNT(*)>=2)");
+  const tst = await one("SELECT COUNT(*) AS n, COUNT(DISTINCT uid) AS u FROM tres");
+  const days = [];
+  for (let i = 13; i >= 0; i--) days.push(tzDay(i));
+  const { results: nd } = await env.DB.prepare("SELECT substr(created_at,1,10) AS d, COUNT(*) AS n FROM users WHERE substr(created_at,1,10)>=? GROUP BY d").bind(days[0]).all();
+  const { results: ad } = await env.DB.prepare("SELECT day AS d, COUNT(*) AS n FROM seen WHERE day>=? GROUP BY day").bind(days[0]).all();
+  const mp = (r) => Object.fromEntries((r || []).map((x) => [x.d, x.n]));
+  const NM = mp(nd), AM = mp(ad);
+  const { results: rows } = await env.DB.prepare("SELECT items FROM orders WHERE status IN " + PAID_ST).all();
+  const top = {};
+  for (const o of rows || []) for (const it of JSON.parse(o.items || "[]")) { const k = toNewAlphabet(it.title || ""); top[k] = (top[k] || 0) + (it.qty || 1); }
+  return appJ({
+    users: { all: users.all_n || 0, live: (users.all_n || 0) - (users.blocked || 0), blocked: users.blocked || 0, new1: users.new1 || 0, new7: users.new7 || 0, new30: users.new30 || 0 },
+    active: { d1: act.a1 || 0, d7: act.a7 || 0, d30: act.a30 || 0, regular: reg.n || 0, since: firstSeen.d || d0 },
+    orders: { n: ord.n || 0, buyers: ord.buyers || 0, repeat: rep.n || 0, sum: ord.sum || 0, month: ord.mn || 0, msum: ord.msum || 0, pending: pend.n || 0 },
+    tests: { n: tst.n || 0, users: tst.u || 0 },
+    chart: days.map((d) => ({ d: d.slice(8, 10) + "." + d.slice(5, 7), nw: NM[d] || 0, ac: AM[d] || 0 })),
+    top: Object.entries(top).sort((a, b) => b[1] - a[1]).slice(0, 5)
+  });
+}
+async function appBcCount(env, aud) {
+  const q = aud === "buyers" ? "SELECT COUNT(*) AS n FROM users WHERE blocked=0 AND id IN (SELECT user_id FROM orders WHERE status IN " + PAID_ST + ")" : aud === "active30" ? "SELECT COUNT(*) AS n FROM users WHERE blocked=0 AND id IN (SELECT uid FROM seen WHERE day>=?)" : "SELECT COUNT(*) AS n FROM users WHERE blocked=0";
+  const st = env.DB.prepare(q);
+  return ((aud === "active30" ? await st.bind(tzDay(29)).first() : await st.first()) || {}).n || 0;
+}
+async function appAdminBcList(env) {
+  const { results } = await env.DB.prepare("SELECT id, sent, failed, done, aud, created, preview FROM broadcast ORDER BY id DESC LIMIT 6").all();
+  const counts = { all: await appBcCount(env, "all"), active30: await appBcCount(env, "active30"), buyers: await appBcCount(env, "buyers") };
+  return appJ({ list: results || [], counts });
+}
+async function appAdminBc(env, u, form, b) {
+  const g = (k) => form ? form.get(k) : b[k];
+  const text = String(g("text") || "").trim();
+  const aud = ["all", "active30", "buyers"].includes(g("aud")) ? g("aud") : "all";
+  const btn = String(g("btn")) === "1" ? 1 : 0;
+  const photo = form ? form.get("file") : null;
+  if (!text && !photo) return appErr("Xabar matnini yozing");
+  if (text.length > (photo ? 1000 : 4000)) return appErr(photo ? "Rasm ostidagi matn 1000 belgidan oshmasin" : "Matn juda uzun");
+  const running = await env.DB.prepare("SELECT id FROM broadcast WHERE done=0 LIMIT 1").first();
+  if (running) return appErr("Oldingi xabar hali tarqatilmoqda, tugashini kuting");
+  const markup = btn ? shopKb().reply_markup : undefined;
+  let r;
+  if (photo && typeof photo !== "string") {
+    const fd = new FormData();
+    fd.append("chat_id", String(u.id));
+    fd.append("photo", photo, photo.name || "rasm.jpg");
+    if (text) fd.append("caption", toNewAlphabet(text));
+    if (markup) fd.append("reply_markup", JSON.stringify(markup));
+    r = await (await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendPhoto`, { method: "POST", body: fd })).json().catch(() => ({ ok: false }));
+  } else {
+    r = await tg(env, "sendMessage", { chat_id: u.id, text, ...(markup ? { reply_markup: markup } : {}) });
+  }
+  if (!r || !r.ok) return appErr("Xabarni tayyorlab bo'lmadi. Botga /start yozib, qayta urinib ko'ring");
+  const n = await appBcCount(env, aud);
+  await env.DB.prepare("INSERT INTO broadcast (from_chat, msg_id, admin, btn, aud, created, preview) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(u.id, r.result.message_id, u.id, btn, aud, now(), (photo ? "🖼 " : "") + toNewAlphabet(text).slice(0, 80)).run();
+  return appJ({ ok: true, n });
 }

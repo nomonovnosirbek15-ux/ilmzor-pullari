@@ -157,6 +157,16 @@ main{padding-bottom:170px}
 .gal .gdoc i{font-style:normal;font-size:34px}
 .pdfv canvas{width:100%;display:block;margin:0 0 8px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.12);background:#fff}
 .ibtn{border:0;border-radius:10px;background:#ecebf6;color:var(--ind);font-weight:700;padding:8px 12px;font-size:13px;margin-top:8px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.tl2{background:#fff;border-radius:14px;padding:12px;box-shadow:0 1px 4px rgba(35,32,94,.08);display:flex;flex-direction:column;gap:2px}
+.tl2 b{font-size:22px;color:var(--ind);line-height:1.15}.tl2 span{font-weight:700;font-size:13px}.tl2 small{color:var(--ink2);font-size:12px}
+.tl2.tg b{color:var(--ok)}.tl2.tr b{color:var(--bad)}.tl2.warn{background:#fff8e8}.tl2.dark{background:var(--ind);color:#fff}.tl2.dark b{color:var(--amb)}.tl2.dark small{color:#c9c6f2}
+.chart{display:flex;gap:4px;height:120px;align-items:stretch}.chart .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.chart .bars{flex:1;width:100%;display:flex;align-items:flex-end;gap:1px}.chart .bars i{flex:1;border-radius:3px 3px 0 0;min-height:2px}.chart small{font-size:10px;color:var(--ink2)}
+.leg{display:flex;gap:14px;font-size:12px;color:var(--ink2);margin-bottom:8px}.leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.trow{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}.trow:last-child{border-bottom:0}
+.chk{display:flex;align-items:center;gap:8px;color:var(--ink);font-weight:600}.chk input{width:auto}
+.seg button{font-size:12px;padding:8px 4px}
 </style>
 </head>
 <body>
@@ -177,7 +187,7 @@ var AP="['‘’ʻʼ`]";
 function NA(t){return String(t).replace(new RegExp('O'+AP,'g'),'Ö').replace(new RegExp('o'+AP,'g'),'ö').replace(new RegExp('G'+AP,'g'),'Ğ').replace(new RegExp('g'+AP,'g'),'ğ').replace(/SH/g,'Ş').replace(/Sh/g,'Ş').replace(/sh/g,'ş').replace(/CH/g,'Ç').replace(/Ch/g,'Ç').replace(/ch/g,'ç');}
 function conv(root){if(!root)return;var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null),n;while(n=w.nextNode()){if(n.parentNode&&/^(SCRIPT|STYLE|TEXTAREA)$/.test(n.parentNode.nodeName))continue;var v=NA(n.nodeValue);if(v!==n.nodeValue)n.nodeValue=v;}
   root.querySelectorAll&&root.querySelectorAll('[placeholder]').forEach(function(e){e.placeholder=NA(e.placeholder);});}
-var S={view:'shop',cat:'',D:null,busy:false,form:null,orders:null,done:null,keys:null,KB:null,T:null,res:[],qs:'',payInfo:'',A:{tab:'orders',filter:'active',orders:null,counts:{},books:null,cats:[],nb:{},track:{}},kf:{book_id:'',text:''}};
+var S={view:'shop',cat:'',D:null,busy:false,form:null,orders:null,done:null,keys:null,KB:null,T:null,res:[],qs:'',payInfo:'',A:{tab:'stats',st:null,bc:{text:'',aud:'all',btn:1,file:null,fname:''},bcs:null,filter:'active',orders:null,counts:{},books:null,cats:[],nb:{},track:{}},kf:{book_id:'',text:''}};
 var $=function(id){return document.getElementById(id);};
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
 var money=function(n){return Number(n).toLocaleString('ru-RU').replace(/ /g,' ')+' so‘m';};
@@ -277,7 +287,9 @@ function payCard(info,id,total){return '<div class="card"><h3>💳 To‘lov</h3>
 function vDone(){var d=S.done;if(d.rc==='check')return '<div class="card ok"><div class="ic">✅</div><h2>Chek qabul qilindi!</h2><p class="note">Admin tekshirib tasdiqlagach, '+(d.digital?'PDF kitobni «📦 Buyurtmalar» bölimida ilovaning özida öqiysiz.':'kitoblaringiz pochtaga topshiriladi.')+' Holatini «📦 Buyurtmalarim» bo‘limida kuzatasiz.</p><br><button class="big ind" style="width:100%;justify-content:center" data-nav="orders">📦 Buyurtmalarim</button></div>';
   return '<div class="card ok"><div class="ic">🎉</div><h2>Buyurtmangiz qabul qilindi!</h2><p>Buyurtma raqami: <b>#'+d.id+'</b><br>Jami: <b>'+money(d.total)+'</b></p></div>'+payCard(d.payInfo,d.id,d.total)+'<button class="add soft" style="margin-bottom:12px" id="close">Keyinroq — bot chatiga o‘tish</button>';}
 
-function vAdmin(){var A=S.A;var h='<div class="seg" style="margin-bottom:12px"><button data-atab="orders" class="'+(A.tab==='orders'?'on':'')+'">🧾 Buyurtmalar</button><button data-atab="books" class="'+(A.tab==='books'?'on':'')+'">📚 Kitoblar</button></div>';
+function vAdmin(){var A=S.A;var h='<div class="seg" style="margin-bottom:12px">'+[['stats','📊 Statistika'],['bc','📢 Xabar'],['orders','🧾 Buyurtma'],['books','📚 Kitoblar']].map(function(x){return '<button data-atab="'+x[0]+'" class="'+(A.tab===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div>';
+  if(A.tab==='stats')return h+vStats();
+  if(A.tab==='bc')return h+vBc();
   if(A.tab==='orders'){var F=[['active','Faol'],['check','🧾 Chek'],['new','⏳ To‘lov'],['confirmed','📦 Jo‘natish'],['sent','🚚 Pochtada'],['all','Hammasi']];
     h+='<div class="chips" style="margin-bottom:12px">'+F.map(function(f){var n=f[0]==='active'?['new','check','confirmed','sent'].reduce(function(a,k){return a+(A.counts[k]||0);},0):f[0]==='all'?'':(A.counts[f[0]]||0);return '<button class="chip" style="'+(A.filter===f[0]?'background:var(--ind);color:#fff':'')+'" data-afil="'+f[0]+'">'+f[1]+(n!==''?' · '+n:'')+'</button>';}).join('')+'</div>';
     if(!A.orders)return h+'<div class="load">Yuklanmoqda…</div>';
@@ -293,7 +305,32 @@ function vAdmin(){var A=S.A;var h='<div class="seg" style="margin-bottom:12px"><
   A.cats.forEach(function(c){var L=A.books.filter(function(b){return b.cat===c.key;});if(!L.length)return;
     h+='<div class="card"><h3>'+esc(c.title)+'</h3>'+L.map(function(b){return '<div class="ab" style="'+(b.active?'':'opacity:.55')+'"><div class="th">'+(b.photo?'<img loading="lazy" src="/app/img/'+b.id+'?v='+encodeURIComponent(b.photo)+'">':'')+'</div><div class="nm">'+esc(b.title)+'<small>'+(b.price?money(b.price):'narx yo‘q')+(b.active?'':' · 🙈 yashirin')+(b.pdf?' · 📄 '+esc(b.pdfName||'PDF'):'')+'</small></div><div class="ctl"><input inputmode="numeric" data-apr="'+b.id+'" value="'+(b.price||'')+'" placeholder="Narx"><button class="btn2 soft" data-asv="'+b.id+'">💾</button><button class="btn2 soft" data-atg="'+b.id+'">'+(b.active?'🙈 Yashirish':'👁 Ko‘rsatish')+'</button><button class="btn2 soft" data-apdf="'+b.id+'">📄 '+(b.pdf?'PDF almashtirish':'PDF yuklash')+'</button>'+(b.pdf?'<button class="btn2 bad" data-arm="'+b.id+'">✕ PDF</button>':'')+'</div></div>';}).join('')+'</div>';});
   return h;}
-function aLoad(){var A=S.A;if(A.tab==='orders'){api('a_orders',{filter:A.filter}).then(function(j){A.orders=j.orders;A.counts=j.counts;if(S.view==='admin')render();}).catch(function(e){say(e.message);});}
+function num(n){return Number(n||0).toLocaleString('ru-RU').replace(/\s/g,' ');}
+function tile(v,l,sub,c){return '<div class="tl2'+(c?' '+c:'')+'"><b>'+v+'</b><span>'+l+'</span>'+(sub?'<small>'+sub+'</small>':'')+'</div>';}
+function vStats(){var T=S.A.st;if(!T)return '<div class="load">Yuklanmoqda…</div>';var U=T.users,Ac=T.active,O=T.orders;
+  var mx=Math.max.apply(null,T.chart.map(function(x){return Math.max(x.nw,x.ac);}).concat([1]));
+  var pct=function(a,b){return b?Math.round(a*100/b)+'%':'—';};
+  return '<div class="sh"><b>👥 Foydalanuvchilar</b></div><div class="tiles">'+tile(num(U.all),'Jami foydalanuvchi','bot + ilova')+tile(num(U.live),'Faol obunachi','xabar yetib boradi','tg')+tile(num(U.blocked),'Botni bloklagan',pct(U.blocked,U.all),'tr')+tile('+'+num(U.new1),'Bugun qo‘shildi','7 kun: +'+num(U.new7)+' · 30 kun: +'+num(U.new30))+'</div>'+
+  '<div class="sh"><b>🔥 Faollik</b></div><div class="tiles">'+tile(num(Ac.d1),'Bugun kirgan')+tile(num(Ac.d7),'7 kunda kirgan')+tile(num(Ac.d30),'30 kunda kirgan')+tile(num(Ac.regular),'Doimiy foydalanuvchi','30 kunda 3+ kun kirgan','dark')+'</div>'+
+  '<div class="note" style="margin:-4px 4px 12px">Faollik '+esc(Ac.since)+' dan beri hisoblanmoqda.</div>'+
+  '<div class="card"><h3>📈 Oxirgi 14 kun</h3><div class="leg"><span><i style="background:var(--ind)"></i>Kirganlar</span><span><i style="background:var(--amb)"></i>Yangilar</span></div><div class="chart">'+T.chart.map(function(x){return '<div class="col" title="'+x.d+'"><div class="bars"><i style="height:'+Math.round(x.ac*100/mx)+'%;background:var(--ind)"></i><i style="height:'+Math.round(x.nw*100/mx)+'%;background:var(--amb)"></i></div><small>'+x.d.slice(0,2)+'</small></div>';}).join('')+'</div></div>'+
+  '<div class="sh"><b>🛒 Savdo</b></div><div class="tiles">'+tile(num(O.n),'To‘langan buyurtma','bu oy: '+num(O.month))+tile(num(O.buyers),'Xaridor',num(O.repeat)+' tasi qayta olgan · '+pct(O.buyers,U.all)+' konversiya')+tile(money(O.msum),'Bu oydagi tushum','jami: '+money(O.sum),'tg')+tile(num(O.pending),'Kutilayotgan','to‘lov yoki chek',O.pending?'warn':'')+'</div>'+
+  (T.top.length?'<div class="card"><h3>🏆 Eng kõp sotilganlar</h3>'+T.top.map(function(x,i){return '<div class="trow"><span>'+(i+1)+'. '+esc(x[0])+'</span><b>'+x[1]+' ta</b></div>';}).join('')+'</div>':'')+
+  '<div class="sh"><b>✅ Testlar</b></div><div class="tiles">'+tile(num(T.tests.n),'Tekshirilgan test')+tile(num(T.tests.users),'Test yechgan o‘quvchi')+'</div>'+
+  '<button class="btn2 soft" style="width:100%;margin-top:4px" data-arel>↻ Yangilash</button>';}
+function vBc(){var B=S.A.bc,L=S.A.bcs;var C=L?L.counts:{};
+  var auds=[['all','Hammaga',C.all],['active30','30 kunda faol',C.active30],['buyers','Xaridorlarga',C.buyers]];
+  var running=L&&L.list.some(function(x){return !x.done;});
+  return '<div class="card"><h3>📢 Foydalanuvchilarga xabar</h3><label>Kimga</label><div class="chips">'+auds.map(function(a){return '<button class="chip" style="'+(B.aud===a[0]?'background:var(--ind);color:#fff':'')+'" data-baud="'+a[0]+'">'+a[1]+(a[2]!=null?' · '+num(a[2]):'')+'</button>';}).join('')+'</div>'+
+  '<label for="bc_t">Xabar matni</label><textarea id="bc_t" data-bc="text" style="min-height:130px" placeholder="Masalan: Yangi mashq daftarlari dökonda! Namunalarni bepul köring 👇">'+esc(B.text)+'</textarea>'+
+  '<div class="row2" style="margin-top:8px"><button class="btn2 soft" data-bpic>🖼 '+(B.file?'Rasm: '+esc(B.fname):'Rasm qöşiş')+'</button>'+(B.file?'<button class="btn2 bad" data-bpicx>✕</button>':'')+'</div>'+
+  '<label class="chk"><input type="checkbox" data-bbtn '+(B.btn?'checked':'')+'> Xabar ostiga «🛍 Dökonni ochish» tugmasi</label>'+
+  '<div class="note">Xabar avval sizga yuboriladi, keyin tanlangan foydalanuvchilarga daqiqasiga 40 tadan tarqatiladi. Tugagach, natijani bot sizga yozadi.</div>'+
+  '<button class="big ind" style="width:100%;justify-content:center;margin-top:12px" id="bsend" '+(running||S.busy?'disabled':'')+'>'+(running?'⏳ Oldingi xabar tarqatilmoqda…':'📢 Yuborish')+'</button></div>'+
+  (L&&L.list.length?'<div class="card"><h3>🕘 Oxirgi xabarlar</h3>'+L.list.map(function(x){var tot=x.sent+x.failed;return '<div class="trow" style="align-items:flex-start"><span>'+esc(x.preview||'Xabar #'+x.id)+'<small style="display:block;color:var(--ink2)">'+esc(x.created||'')+' · '+({all:'hammaga',active30:'faollarga',buyers:'xaridorlarga'}[x.aud]||'hammaga')+'</small></span><b style="white-space:nowrap">'+(x.done?'✅ '+x.sent+(x.failed?' · ❌ '+x.failed:''):'⏳ '+tot)+'</b></div>';}).join('')+'</div>':'');}
+function aLoad(){var A=S.A;if(A.tab==='stats'){api('a_stats').then(function(j){A.st=j;if(S.view==='admin')render();}).catch(function(e){say(e.message);});return;}
+  if(A.tab==='bc'){api('a_bcs').then(function(j){A.bcs=j;if(S.view==='admin')render();}).catch(function(e){say(e.message);});return;}
+  if(A.tab==='orders'){api('a_orders',{filter:A.filter}).then(function(j){A.orders=j.orders;A.counts=j.counts;if(S.view==='admin')render();}).catch(function(e){say(e.message);});}
   else api('a_books').then(function(j){A.books=j.books;A.cats=j.cats;if(S.view==='admin')render();}).catch(function(e){say(e.message);});}
 function pickFile(accept,cb){var i=document.createElement('input');i.type='file';i.accept=accept;i.style.display='none';document.body.appendChild(i);i.onchange=function(){var f=i.files[0];i.remove();if(f)cb(f);};i.click();}
 function upload(op,fields,file){var fd=new FormData();fd.append('initData',ID);Object.keys(fields).forEach(function(k){fd.append(k,fields[k]);});fd.append('file',file);
@@ -355,7 +392,7 @@ function submit(){var F=S.form;F.err='';
   api('order',body).then(function(j){S.busy=false;var pu=S.D.user||{},ad=body.region?[body.region,body.district,body.street].join(', '):(body.address||pu.address||'');S.D.user={name:body.name,phone:body.phone,address:ad,addressShow:NA(ad)};S.done=j;S.form=null;S.D.cart=j.cart||[];hap('ok');go('done');})
   .catch(function(e){S.busy=false;F.err=e.message;render();});}
 
-document.addEventListener('click',function(e){var t=e.target.closest('[data-mypdf],[data-simg],[data-spdf],[data-close2],[data-rcpt],[data-kopen],[data-atab],[data-afil],[data-ast],[data-arc],[data-asv],[data-atg],[data-apdf],[data-arm],#nbadd,[data-kb],[data-q],[data-nav],[data-cat],[data-open],[data-close],[data-smp],[data-am],[data-test],[data-a],#send,#close,#kadd,#tcheck,#tkey,#tagain,#tdel');
+document.addEventListener('click',function(e){var t=e.target.closest('[data-arel],[data-baud],[data-bpic],[data-bpicx],[data-bbtn],#bsend,[data-mypdf],[data-simg],[data-spdf],[data-close2],[data-rcpt],[data-kopen],[data-atab],[data-afil],[data-ast],[data-arc],[data-asv],[data-atg],[data-apdf],[data-arm],#nbadd,[data-kb],[data-q],[data-nav],[data-cat],[data-open],[data-close],[data-smp],[data-am],[data-test],[data-a],#send,#close,#kadd,#tcheck,#tkey,#tagain,#tdel');
   if(!t){if(e.target.classList&&e.target.classList.contains('sheet'))closeSheet();return;}
   if(t.dataset.q){var p=t.dataset.q.split(':');setQty(+p[0],+p[1]);var sb=$('sbuy');if(sb){var b=S.D.books.filter(function(x){return x.id===+p[0];})[0];sb.innerHTML=buyBtn(b);conv(sb);}return;}
   if(t.dataset.nav){closeSheet();go(t.dataset.nav);return;}
@@ -372,6 +409,15 @@ document.addEventListener('click',function(e){var t=e.target.closest('[data-mypd
   if(t.id==='close'){try{W.close();}catch(_){}return;}
   if(t.dataset.rcpt){if(!S.busy)sendReceipt(+t.dataset.rcpt);return;}
   if(t.dataset.kopen){var kid=+t.dataset.kopen;closeSheet();S.KB=kid;go('kbook');return;}
+  if(t.dataset.arel!=null){S.A.st=null;render();aLoad();return;}
+  if(t.dataset.baud){S.A.bc.aud=t.dataset.baud;render();return;}
+  if(t.dataset.bbtn!=null){S.A.bc.btn=t.checked?1:0;return;}
+  if(t.dataset.bpicx!=null){S.A.bc.file=null;S.A.bc.fname='';render();return;}
+  if(t.dataset.bpic!=null){pickFile('image/*',function(f){if(f.size>10*1024*1024){say('Rasm 10 MB dan oshmasin');return;}S.A.bc.file=f;S.A.bc.fname=f.name.slice(0,18);render();});return;}
+  if(t.id==='bsend'){var B=S.A.bc;if(!B.text.trim()&&!B.file){say('Xabar matnini yozing');return;}var cnt=(S.A.bcs&&S.A.bcs.counts[B.aud])||0;
+    var go3=function(){S.busy=true;render();var pr=B.file?upload('a_bc',{text:B.text,aud:B.aud,btn:B.btn},B.file):api('a_bc',{text:B.text,aud:B.aud,btn:B.btn});
+      pr.then(function(j){S.busy=false;hap('ok');S.A.bc={text:'',aud:'all',btn:1,file:null,fname:''};say('✅ Xabar '+j.n+' ta foydalanuvchiga tarqatila boşlandi. Namunasi sizga yuborildi.');aLoad();}).catch(function(e){S.busy=false;render();say(e.message);});};
+    var q=NA('Xabar '+cnt+' ta foydalanuvchiga yuborilsinmi?');try{W.showConfirm(q,function(y){if(y)go3();});}catch(_){if(confirm(q))go3();}return;}
   if(t.dataset.atab){S.A.tab=t.dataset.atab;render();aLoad();return;}
   if(t.dataset.afil){S.A.filter=t.dataset.afil;S.A.orders=null;render();aLoad();return;}
   if(t.dataset.ast){var pa=t.dataset.ast.split(':'),oid=+pa[0],to=pa[1];var lbl={confirmed:'to‘lovni tasdiqlaysizmi',cancelled:'buyurtmani bekor qilasizmi',reject:'chekni rad etasizmi',sent:'pochtaga topshirildi deb belgilaysizmi',done:'yetkazildi deb belgilaysizmi'}[to];
@@ -396,6 +442,7 @@ document.addEventListener('click',function(e){var t=e.target.closest('[data-mypd
 document.addEventListener('input',function(e){var ds=e.target.dataset||{};
   if(e.target.id==='qs'){S.qs=e.target.value;var g=$('grid');if(g){g.innerHTML=S.qs.trim()||S.cat?gridHtml():homeHtml();conv(g);}nav();conv($('tabs'));return;}
   if(ds.nb){S.A.nb[ds.nb]=e.target.value;return;}
+  if(ds.bc){S.A.bc[ds.bc]=e.target.value;return;}
   if(ds.atr){S.A.track[ds.atr]=e.target.value;return;}
   var k=e.target.dataset&&e.target.dataset.k;if(k){S.kf[k]=e.target.value;return;}var f=e.target.dataset&&e.target.dataset.f;if(!f||!S.form)return;S.form[f]=e.target.value;
   if(f==='region'){S.form.district='';render();}else if(f==='district'){render();}});
